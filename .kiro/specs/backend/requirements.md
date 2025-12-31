@@ -12,7 +12,6 @@ Requirements:
 - Quick prototype focused on core gameplay
 
 Background:
-- Existing color board UI with 4x30 grid and selection functionality
 - Game involves clue-giver providing 1-2 word hints, others placing cubes on matching colors
 - Scoring: 3 points exact match, 1 point adjacent, clue-giver gets 1 point per correct guess
 - Need real-time updates for cube placement and turn management
