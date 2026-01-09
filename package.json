@@ -1,0 +1,16 @@
+{
+  "name": "rgb",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "client",
+    "service"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "dev:client": "npm run dev --workspace=client",
+    "deploy:service": "npm run deploy --workspace=service",
+    "test": "npm run test --workspaces"
+  }
+}
