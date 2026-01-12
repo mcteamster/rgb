@@ -30,7 +30,6 @@ export const TimerButton: React.FC<TimerButtonProps> = ({
     <Button 
       onClick={onClick} 
       disabled={disabled}
-      className="color-accurate"
       style={{ 
         background: timerUp
           ? `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`

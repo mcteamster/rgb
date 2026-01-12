@@ -75,14 +75,6 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
 
     // Draw hue indicator (triangle)
     const hueAngle = selectedHue * Math.PI / 180;
-    const innerX = center + (radius * 0.7) * Math.cos(hueAngle);
-    const innerY = center + (radius * 0.7) * Math.sin(hueAngle);
-    const outerRingCenter = center + (radius * 0.85) * Math.cos(hueAngle);
-    const outerRingCenterY = center + (radius * 0.85) * Math.sin(hueAngle);
-    
-    // Draw triangle from inner circle pointing to outer ring center
-    const triangleSize = markerRadius * 1.5;
-    const height = triangleSize * Math.sqrt(3) / 2; // Height of equilateral triangle
     
     // Calculate distance from inner circle to hue ring center
     const innerRadius = radius * 0.7;
@@ -91,7 +83,6 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     
     // Scale triangle to fit the available space
     const scaledSize = triangleLength * 1.2; // Base width
-    const scaledHeight = scaledSize * Math.sqrt(3) / 2;
     
     // Position triangle starting from inner circle
     const baseX = center + innerRadius * Math.cos(hueAngle);
