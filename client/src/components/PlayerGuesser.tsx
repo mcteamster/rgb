@@ -60,7 +60,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
       <div className="guess-controls">
         <div className="current-color-preview">
           <div 
-            className="color-preview"
+            className="color-preview color-accurate"
             onClick={() => !isColorLocked && setShowSliders(true)}
             style={{
               backgroundColor: `hsl(${selectedColor.h}, ${selectedColor.s * 100}%, ${selectedColor.l * 100}%)`,

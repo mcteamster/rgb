@@ -22,7 +22,7 @@ export const ColorBox: React.FC<ColorBoxProps> = ({
 }) => {
   return (
     <div
-      className={`color-box ${className}`}
+      className={`color-box color-accurate ${className}`}
       onClick={onClick}
       style={{
         backgroundColor: `hsl(${color.h}, ${color.s}%, ${color.l}%)`,
