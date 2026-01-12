@@ -108,6 +108,7 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
             {playerScores.map((player: any) => (
               <div
                 key={player.playerId}
+                className="color-accurate"
                 style={{
                   position: 'relative',
                   display: 'flex',
@@ -210,6 +211,7 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
       {playerScores.map((player: any) => (
         <div key={player.playerId} className="player-tab">
           <span 
+            className="color-accurate"
             style={{ 
               color: (() => {
                 // Check if this player is the current describer

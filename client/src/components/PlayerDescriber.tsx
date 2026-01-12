@@ -74,6 +74,7 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         <div style={{ flex: 1, position: 'relative', height: '80px' }}>
           <div 
+            className="color-accurate"
             style={{
               position: 'absolute',
               top: 0,

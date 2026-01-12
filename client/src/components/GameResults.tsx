@@ -73,7 +73,7 @@ export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => 
                         return (
                           <div
                             key={roundIndex}
-                            className="describer-square"
+                            className="describer-square color-accurate"
                             style={{
                               backgroundColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
                               borderColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
@@ -92,7 +92,7 @@ export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => 
                         return (
                           <div
                             key={roundIndex}
-                            className="guess-square"
+                            className="guess-square color-accurate"
                             style={{
                               backgroundColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
                               borderColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
@@ -111,7 +111,7 @@ export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => 
                       return (
                         <div
                           key={roundIndex}
-                          className="guess-square"
+                          className="guess-square color-accurate"
                           style={{
                             backgroundColor: `hsl(${playerGuess.h}, ${playerGuess.s}%, ${playerGuess.l}%)`,
                             borderColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`
