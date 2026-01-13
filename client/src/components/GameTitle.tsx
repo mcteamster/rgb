@@ -2,8 +2,8 @@ import React from 'react';
 import { useColor } from '../contexts/ColorContext';
 
 export const GameTitle: React.FC = () => {
-  const { wheelSize } = useColor();
-  const dynamicFontSize = Math.max(wheelSize * 0.10, 20);
+  const { wheelGeometry } = useColor();
+  const dynamicFontSize = Math.max(wheelGeometry.size * 0.10, 20);
 
   return (
     <div 

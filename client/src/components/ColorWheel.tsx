@@ -7,7 +7,7 @@ interface ColorWheelProps {
 }
 
 export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
-  const { selectedHue, selectedColor, clickPosition, handleColorClick, handleHueChange, setWheelSize, setCanvasCenter, updateClickPositionFromColor } = useColor();
+  const { selectedHue, selectedColor, clickState, handleColorClick, handleHueChange, setWheelGeometry, updateClickPositionFromColor } = useColor();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragModeRef = useRef<'hue' | 'sl' | null>(null);
   const canvasSize = Math.max(size.width, size.height);
@@ -17,10 +17,12 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   const markerRadius = Math.max(Math.min(wheelSize * 0.01, 6), 2); // 1% of wheel size, max 6px, min 2px
 
   useEffect(() => {
-    setWheelSize(wheelSize);
-    setCanvasCenter(center);
+    setWheelGeometry({ size: wheelSize, center, radius });
+  }, [wheelSize, center, radius, setWheelGeometry]);
+  
+  useEffect(() => {
     updateClickPositionFromColor();
-  }, [wheelSize, center, setWheelSize, setCanvasCenter, updateClickPositionFromColor]);
+  }, [updateClickPositionFromColor]);
 
   const calculateSL = (distance: number, angle: number) => {
     const normalizedDistance = Math.min(distance / (radius * 0.7), 1);
@@ -123,16 +125,16 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     ctx.stroke();
 
     // Draw SV indicator
-    if (clickPosition) {
+    if (clickState.position) {
       ctx.fillStyle = 'white';
       ctx.beginPath();
-      ctx.arc(clickPosition.x, clickPosition.y, markerRadius, 0, 2 * Math.PI);
+      ctx.arc(clickState.position.x, clickState.position.y, markerRadius, 0, 2 * Math.PI);
       ctx.fill();
       ctx.strokeStyle = 'black';
       ctx.lineWidth = 3;
       ctx.stroke();
     }
-  }, [canvasSize, center, radius, selectedHue, selectedColor, clickPosition, markerRadius]);
+  }, [canvasSize, center, radius, selectedHue, selectedColor, clickState.position, markerRadius]);
 
   const handleInteraction = (x: number, y: number, isStart: boolean) => {
     const { distance, angle } = cartesianToPolar(x, y, center);

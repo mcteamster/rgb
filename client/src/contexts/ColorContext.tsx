@@ -2,21 +2,28 @@ import React, { createContext, useContext, useState, useCallback, useRef, useEff
 import { HSLColor, calculateDistanceFromLightness, calculateAngleFromSaturation } from '../utils/colorUtils';
 import { useGame } from './GameContext';
 
+interface WheelGeometry {
+  size: number;
+  center: number;
+  radius: number;
+}
+
+interface ClickState {
+  position: { x: number; y: number } | null;
+  angle: number;
+}
+
 interface ColorContextType {
   selectedColor: HSLColor;
   selectedHue: number;
-  clickPosition: { x: number; y: number } | null;
-  clickAngle: number;
-  wheelSize: number;
-  canvasCenter: number;
+  clickState: ClickState;
+  wheelGeometry: WheelGeometry;
   isColorLocked: boolean;
   showSliders: boolean;
   setSelectedColor: (color: HSLColor) => void;
   setSelectedHue: (hue: number) => void;
-  setClickPosition: (position: { x: number; y: number } | null) => void;
-  setClickAngle: (angle: number) => void;
-  setWheelSize: (size: number) => void;
-  setCanvasCenter: (center: number) => void;
+  setClickState: (state: Partial<ClickState>) => void;
+  setWheelGeometry: (geometry: Partial<WheelGeometry>) => void;
   setIsColorLocked: (locked: boolean) => void;
   setShowSliders: (show: boolean) => void;
   handleColorClick: (x: number, y: number, hsl: HSLColor) => void;
@@ -50,17 +57,44 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
   });
   const [isColorLocked, setIsColorLocked] = useState(false);
   const [showSliders, setShowSliders] = useState(false);
-  const [wheelSize, setWheelSize] = useState(() => 
-    Math.round(Math.min(window.innerHeight * 0.6, window.innerWidth * 0.8))
-  );
-  const [canvasCenter, setCanvasCenter] = useState(() =>
-    Math.round(Math.max(window.innerHeight, window.innerWidth) / 2)
-  );
+  
+  const [wheelGeometry, setWheelGeometryState] = useState<WheelGeometry>(() => {
+    const size = Math.round(Math.min(window.innerHeight * 0.6, window.innerWidth * 0.8));
+    const center = Math.round(Math.max(window.innerHeight, window.innerWidth) / 2);
+    return { size, center, radius: size / 2 - 10 };
+  });
+  
+  const setWheelGeometry = useCallback((partial: Partial<WheelGeometry>) => {
+    setWheelGeometryState(prev => {
+      const updated = { ...prev, ...partial };
+      if (partial.size !== undefined) {
+        updated.radius = updated.size / 2 - 10;
+      }
+      return updated;
+    });
+  }, []);
+  
+  const [clickState, setClickStateState] = useState<ClickState>({
+    position: null,
+    angle: 270
+  });
+  
+  const clickAngleRef = useRef(270);
+  
+  const setClickState = useCallback((partial: Partial<ClickState>) => {
+    setClickStateState(prev => {
+      const updated = { ...prev, ...partial };
+      if (partial.angle !== undefined) {
+        clickAngleRef.current = partial.angle;
+      }
+      return updated;
+    });
+  }, []);
+  
   const { updateDraftColor, getCurrentRound, playerId, gameState } = useGame();
   const draftUpdateTimeoutRef = useRef<NodeJS.Timeout>();
   const lastSentDraftColorRef = useRef<HSLColor | null>(null);
   const pendingSubmissionRef = useRef(false);
-  const [clickAngle, setClickAngle] = useState(270);
 
   // Sync locked state with server submissions
   useEffect(() => {
@@ -121,24 +155,16 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     }
   }, [playerId, selectedColor, updateDraftColor]);
 
-  const [clickPosition, setClickPosition] = useState<{ x: number; y: number } | null>(() => {
-    const center = wheelSize / 2;
-    const radius = (center - 10) * 0.7;
-    const normalizedDistance = calculateDistanceFromLightness(0.15);
-    const distance = normalizedDistance * radius;
-    const x = center + distance * Math.cos(270 * Math.PI / 180);
-    const y = center + distance * Math.sin(270 * Math.PI / 180);
-    return { x, y };
-  });
-
   const updateClickPositionFromColor = useCallback(() => {
-    const radius = wheelSize / 2 - 10;
+    const radius = wheelGeometry.radius;
+    const center = wheelGeometry.center;
+    const angle = clickAngleRef.current;
     
     // Calculate base angle from saturation
     let targetAngle = calculateAngleFromSaturation(selectedColor.s);
     
     // Preserve the side of the circle by checking if we're on the left side (90-270 degrees)
-    const isOnLeftSide = clickAngle > 90 && clickAngle < 270;
+    const isOnLeftSide = angle > 90 && angle < 270;
     
     // If we're on the left side and the calculated angle is on the right side, flip it
     if (isOnLeftSide && (targetAngle < 90 || targetAngle > 270)) {
@@ -155,22 +181,21 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     const normalizedDistance = calculateDistanceFromLightness(selectedColor.l);
     const distance = normalizedDistance * radius * 0.7;
     
-    const x = canvasCenter + distance * Math.cos(targetAngle * Math.PI / 180);
-    const y = canvasCenter + distance * Math.sin(targetAngle * Math.PI / 180);
+    const x = center + distance * Math.cos(targetAngle * Math.PI / 180);
+    const y = center + distance * Math.sin(targetAngle * Math.PI / 180);
     
-    setClickPosition({ x, y });
-  }, [wheelSize, canvasCenter, selectedColor.l, selectedColor.s, clickAngle]);
+    setClickStateState(prev => ({ ...prev, position: { x, y } }));
+  }, [wheelGeometry.radius, wheelGeometry.center, selectedColor.l, selectedColor.s]);
 
   const handleColorClick = (x: number, y: number, hsl: HSLColor) => {
     if (isColorLocked) return;
     setSelectedColor(hsl);
-    setClickPosition({ x, y });
     // Calculate and store the angle from the click position
-    const dx = x - canvasCenter;
-    const dy = y - canvasCenter;
+    const dx = x - wheelGeometry.center;
+    const dy = y - wheelGeometry.center;
     let angle = Math.atan2(dy, dx) * 180 / Math.PI;
     if (angle < 0) angle += 360;
-    setClickAngle(angle);
+    setClickState({ position: { x, y }, angle });
   };
 
   const handleSetSelectedColor = (color: HSLColor) => {
@@ -194,18 +219,14 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     <ColorContext.Provider value={{
       selectedColor,
       selectedHue,
-      clickPosition,
-      clickAngle,
-      wheelSize,
-      canvasCenter,
+      clickState,
+      wheelGeometry,
       isColorLocked,
       showSliders,
       setSelectedColor: handleSetSelectedColor,
       setSelectedHue,
-      setClickPosition,
-      setClickAngle,
-      setWheelSize,
-      setCanvasCenter,
+      setClickState,
+      setWheelGeometry,
       setIsColorLocked,
       setShowSliders,
       handleColorClick,
