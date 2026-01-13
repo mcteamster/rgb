@@ -31,6 +31,12 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d')!;
+    
+    // Fill entire canvas with selected color as background
+    const [bgR, bgG, bgB] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
+    ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
+    ctx.fillRect(0, 0, size, size);
+    
     const imageData = ctx.createImageData(size, size);
     const data = imageData.data;
 
