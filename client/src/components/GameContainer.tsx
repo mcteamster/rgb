@@ -24,13 +24,13 @@ export const GameContainer: React.FC = () => {
   const discordRoomChecked = useRef(false);
   const [showAbout, setShowAbout] = useState(false);
   const [size, setSize] = useState(() => {
-    return Math.round(Math.min(window.innerHeight * 0.6, window.innerWidth * 0.8));
+    return { width: window.innerWidth, height: window.innerHeight };
   });
   const [lastRoundId, setLastRoundId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleResize = () => {
-      setSize(Math.round(Math.min(window.innerHeight * 0.6, window.innerWidth * 0.8)));
+      setSize({ width: window.innerWidth, height: window.innerHeight });
     };
 
     window.addEventListener('resize', handleResize);
@@ -105,10 +105,7 @@ export const GameContainer: React.FC = () => {
   // Show lobby modal over color wheel if not in a game
   if (!gameState || !playerId) {
     return (
-      <div
-        className="app-container"
-        style={{ background: `hsl(${selectedColor.h}, ${selectedColor.s * 100}%, ${selectedColor.l * 100}%)` }}
-      >
+      <div className="app-container">
         <RainbowIcon onShowAbout={() => setShowAbout(true)} />
         <ConnectionStatus />
         <GameNavbar />
@@ -125,10 +122,7 @@ export const GameContainer: React.FC = () => {
   const isEndgame = currentRound?.phase === 'endgame';
 
   return (
-    <div
-      className="app-container game-active"
-      style={{ background: `hsl(${selectedColor.h}, ${selectedColor.s * 100}%, ${selectedColor.l * 100}%)` }}
-    >
+    <div className="app-container game-active">
       <RainbowIcon onShowAbout={() => setShowAbout(true)} />
       <ConnectionStatus />
       <GameNavbar />

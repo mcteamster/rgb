@@ -3,21 +3,24 @@ import { hslToRgb, cartesianToPolar, calculateSaturationFromAngle, calculateLigh
 import { useColor } from '../contexts/ColorContext';
 
 interface ColorWheelProps {
-  size: number;
+  size: { width: number; height: number };
 }
 
 export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
-  const { selectedHue, selectedColor, clickPosition, handleColorClick, handleHueChange, setWheelSize, updateClickPositionFromColor } = useColor();
+  const { selectedHue, selectedColor, clickPosition, handleColorClick, handleHueChange, setWheelSize, setCanvasCenter, updateClickPositionFromColor } = useColor();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dragModeRef = useRef<'hue' | 'sl' | null>(null);
-  const center = size / 2;
-  const radius = center - 10;
-  const markerRadius = Math.max(Math.min(size * 0.01, 6), 2); // 1% of wheel size, max 6px, min 2px
+  const canvasSize = Math.max(size.width, size.height);
+  const center = canvasSize / 2;
+  const wheelSize = Math.min(size.height * 0.6, size.width * 0.8);
+  const radius = wheelSize / 2 - 10;
+  const markerRadius = Math.max(Math.min(wheelSize * 0.01, 6), 2); // 1% of wheel size, max 6px, min 2px
 
   useEffect(() => {
-    setWheelSize(size);
+    setWheelSize(wheelSize);
+    setCanvasCenter(center);
     updateClickPositionFromColor();
-  }, [size, setWheelSize, updateClickPositionFromColor]);
+  }, [wheelSize, center, setWheelSize, setCanvasCenter, updateClickPositionFromColor]);
 
   const calculateSL = (distance: number, angle: number) => {
     const normalizedDistance = Math.min(distance / (radius * 0.7), 1);
@@ -32,18 +35,16 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
 
     const ctx = canvas.getContext('2d')!;
     
-    // Fill entire canvas with selected color as background
-    const [bgR, bgG, bgB] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
-    ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
-    ctx.fillRect(0, 0, size, size);
-    
-    const imageData = ctx.createImageData(size, size);
+    const imageData = ctx.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
+    
+    // Get background color
+    const [bgR, bgG, bgB] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
 
-    for (let y = 0; y < size; y++) {
-      for (let x = 0; x < size; x++) {
+    for (let y = 0; y < canvasSize; y++) {
+      for (let x = 0; x < canvasSize; x++) {
         const { distance, angle } = cartesianToPolar(x, y, center);
-        const index = (y * size + x) * 4;
+        const index = (y * canvasSize + x) * 4;
         
         if (distance <= radius && distance >= radius * 0.7) {
           const [r, g, b] = hslToRgb(angle, 1, 0.5);
@@ -57,6 +58,12 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
           data[index] = r;
           data[index + 1] = g;
           data[index + 2] = b;
+          data[index + 3] = 255;
+        } else {
+          // Fill background with selected color
+          data[index] = bgR;
+          data[index + 1] = bgG;
+          data[index + 2] = bgB;
           data[index + 3] = 255;
         }
       }
@@ -125,7 +132,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
       ctx.lineWidth = 3;
       ctx.stroke();
     }
-  }, [size, center, radius, selectedHue, selectedColor, clickPosition, markerRadius]);
+  }, [canvasSize, center, radius, selectedHue, selectedColor, clickPosition, markerRadius]);
 
   const handleInteraction = (x: number, y: number, isStart: boolean) => {
     const { distance, angle } = cartesianToPolar(x, y, center);
@@ -169,8 +176,8 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   return (
     <canvas
       ref={canvasRef}
-      width={size}
-      height={size}
+      width={canvasSize}
+      height={canvasSize}
       onMouseDown={(e) => {
         const { x, y } = getCoords(e);
         handleInteraction(x, y, true);
