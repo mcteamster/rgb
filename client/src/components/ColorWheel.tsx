@@ -219,7 +219,6 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
       position: 'relative', 
       width: canvasSize, 
       height: canvasSize,
-      transform: 'translate(-50%, -50%)',
     }} className="color-wheel">
       <canvas
         ref={backgroundRef}

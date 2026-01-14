@@ -66,6 +66,7 @@ body {
   left: 50%;
   cursor: pointer;
   touch-action: none;
+  transform: translate(-50%, -50%);
 }
 
 /* Modals */
@@ -394,9 +395,9 @@ body {
 
 .game-title {
   position: fixed;
-  top: 50%;
+  top: 0;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0);
   font-weight: 900;
   color: white;
   text-align: center;
@@ -404,7 +405,7 @@ body {
   text-shadow: 3px 3px 6px rgba(0, 0, 0, 1);
   pointer-events: none;
   z-index: 10;
-  margin-top: -0.75rem;
+  margin-top: 1rem;
 }
 
 .game-id {
@@ -1007,7 +1008,7 @@ textarea:-ms-input-placeholder {
   display: flex;
   flex: 1;
   gap: 2rem;
-  align-items: flex-start;
+  align-items: center;
 }
 
 /* Configuration section styles */

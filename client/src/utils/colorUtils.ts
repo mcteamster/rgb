@@ -70,5 +70,5 @@ export const cartesianToPolar = (x: number, y: number, center: number) => {
 };
 
 export const setBodyBackground = (color: HSLColor) => {
-  // document.body.style.backgroundColor = `hsl(${Math.round(color.h)}, ${Math.round(color.s)}%, ${Math.round(color.l)}%)`;
+  document.body.style.backgroundColor = `hsl(${Math.round(color.h)}, ${Math.round(color.s)}%, ${Math.round(color.l)}%)`;
 };
