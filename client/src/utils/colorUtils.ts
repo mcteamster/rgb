@@ -45,7 +45,7 @@ export const hslToRgb = (h: number, s: number, l: number): [number, number, numb
 };
 
 export const calculateSaturationFromAngle = (angle: number): number => {
-  return Math.round(Math.pow((-Math.sin(angle * Math.PI / 180) + 1) / 2, 0.3) * 100);
+  return Math.pow((-Math.sin(angle * Math.PI / 180) + 1) / 2, 0.3) * 100;
 };
 
 export const calculateAngleFromSaturation = (s: number): number => {
@@ -53,7 +53,7 @@ export const calculateAngleFromSaturation = (s: number): number => {
 };
 
 export const calculateLightnessFromDistance = (normalizedDistance: number): number => {
-  return Math.round(Math.pow(1 - normalizedDistance, 2/3) * 100);
+  return Math.pow(1 - normalizedDistance, 2/3) * 100;
 };
 
 export const calculateDistanceFromLightness = (l: number): number => {

@@ -35,12 +35,12 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     updateClickPositionFromColor();
   }, [updateClickPositionFromColor]);
 
-  const calculateSL = (distance: number, angle: number) => {
+  const calculateSL = useCallback((distance: number, angle: number) => {
     const normalizedDistance = Math.min(distance / (radius * 0.7), 1);
     const s = calculateSaturationFromAngle(angle);
     const l = calculateLightnessFromDistance(normalizedDistance);
     return { s: Math.max(0, Math.min(100, s)), l: Math.max(0, Math.min(100, l)) };
-  };
+  }, [radius]);
 
   const renderWheelToCache = useCallback((hue: number) => {
     const offscreen = document.createElement('canvas');
@@ -172,6 +172,17 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [drawOverlay]);
 
+  const getCoords = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const canvas = canvasRef.current!;
+    const rect = canvas.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    return { 
+      x: clientX - rect.left, 
+      y: clientY - rect.top 
+    };
+  }, []);
+
   const handleInteraction = useCallback((x: number, y: number, isStart: boolean) => {
     const { distance, angle } = cartesianToPolar(x, y, center);
 
@@ -203,16 +214,37 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     }
   }, [center, radius, selectedHue, handleHueChange, handleColorClick, calculateSL]);
 
-  const getCoords = (e: React.MouseEvent | React.TouchEvent) => {
-    const canvas = canvasRef.current!;
-    const rect = canvas.getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    return { 
-      x: clientX - rect.left, 
-      y: clientY - rect.top 
-    };
-  };
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    const { x, y } = getCoords(e);
+    handleInteraction(x, y, true);
+  }, [getCoords, handleInteraction]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (e.buttons === 1) {
+      const { x, y } = getCoords(e);
+      handleInteraction(x, y, false);
+    }
+  }, [getCoords, handleInteraction]);
+
+  const handleMouseEnd = useCallback(() => {
+    dragModeRef.current = null;
+  }, []);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const { x, y } = getCoords(e);
+    handleInteraction(x, y, true);
+  }, [getCoords, handleInteraction]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    e.preventDefault();
+    const { x, y } = getCoords(e);
+    handleInteraction(x, y, false);
+  }, [getCoords, handleInteraction]);
+
+  const handleTouchEnd = useCallback(() => {
+    dragModeRef.current = null;
+  }, []);
 
   return (
     <div style={{ 
@@ -242,29 +274,13 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
         width={canvasSize}
         height={canvasSize}
         style={{ position: 'absolute', top: 0, left: 0 }}
-        onMouseDown={(e) => {
-          const { x, y } = getCoords(e);
-          handleInteraction(x, y, true);
-        }}
-        onMouseUp={() => dragModeRef.current = null}
-        onMouseLeave={() => dragModeRef.current = null}
-        onMouseMove={(e) => {
-          if (e.buttons === 1) {
-            const { x, y } = getCoords(e);
-            handleInteraction(x, y, false);
-          }
-        }}
-        onTouchStart={(e) => {
-          e.preventDefault();
-          const { x, y } = getCoords(e);
-          handleInteraction(x, y, true);
-        }}
-        onTouchEnd={() => dragModeRef.current = null}
-        onTouchMove={(e) => {
-          e.preventDefault();
-          const { x, y } = getCoords(e);
-          handleInteraction(x, y, false);
-        }}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseEnd}
+        onMouseLeave={handleMouseEnd}
+        onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchMove={handleTouchMove}
       />
     </div>
   );
