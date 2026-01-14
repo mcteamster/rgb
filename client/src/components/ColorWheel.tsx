@@ -22,6 +22,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
 
   useEffect(() => {
     setWheelGeometry({ size: wheelSize, center, radius });
+    wheelCacheRef.current = null; // Invalidate cache on size change
   }, [wheelSize, center, radius, setWheelGeometry]);
   
   useEffect(() => {
@@ -87,6 +88,14 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     const ctx = overlay.getContext('2d')!;
     ctx.clearRect(0, 0, canvasSize, canvasSize);
 
+    // Draw outer ring with selected color
+    const [r, g, b] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
+    ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(center, center, radius, 0, 2 * Math.PI);
+    ctx.stroke();
+
     // Draw hue indicator
     const hueAngle = selectedHue * Math.PI / 180;
     const innerRadius = radius * 0.7;
@@ -123,7 +132,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
       ctx.lineWidth = 3;
       ctx.stroke();
     }
-  }, [canvasSize, center, radius, selectedHue, clickState.position, markerRadius]);
+  }, [canvasSize, center, radius, selectedHue, selectedColor, clickState.position, markerRadius]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
