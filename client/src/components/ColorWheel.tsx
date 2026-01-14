@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import { hslToRgb, cartesianToPolar, calculateSaturationFromAngle, calculateLightnessFromDistance } from '../utils/colorUtils';
 import { useColor } from '../contexts/ColorContext';
 
@@ -9,12 +9,16 @@ interface ColorWheelProps {
 export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   const { selectedHue, selectedColor, clickState, handleColorClick, handleHueChange, setWheelGeometry, updateClickPositionFromColor } = useColor();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const dragModeRef = useRef<'hue' | 'sl' | null>(null);
+  const wheelCacheRef = useRef<{ hue: number; canvas: HTMLCanvasElement } | null>(null);
+  const rafRef = useRef<number>();
+  
   const canvasSize = Math.max(size.width, size.height);
   const center = canvasSize / 2;
   const wheelSize = Math.min(size.height * 0.6, size.width * 0.8);
   const radius = wheelSize / 2 - 10;
-  const markerRadius = Math.max(Math.min(wheelSize * 0.01, 6), 2); // 1% of wheel size, max 6px, min 2px
+  const markerRadius = Math.max(Math.min(wheelSize * 0.01, 6), 2);
 
   useEffect(() => {
     setWheelGeometry({ size: wheelSize, center, radius });
@@ -31,17 +35,14 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     return { s: Math.max(0, Math.min(1, s)), l: Math.max(0, Math.min(1, l)) };
   };
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d')!;
+  const renderWheelToCache = useCallback((hue: number) => {
+    const offscreen = document.createElement('canvas');
+    offscreen.width = canvasSize;
+    offscreen.height = canvasSize;
+    const ctx = offscreen.getContext('2d', { willReadFrequently: false })!;
     
     const imageData = ctx.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
-    
-    // Get background color
-    const [bgR, bgG, bgB] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
 
     for (let y = 0; y < canvasSize; y++) {
       for (let x = 0; x < canvasSize; x++) {
@@ -56,64 +57,52 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
           data[index + 3] = 255;
         } else if (distance < radius * 0.7) {
           const { s, l } = calculateSL(distance, angle);
-          const [r, g, b] = hslToRgb(selectedHue, s, l);
+          const [r, g, b] = hslToRgb(hue, s, l);
           data[index] = r;
           data[index + 1] = g;
           data[index + 2] = b;
           data[index + 3] = 255;
         } else {
-          // Fill background with selected color
-          data[index] = bgR;
-          data[index + 1] = bgG;
-          data[index + 2] = bgB;
-          data[index + 3] = 255;
+          data[index + 3] = 0; // Transparent background
         }
       }
     }
     
     ctx.putImageData(imageData, 0, 0);
 
-    // Draw separating ring
     ctx.strokeStyle = 'black';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(center, center, radius * 0.7, 0, 2 * Math.PI);
     ctx.stroke();
 
-    // Draw outer border of hue ring with selected color
-    const [r, g, b] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
-    ctx.strokeStyle = `rgb(${r}, ${g}, ${b})`;
-    ctx.lineWidth = 0;
-    ctx.beginPath();
-    ctx.arc(center, center, radius, 0, 2 * Math.PI);
-    ctx.stroke();
+    wheelCacheRef.current = { hue, canvas: offscreen };
+    return offscreen;
+  }, [canvasSize, center, radius, calculateSL]);
 
-    // Draw hue indicator (triangle)
+  const drawOverlay = useCallback(() => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+
+    const ctx = overlay.getContext('2d')!;
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+    // Draw hue indicator
     const hueAngle = selectedHue * Math.PI / 180;
-    
-    // Calculate distance from inner circle to hue ring center
     const innerRadius = radius * 0.7;
     const hueRingCenter = radius * 0.85;
     const triangleLength = hueRingCenter - innerRadius;
+    const scaledSize = triangleLength * 1.2;
     
-    // Scale triangle to fit the available space
-    const scaledSize = triangleLength * 1.2; // Base width
-    
-    // Position triangle starting from inner circle
     const baseX = center + innerRadius * Math.cos(hueAngle);
     const baseY = center + innerRadius * Math.sin(hueAngle);
-    
-    // Tip points to hue ring center
     const tipX = center + hueRingCenter * Math.cos(hueAngle);
     const tipY = center + hueRingCenter * Math.sin(hueAngle);
-    
     const perpAngle = hueAngle + Math.PI / 2;
     
     ctx.fillStyle = 'black';
     ctx.beginPath();
-    // Triangle tip (at hue ring center)
     ctx.moveTo(tipX, tipY);
-    // Base vertices (at inner circle, equilateral)
     ctx.lineTo(baseX + (scaledSize / 2) * Math.cos(perpAngle), 
                baseY + (scaledSize / 2) * Math.sin(perpAngle));
     ctx.lineTo(baseX - (scaledSize / 2) * Math.cos(perpAngle), 
@@ -124,7 +113,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    // Draw SV indicator
+    // Draw SL indicator
     if (clickState.position) {
       ctx.fillStyle = 'white';
       ctx.beginPath();
@@ -134,9 +123,35 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
       ctx.lineWidth = 3;
       ctx.stroke();
     }
-  }, [canvasSize, center, radius, selectedHue, selectedColor, clickState.position, markerRadius]);
+  }, [canvasSize, center, radius, selectedHue, clickState.position, markerRadius]);
 
-  const handleInteraction = (x: number, y: number, isStart: boolean) => {
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: false })!;
+    
+    // Fill background
+    const [bgR, bgG, bgB] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
+    ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
+    ctx.fillRect(0, 0, canvasSize, canvasSize);
+
+    // Use cached wheel or render new one
+    const cached = wheelCacheRef.current;
+    const wheelCanvas = (cached?.hue === selectedHue) 
+      ? cached.canvas 
+      : renderWheelToCache(selectedHue);
+    
+    ctx.drawImage(wheelCanvas, 0, 0);
+  }, [canvasSize, selectedHue, selectedColor, renderWheelToCache]);
+
+  useEffect(() => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(drawOverlay);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [drawOverlay]);
+
+  const handleInteraction = useCallback((x: number, y: number, isStart: boolean) => {
     const { distance, angle } = cartesianToPolar(x, y, center);
 
     if (isStart) {
@@ -165,7 +180,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
         }
       }
     }
-  };
+  }, [center, radius, selectedHue, handleHueChange, handleColorClick, calculateSL]);
 
   const getCoords = (e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current!;
@@ -176,34 +191,47 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={canvasSize}
-      height={canvasSize}
-      onMouseDown={(e) => {
-        const { x, y } = getCoords(e);
-        handleInteraction(x, y, true);
-      }}
-      onMouseUp={() => dragModeRef.current = null}
-      onMouseLeave={() => dragModeRef.current = null}
-      onMouseMove={(e) => {
-        if (e.buttons === 1) {
+    <div style={{ position: 'relative', width: canvasSize, height: canvasSize }} className="color-wheel">
+      <canvas
+        ref={canvasRef}
+        width={canvasSize}
+        height={canvasSize}
+        style={{ position: 'absolute', top: 0, left: 0 }}
+      />
+      <canvas
+        ref={overlayRef}
+        width={canvasSize}
+        height={canvasSize}
+        style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}
+      />
+      <canvas
+        width={canvasSize}
+        height={canvasSize}
+        style={{ position: 'absolute', top: 0, left: 0 }}
+        onMouseDown={(e) => {
+          const { x, y } = getCoords(e);
+          handleInteraction(x, y, true);
+        }}
+        onMouseUp={() => dragModeRef.current = null}
+        onMouseLeave={() => dragModeRef.current = null}
+        onMouseMove={(e) => {
+          if (e.buttons === 1) {
+            const { x, y } = getCoords(e);
+            handleInteraction(x, y, false);
+          }
+        }}
+        onTouchStart={(e) => {
+          e.preventDefault();
+          const { x, y } = getCoords(e);
+          handleInteraction(x, y, true);
+        }}
+        onTouchEnd={() => dragModeRef.current = null}
+        onTouchMove={(e) => {
+          e.preventDefault();
           const { x, y } = getCoords(e);
           handleInteraction(x, y, false);
-        }
-      }}
-      onTouchStart={(e) => {
-        e.preventDefault();
-        const { x, y } = getCoords(e);
-        handleInteraction(x, y, true);
-      }}
-      onTouchEnd={() => dragModeRef.current = null}
-      onTouchMove={(e) => {
-        e.preventDefault();
-        const { x, y } = getCoords(e);
-        handleInteraction(x, y, false);
-      }}
-      className="color-wheel"
-    />
+        }}
+      />
+    </div>
   );
 };
