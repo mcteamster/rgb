@@ -8,19 +8,17 @@ interface ColorWheelProps {
 
 export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   const { selectedHue, selectedColor, clickState, handleColorClick, handleHueChange, setWheelGeometry, updateClickPositionFromColor } = useColor();
+  const backgroundRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const dragModeRef = useRef<'hue' | 'sl' | null>(null);
   const wheelCacheRef = useRef<{ hue: number; canvas: HTMLCanvasElement } | null>(null);
   const rafRef = useRef<number>();
   
-  const maxCanvasSize = 2560;
-  const displaySize = Math.max(size.width, size.height);
-  const canvasSize = Math.min(displaySize, maxCanvasSize);
-  const scale = displaySize / canvasSize;
-  const center = canvasSize / 2;
-  const wheelSize = Math.min(size.height * 0.6, size.width * 0.8) / scale;
+  const wheelSize = Math.min(size.height * 0.6, size.width * 0.8);
   const radius = wheelSize / 2 - 10;
+  const canvasSize = Math.ceil(wheelSize);
+  const center = canvasSize / 2;
   const markerRadius = Math.max(Math.min(wheelSize * 0.01, 6), 2);
 
   const prevCanvasSizeRef = useRef(canvasSize);
@@ -143,24 +141,30 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   }, [canvasSize, center, radius, selectedHue, selectedColor, clickState.position, markerRadius]);
 
   useEffect(() => {
+    const background = backgroundRef.current;
+    if (!background) return;
+
+    const ctx = background.getContext('2d')!;
+    const [bgR, bgG, bgB] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
+    ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
+    ctx.fillRect(0, 0, 1, 1);
+  }, [selectedColor]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d', { willReadFrequently: false })!;
     
-    // Fill background
-    const [bgR, bgG, bgB] = hslToRgb(selectedColor.h, selectedColor.s, selectedColor.l);
-    ctx.fillStyle = `rgb(${bgR}, ${bgG}, ${bgB})`;
-    ctx.fillRect(0, 0, canvasSize, canvasSize);
-
     // Use cached wheel or render new one
     const cached = wheelCacheRef.current;
     const wheelCanvas = (cached?.hue === selectedHue) 
       ? cached.canvas 
       : renderWheelToCache(selectedHue);
     
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
     ctx.drawImage(wheelCanvas, 0, 0);
-  }, [canvasSize, selectedHue, selectedColor, renderWheelToCache]);
+  }, [canvasSize, selectedHue, renderWheelToCache]);
 
   useEffect(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -205,8 +209,8 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     return { 
-      x: (clientX - rect.left) / scale, 
-      y: (clientY - rect.top) / scale 
+      x: clientX - rect.left, 
+      y: clientY - rect.top 
     };
   };
 
@@ -215,8 +219,14 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
       position: 'relative', 
       width: canvasSize, 
       height: canvasSize,
-      transform: `translate(-50%, -50%) scale(${scale})`,
+      transform: 'translate(-50%, -50%)',
     }} className="color-wheel">
+      <canvas
+        ref={backgroundRef}
+        width={1}
+        height={1}
+        style={{ position: 'fixed', top: '50%', left: '50%', width: '100vw', height: '100vh', imageRendering: 'pixelated', transform: 'translate(-50%, -50%)' }}
+      />
       <canvas
         ref={canvasRef}
         width={canvasSize}
