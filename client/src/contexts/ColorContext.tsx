@@ -203,13 +203,22 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     setSelectedColor(color);
   };
 
-  const handleHueChange = (hue: number) => {
+  const handleHueChange = useCallback((hue: number) => {
     if (isColorLocked) return;
     setSelectedHue(hue);
     const newColor = { h: hue, s: selectedColor.s, l: selectedColor.l };
     setSelectedColor(newColor);
     updateClickPositionFromColor();
-  };
+  }, [isColorLocked, selectedColor.s, selectedColor.l, updateClickPositionFromColor]);
+
+  const lastHueUpdateRef = useRef(0);
+  const throttledHueChange = useCallback((hue: number) => {
+    const now = Date.now();
+    if (now - lastHueUpdateRef.current >= 50) { // 20 Hz = 50ms
+      lastHueUpdateRef.current = now;
+      handleHueChange(hue);
+    }
+  }, [handleHueChange]);
 
   const setPendingSubmission = (pending: boolean) => {
     pendingSubmissionRef.current = pending;
@@ -230,7 +239,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
       setIsColorLocked,
       setShowSliders,
       handleColorClick,
-      handleHueChange,
+      handleHueChange: throttledHueChange,
       updateClickPositionFromColor,
       setPendingSubmission
     }}>
