@@ -41,8 +41,8 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout }) => {
     if (isDescriber && currentRound?.targetColor) {
       const targetColor = {
         h: currentRound.targetColor.h,
-        s: currentRound.targetColor.s / 100,
-        l: currentRound.targetColor.l / 100
+        s: currentRound.targetColor.s,
+        l: currentRound.targetColor.l
       };
       setSelectedColor(targetColor);
       setSelectedHue(targetColor.h);

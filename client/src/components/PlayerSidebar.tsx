@@ -222,7 +222,7 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
                 
                 const color = player.playerId === playerId ? selectedColor : player.draftColor;
                 if (!color) return '#495057';
-                const lightness = player.playerId === playerId ? color.l * 100 : color.l;
+                const lightness = color.l;
                 return lightness > 50 ? '#000' : '#fff';
               })(),
               backgroundColor: (() => {
@@ -235,8 +235,8 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
                 const color = player.playerId === playerId ? selectedColor : player.draftColor;
                 if (!color) return 'transparent';
                 const h = color.h;
-                const s = player.playerId === playerId ? color.s * 100 : color.s;
-                const l = player.playerId === playerId ? color.l * 100 : color.l;
+                const s = color.s;
+                const l = color.l;
                 return `hsl(${h}, ${s}%, ${l}%)`;
               })(),
               width: (() => {

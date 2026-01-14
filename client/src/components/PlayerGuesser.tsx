@@ -31,9 +31,9 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
       if (!isColorLocked) {
         setIsColorLocked(true);
         const serverColor = {
-          h: selectedColor.h,
-          s: Math.round(selectedColor.s * 100),
-          l: Math.round(selectedColor.l * 100)
+          h: Math.round(selectedColor.h),
+          s: Math.round(selectedColor.s),
+          l: Math.round(selectedColor.l)
         };
         submitColor(serverColor);
       }
@@ -46,9 +46,9 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
       setPendingSubmission(true);
       setIsColorLocked(true);
       const serverColor = {
-        h: selectedColor.h,
-        s: Math.round(selectedColor.s * 100),
-        l: Math.round(selectedColor.l * 100)
+        h: Math.round(selectedColor.h),
+        s: Math.round(selectedColor.s),
+        l: Math.round(selectedColor.l)
       };
       submitColor(serverColor);
     }
@@ -63,7 +63,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
             className="color-preview color-accurate"
             onClick={() => !isColorLocked && setShowSliders(true)}
             style={{
-              backgroundColor: `hsl(${selectedColor.h}, ${selectedColor.s * 100}%, ${selectedColor.l * 100}%)`,
+              backgroundColor: `hsl(${Math.round(selectedColor.h)}, ${Math.round(selectedColor.s)}%, ${Math.round(selectedColor.l)}%)`,
               cursor: isColorLocked ? 'not-allowed' : 'pointer',
               width: '100%',
               height: '60px',
@@ -82,12 +82,12 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-evenly',
                 width: '80%',
-                color: selectedColor.l > 0.5 ? 'black' : 'white'
+                color: selectedColor.l > 50 ? 'black' : 'white'
               }}
             >
               <div style={{ fontWeight: 'bold' }}>H: {Math.round(selectedColor.h)}°</div>
-              <div style={{ fontWeight: 'bold' }}>S: {Math.round(selectedColor.s * 100)}%</div>
-              <div style={{ fontWeight: 'bold' }}>L: {Math.round(selectedColor.l * 100)}%</div>
+              <div style={{ fontWeight: 'bold' }}>S: {Math.round(selectedColor.s)}%</div>
+              <div style={{ fontWeight: 'bold' }}>L: {Math.round(selectedColor.l)}%</div>
             </div>
             <div 
               style={{
@@ -95,7 +95,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
                 top: '5px',
                 right: '5px',
                 fontSize: '12px',
-                color: selectedColor.l > 0.5 ? 'black' : 'white',
+                color: selectedColor.l > 50 ? 'black' : 'white',
                 opacity: 0.8
               }}
             >
@@ -112,8 +112,8 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
           countdown={timer.countdown}
           targetColor={{
             h: selectedColor.h,
-            s: selectedColor.s * 100,
-            l: selectedColor.l * 100
+            s: selectedColor.s,
+            l: selectedColor.l
           }}
         >
           {timer.isUp ? (

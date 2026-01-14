@@ -14,16 +14,24 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   const wheelCacheRef = useRef<{ hue: number; canvas: HTMLCanvasElement } | null>(null);
   const rafRef = useRef<number>();
   
-  const canvasSize = Math.max(size.width, size.height);
+  const maxCanvasSize = 2560;
+  const displaySize = Math.max(size.width, size.height);
+  const canvasSize = Math.min(displaySize, maxCanvasSize);
+  const scale = displaySize / canvasSize;
   const center = canvasSize / 2;
-  const wheelSize = Math.min(size.height * 0.6, size.width * 0.8);
+  const wheelSize = Math.min(size.height * 0.6, size.width * 0.8) / scale;
   const radius = wheelSize / 2 - 10;
   const markerRadius = Math.max(Math.min(wheelSize * 0.01, 6), 2);
 
+  const prevCanvasSizeRef = useRef(canvasSize);
+  
   useEffect(() => {
     setWheelGeometry({ size: wheelSize, center, radius });
-    wheelCacheRef.current = null; // Invalidate cache on size change
-  }, [wheelSize, center, radius, setWheelGeometry]);
+    if (prevCanvasSizeRef.current !== canvasSize) {
+      wheelCacheRef.current = null; // Invalidate cache only on canvas size change
+      prevCanvasSizeRef.current = canvasSize;
+    }
+  }, [wheelSize, center, radius, canvasSize, setWheelGeometry]);
   
   useEffect(() => {
     updateClickPositionFromColor();
@@ -33,7 +41,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     const normalizedDistance = Math.min(distance / (radius * 0.7), 1);
     const s = calculateSaturationFromAngle(angle);
     const l = calculateLightnessFromDistance(normalizedDistance);
-    return { s: Math.max(0, Math.min(1, s)), l: Math.max(0, Math.min(1, l)) };
+    return { s: Math.max(0, Math.min(100, s)), l: Math.max(0, Math.min(100, l)) };
   };
 
   const renderWheelToCache = useCallback((hue: number) => {
@@ -51,7 +59,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
         const index = (y * canvasSize + x) * 4;
         
         if (distance <= radius && distance >= radius * 0.7) {
-          const [r, g, b] = hslToRgb(angle, 1, 0.5);
+          const [r, g, b] = hslToRgb(angle, 100, 50);
           data[index] = r;
           data[index + 1] = g;
           data[index + 2] = b;
@@ -196,11 +204,19 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     const rect = canvas.getBoundingClientRect();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    return { x: clientX - rect.left, y: clientY - rect.top };
+    return { 
+      x: (clientX - rect.left) / scale, 
+      y: (clientY - rect.top) / scale 
+    };
   };
 
   return (
-    <div style={{ position: 'relative', width: canvasSize, height: canvasSize }} className="color-wheel">
+    <div style={{ 
+      position: 'relative', 
+      width: canvasSize, 
+      height: canvasSize,
+      transform: `translate(-50%, -50%) scale(${scale})`,
+    }} className="color-wheel">
       <canvas
         ref={canvasRef}
         width={canvasSize}

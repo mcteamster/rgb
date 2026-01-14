@@ -85,10 +85,10 @@ export const ColorSliders: React.FC<ColorSlidersProps> = ({ onClose }) => {
       setSelectedColor(newColor);
       updateClickPositionFromColor();
     } else if (component === 's') {
-      newColor.s = value / 200;
+      newColor.s = value;
       updateQueueRef.current.push(newColor);
     } else if (component === 'l') {
-      newColor.l = value / 200;
+      newColor.l = value;
       updateQueueRef.current.push(newColor);
     }
   };
@@ -97,29 +97,29 @@ export const ColorSliders: React.FC<ColorSlidersProps> = ({ onClose }) => {
     <div className="hsl-slider-modal">
       <ColorSlider
         label="Hue"
-        value={selectedColor.h}
+        value={Math.round(selectedColor.h)}
         min={0}
         max={359}
         onChange={(value) => handleHSLChange('h', value)}
-        displayValue={`${Math.round(selectedColor.h).toString()}°`}
+        displayValue={`${Math.round(selectedColor.h)}°`}
       />
       <ColorSlider
         label="Saturation"
-        value={selectedColor.s * 200}
+        value={Math.round(selectedColor.s)}
         min={0}
-        max={200}
+        max={100}
         onChange={(value) => handleHSLChange('s', value)}
         onRelease={() => updateClickPositionFromColor()}
-        displayValue={`${selectedColor.s < 1 ? (selectedColor.s * 100).toFixed(1) : 100}%`}
+        displayValue={`${Math.round(selectedColor.s)}%`}
       />
       <ColorSlider
         label="Lightness"
-        value={selectedColor.l * 200}
+        value={Math.round(selectedColor.l)}
         min={0}
-        max={200}
+        max={100}
         onChange={(value) => handleHSLChange('l', value)}
         onRelease={() => updateClickPositionFromColor()}
-        displayValue={`${selectedColor.l < 1 ? (selectedColor.l * 100).toFixed(1) : 100}%`}
+        displayValue={`${Math.round(selectedColor.l)}%`}
       />
       <button className="modal-close" onClick={onClose}>
         Close

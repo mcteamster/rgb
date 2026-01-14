@@ -5,27 +5,29 @@ export interface HSLColor {
 }
 
 /**
- * Convert client HSL color format (0-1) to server format (0-100 for S/L)
+ * Convert client HSL color format (integers: H: 0-360, S/L: 0-100) to server format
  */
 export const convertToServerColor = (color: HSLColor): HSLColor => ({
-  h: color.h,
-  s: Math.round(color.s * 100),
-  l: Math.round(color.l * 100)
+  h: Math.round(color.h),
+  s: Math.round(color.s),
+  l: Math.round(color.l)
 });
 
 /**
- * Convert server HSL color format (0-100 for S/L) to client format (0-1)
+ * Convert server HSL color format to client format (integers: H: 0-360, S/L: 0-100)
  */
 export const convertToClientColor = (color: HSLColor): HSLColor => ({
-  h: color.h,
-  s: color.s / 100,
-  l: color.l / 100
+  h: Math.round(color.h),
+  s: Math.round(color.s),
+  l: Math.round(color.l)
 });
 
 export const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
-  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const sNorm = s / 100;
+  const lNorm = l / 100;
+  const c = (1 - Math.abs(2 * lNorm - 1)) * sNorm;
   const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-  const m = l - c / 2;
+  const m = lNorm - c / 2;
   
   let r: number, g: number, b: number;
   if (h < 60) [r, g, b] = [c, x, 0];
@@ -43,19 +45,19 @@ export const hslToRgb = (h: number, s: number, l: number): [number, number, numb
 };
 
 export const calculateSaturationFromAngle = (angle: number): number => {
-  return Math.pow((-Math.sin(angle * Math.PI / 180) + 1) / 2, 0.3);
+  return Math.round(Math.pow((-Math.sin(angle * Math.PI / 180) + 1) / 2, 0.3) * 100);
 };
 
 export const calculateAngleFromSaturation = (s: number): number => {
-  return Math.asin(-Math.pow(s, 1/0.3) * 2 + 1) * 180 / Math.PI;
+  return Math.asin(-Math.pow(s / 100, 1/0.3) * 2 + 1) * 180 / Math.PI;
 };
 
 export const calculateLightnessFromDistance = (normalizedDistance: number): number => {
-  return Math.pow(1 - normalizedDistance, 2/3);
+  return Math.round(Math.pow(1 - normalizedDistance, 2/3) * 100);
 };
 
 export const calculateDistanceFromLightness = (l: number): number => {
-  return 1 - Math.pow(l, 3/2);
+  return 1 - Math.pow(l / 100, 3/2);
 };
 
 export const cartesianToPolar = (x: number, y: number, center: number) => {
@@ -68,5 +70,5 @@ export const cartesianToPolar = (x: number, y: number, center: number) => {
 };
 
 export const setBodyBackground = (color: HSLColor) => {
-  document.body.style.backgroundColor = `hsl(${color.h}, ${color.s * 100}%, ${color.l * 100}%)`;
+  document.body.style.backgroundColor = `hsl(${Math.round(color.h)}, ${Math.round(color.s)}%, ${Math.round(color.l)}%)`;
 };
