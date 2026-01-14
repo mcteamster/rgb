@@ -62,8 +62,8 @@ body {
 /* Color Wheel */
 .color-wheel {
   position: fixed;
-  top: 50vh;
-  left: 50vw;
+  top: 50%;
+  left: 50%;
   cursor: pointer;
   touch-action: none;
 }
