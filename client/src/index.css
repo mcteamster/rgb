@@ -1003,14 +1003,6 @@ textarea:-ms-input-placeholder {
   margin-bottom: 1rem;
 }
 
-/* Game Content */
-.game-content {
-  display: flex;
-  flex: 1;
-  gap: 2rem;
-  align-items: center;
-}
-
 /* Configuration section styles */
 .config-section {
   padding: 12px;

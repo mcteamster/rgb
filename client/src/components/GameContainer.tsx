@@ -129,12 +129,7 @@ export const GameContainer: React.FC = () => {
 
       { isEndgame && <GameResults players={gameState.players} rounds={gameState.gameplay.rounds} />}
       <GameDisplay />
-
-      <div className="game-content">
-        <div className="canvas-wheel">
-          <ColorWheel size={size} />
-        </div>
-      </div>
+      <ColorWheel size={size} />
 
       <GameManager onShowAbout={() => setShowAbout(true)} />
       {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
