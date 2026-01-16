@@ -348,9 +348,9 @@ body {
 
 .game-title {
   position: fixed;
-  top: 0;
+  top: 50%;
   left: 50%;
-  transform: translate(-50%, 0);
+  transform: translate(-50%, -60%);
   font-weight: 900;
   color: white;
   text-align: center;
