@@ -348,9 +348,9 @@ body {
 
 .game-title {
   position: fixed;
-  top: 50%;
+  top: 50vh;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -55%);
   font-weight: 900;
   color: white;
   text-align: center;
@@ -358,7 +358,6 @@ body {
   text-shadow: 3px 3px 6px rgba(0, 0, 0, 1);
   pointer-events: none;
   z-index: 10;
-  margin-top: 1rem;
 }
 
 .game-id {
