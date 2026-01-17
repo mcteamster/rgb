@@ -11,7 +11,7 @@ import { GameResults } from './GameResults';
 import { RainbowIcon } from './RainbowIcon';
 import { AboutPage } from './AboutPage';
 import { useColor } from '../contexts/ColorContext';
-import { useGame } from '../contexts/GameContext';
+import { useGame, loadSession, clearSession } from '../contexts/GameContext';
 import { setBodyBackground } from '../utils/colorUtils';
 import { discordSdk } from '../services/discord';
 import { API_BASE_URL } from '../constants/regions';
@@ -89,11 +89,11 @@ export const GameContainer: React.FC = () => {
 
     if (roomCode) {
       if (/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/.test(roomCode.toUpperCase())) {
-        const savedSession = JSON.parse(localStorage.getItem('rgb-game-session') || 'null');
+        const savedSession = loadSession();
         if (savedSession && savedSession.gameId === roomCode) {
           rejoinGame(savedSession.gameId, savedSession.playerId, savedSession.playerName);
         } else if (savedSession) {
-          localStorage.removeItem('rgb-game-session');
+          clearSession();
           navigate(`/${roomCode.toUpperCase()}`, { replace: true });
         }
       } else {

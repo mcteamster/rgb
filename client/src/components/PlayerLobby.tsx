@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useGame } from '../contexts/GameContext';
+import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
 import { Notification } from './Notices';
@@ -18,16 +18,9 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
       return 'join';
     }
     // Check for stored session
-    try {
-      const stored = localStorage.getItem('rgb-game-session');
-      if (stored) {
-        const session = JSON.parse(stored);
-        if (session.gameId) {
-          return 'join';
-        }
-      }
-    } catch {
-      // Ignore parsing errors
+    const session = loadSession();
+    if (session?.gameId) {
+      return 'join';
     }
     return 'choose';
   });
@@ -36,16 +29,8 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
       return roomCode;
     }
     // Check for stored session and use that gameId
-    try {
-      const stored = localStorage.getItem('rgb-game-session');
-      if (stored) {
-        const session = JSON.parse(stored);
-        return session.gameId || '';
-      }
-    } catch {
-      // Ignore parsing errors
-    }
-    return '';
+    const session = loadSession();
+    return session?.gameId || '';
   });
   const [playerName, setPlayerName] = useState(savedPlayerName);
   const [isLoading, setIsLoading] = useState(false);

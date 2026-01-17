@@ -31,18 +31,18 @@ export const Notification: React.FC<NotificationProps> = ({ region, errors = [],
     checkNotices();
   }, [checkNotices]);
 
-  // Auto-dismiss errors after 6 seconds
+  // Auto-dismiss errors after 3 seconds
   useEffect(() => {
     if (errors.length > 0) {
       const timer = setTimeout(() => {
         // Clear all errors by calling onClearError for each error index
         errors.forEach((_, index) => onClearError?.(index));
-      }, 6000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [errors, onClearError]);
 
-  // Auto-dismiss notices after 6 seconds
+  // Auto-dismiss notices after 3 seconds
   useEffect(() => {
     const applicableNotices = notices.filter(notice => 
       notice.message &&
@@ -55,7 +55,7 @@ export const Notification: React.FC<NotificationProps> = ({ region, errors = [],
         applicableNotices.forEach(notice => {
           setDismissedNotices(prev => new Set([...prev, notice.message!]));
         });
-      }, 6000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [notices, region, dismissedNotices]);

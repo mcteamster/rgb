@@ -208,13 +208,6 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
         });
         return { statusCode: 400 };
     }
-    if (game.meta.status !== 'waiting') {
-        await sendToConnection(connectionId, {
-            type: 'error',
-            error: 'Game is already in progress'
-        });
-        return { statusCode: 400 };
-    }
     
     if (game.players.length >= game.config.maxPlayers) {
         await sendToConnection(connectionId, {

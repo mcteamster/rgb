@@ -128,13 +128,14 @@ export class GameWebSocket {
 
     this.on('error', (event: GameEvent) => {
       // Handle pending requests
+      const hasPendingRequests = this.pendingRequests.size > 0;
       for (const [key, pending] of this.pendingRequests.entries()) {
         this.pendingRequests.delete(key);
         pending.reject(new Error(event.error || 'Request failed'));
       }
       
-      // Handle UI updates
-      if (this.callbacks) {
+      // Only show UI error if there were no pending requests (to avoid duplicates)
+      if (!hasPendingRequests && this.callbacks) {
         this.callbacks.onError(event.error || 'Unknown error');
       }
     });

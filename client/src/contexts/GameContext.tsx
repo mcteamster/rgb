@@ -55,16 +55,32 @@ interface GameSession {
   gameId: string;
   playerId: string;
   playerName: string;
+  timestamp: number;
 }
 
-const saveSession = (session: GameSession) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+const saveSession = (session: Omit<GameSession, 'timestamp'>) => {
+  const sessionWithTimestamp: GameSession = {
+    ...session,
+    timestamp: Date.now()
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionWithTimestamp));
 };
 
 const loadSession = (): GameSession | null => {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
+    if (!stored) return null;
+    
+    const session: GameSession = JSON.parse(stored);
+    
+    // Check if session is older than 12 hours (43200000 ms)
+    const sessionAge = Date.now() - (session.timestamp || 0);
+    if (sessionAge > 43200000) {
+      clearSession();
+      return null;
+    }
+    
+    return session;
   } catch {
     return null;
   }
@@ -73,6 +89,8 @@ const loadSession = (): GameSession | null => {
 const clearSession = () => {
   localStorage.removeItem(STORAGE_KEY);
 };
+
+export { loadSession, clearSession };
 
 const savePlayerName = (name: string) => {
   localStorage.setItem(PLAYER_NAME_KEY, name);
