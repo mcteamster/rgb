@@ -1,4 +1,9 @@
 import { HSLColor } from './types';
+import { ScoringAlgorithm, geometricThresholdScoring } from './scoring';
+
+// ============================================================================
+// ID GENERATION
+// ============================================================================
 
 export function generateGameId(): string {
     const alphabet = 'BCDFGHJKLMNPQRSTVWXZ'; // No vowels to avoid spelling words
@@ -52,6 +57,10 @@ export function generatePlayerId(): string {
     return Math.random().toString(36).substring(2, 10);
 }
 
+// ============================================================================
+// COLOR UTILITIES
+// ============================================================================
+
 export function isValidHSLColor(color: HSLColor): boolean {
     const { h, s, l } = color;
     return h >= 0 && h <= 360 && s >= 0 && s <= 100 && l >= 0 && l <= 100;
@@ -64,6 +73,21 @@ export function generateRandomHSLColor(): HSLColor {
         l: Math.floor(Math.random() * 81) + 15  // 15-95%
     };
 }
+
+// ============================================================================
+// SCORING
+// ============================================================================
+
+// Current scoring algorithm - easy to swap
+const CURRENT_SCORING_ALGORITHM: ScoringAlgorithm = geometricThresholdScoring;
+
+export function calculateColorScore(targetColor: any, guessedColor: any): number {
+    return CURRENT_SCORING_ALGORITHM(targetColor, guessedColor);
+}
+
+// ============================================================================
+// GAME STATE UTILITIES
+// ============================================================================
 
 export function getCurrentRound(game: any): any | null {
     if (game.meta.currentRound === null || game.meta.currentRound === undefined) {
@@ -83,45 +107,6 @@ export function findLastSubmittedColor(game: any, playerId: string): HSLColor | 
     return null;
 }
 
-// Calculate score based on HSL color distance
-export function calculateColorScore(targetColor: any, guessedColor: any): number {
-    // Normalize hue difference (0-360 wraps around)
-    let hueDiff = Math.abs(targetColor.h - guessedColor.h);
-    if (hueDiff > 180) {
-        hueDiff = 360 - hueDiff;
-    }
-    
-    // Calculate differences
-    const satDiff = targetColor.s - guessedColor.s;
-    const lightDiff = targetColor.l - guessedColor.l;
-    
-    // Weight saturation by distance from extreme lightness
-    const avgLightness = (targetColor.l + guessedColor.l) / 2;
-    const lightWeight = 1 - Math.abs(avgLightness - 50) / 50; // 0 at L=0/100, 1 at L=50
-    
-    // Weight hue by saturation and lightness
-    const avgSaturation = (targetColor.s + guessedColor.s) / 200; // 0-1 scale
-    const hueWeight = avgSaturation * lightWeight;
-    
-    // Normalize to 0-1 scale for distance calculation
-    const normalizedHueDiff = (hueDiff / 180) * hueWeight; // weighted by saturation and lightness
-    const normalizedSatDiff = (satDiff / 100) * lightWeight; // weighted by lightness
-    const normalizedLightDiff = lightDiff / 100; // 0-1 scale
-    
-    const distance = Math.sqrt(
-        normalizedHueDiff * normalizedHueDiff +
-        normalizedSatDiff * normalizedSatDiff + 
-        normalizedLightDiff * normalizedLightDiff
-    );
-    
-    // Convert distance to score (0-100 points)
-    const maxDistance = Math.sqrt(1 + lightWeight * lightWeight + hueWeight * hueWeight);
-    const score = Math.max(0, Math.round(100 * (1 - distance / maxDistance)));
-    
-    return score;
-}
-
-// Check if all players have given the required number of clues
 export function shouldEndGame(game: any): boolean {
     const turnsPerPlayer = game.config.turnsPerPlayer;
     const players = game.players;
