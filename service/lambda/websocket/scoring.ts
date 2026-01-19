@@ -31,15 +31,21 @@ export function geometricNormalScoring(targetColor: HSLColor, guessedColor: HSLC
     const satDiff = Math.abs(targetColor.s - guessedColor.s);
     const lightDiff = Math.abs(targetColor.l - guessedColor.l);
     
+    // Adjust hue sigma based on target lightness extremity (playable range: 15-85%)
+    let multiplier = 1;
+    if (targetColor.l < 20) multiplier = 1 + 2 * (20 - targetColor.l) / 5;
+    else if (targetColor.l > 80) multiplier = 1 + 2 * (targetColor.l - 80) / 5;
+    const adjustedHueSigma = NORMAL_CONFIG.sigma.hue * multiplier;
+    
     // Check 3-sigma thresholds (anything beyond is 0)
-    if (hueDiff > 3 * NORMAL_CONFIG.sigma.hue || 
+    if (hueDiff > 3 * adjustedHueSigma || 
         satDiff > 3 * NORMAL_CONFIG.sigma.saturation || 
         lightDiff > 3 * NORMAL_CONFIG.sigma.lightness) {
         return 0;
     }
     
     // Calculate normal distribution components
-    const hueComponent = Math.exp(-0.5 * Math.pow(hueDiff / NORMAL_CONFIG.sigma.hue, 2));
+    const hueComponent = Math.exp(-0.5 * Math.pow(hueDiff / adjustedHueSigma, 2));
     const satComponent = Math.exp(-0.5 * Math.pow(satDiff / NORMAL_CONFIG.sigma.saturation, 2));
     const lightComponent = Math.exp(-0.5 * Math.pow(lightDiff / NORMAL_CONFIG.sigma.lightness, 2));
     
