@@ -95,75 +95,98 @@ The bicone structure reflects fundamental color properties:
 
 - **Hue Range**: 0-360° (full spectrum)
 - **Saturation Range**: 10-100% (avoid pure grayscale)
-- **Lightness Range**: 15-95% (avoid pure black/white)
+- **Lightness Range**: 15-85% (avoid pure black/white)
 - **Precision**: 1° hue, 1% saturation/lightness
 
-### Current Algorithm: Geometric Threshold Scoring
+### Current Algorithm: Geometric Normal Distribution Scoring
 
-On the Spectrum uses threshold-based scoring with geometric mean combination for balanced accuracy requirements:
+On the Spectrum uses normal distribution curves for each HSL component, combined with a weighted geometric mean for balanced scoring:
 
 ```typescript
-const THRESHOLD_CONFIG = {
-    thresholds: {
-        hue: 90,        // degrees
-        saturation: 50, // percent
-        lightness: 25   // percent
-    },
-    tolerances: {
-        hue: 5,         // degrees - full marks within this range
-        saturation: 2,  // percent - full marks within this range
-        lightness: 1    // percent - full marks within this range
+const NORMAL_CONFIG = {
+    sigma: {
+        hue: 25,        // degrees (3-sigma = 75 degrees)
+        saturation: 35, // percent (3-sigma = 105 percent)
+        lightness: 15   // percent (3-sigma = 45 percent)
     },
     weights: {
-        hue: 7.0,
+        hue: 6.0,
         saturation: 1.0,
         lightness: 2.0
     }
 };
 
-function geometricThresholdScoring(targetColor: HSLColor, guessedColor: HSLColor): number {
-  let hueDiff = Math.abs(targetColor.h - guessedColor.h);
-  if (hueDiff > 180) hueDiff = 360 - hueDiff;
-  
-  const satDiff = Math.abs(targetColor.s - guessedColor.s);
-  const lightDiff = Math.abs(targetColor.l - guessedColor.l);
-  
-  // Apply thresholds with linear ramp
-  const hueComponent = hueDiff > 90 ? 0 : 
-                      hueDiff <= 5 ? 1.0 : 
-                      (90 - hueDiff) / (90 - 5);
-  
-  const satComponent = satDiff > 50 ? 0 : 
-                      satDiff <= 2 ? 1.0 : 
-                      (50 - satDiff) / (50 - 2);
-  
-  const lightComponent = lightDiff > 25 ? 0 : 
-                        lightDiff <= 1 ? 1.0 : 
-                        (25 - lightDiff) / (25 - 1);
-  
-  // Geometric mean with weights as exponents (7:1:2 ratio)
-  return Math.round(100 * Math.pow(
-    Math.pow(hueComponent, 7.0) * 
-    Math.pow(satComponent, 1.0) * 
-    Math.pow(lightComponent, 2.0),
-    1 / (7.0 + 1.0 + 2.0)
-  ));
+function geometricNormalScoring(targetColor: HSLColor, guessedColor: HSLColor): number {
+    // Normalize hue difference (0-360 wraps around)
+    const hueDiff = Math.min(
+        Math.abs(targetColor.h - guessedColor.h),
+        360 - Math.abs(targetColor.h - guessedColor.h)
+    );
+    
+    const satDiff = Math.abs(targetColor.s - guessedColor.s);
+    const lightDiff = Math.abs(targetColor.l - guessedColor.l);
+    
+    // Adjust hue sigma based on target lightness extremity (playable range: 15-85%)
+    let multiplier = 1;
+    if (targetColor.l < 20) multiplier = 1 + 2 * (20 - targetColor.l) / 5;
+    else if (targetColor.l > 80) multiplier = 1 + 2 * (targetColor.l - 80) / 5;
+    const adjustedHueSigma = NORMAL_CONFIG.sigma.hue * multiplier;
+    
+    // Check 3-sigma thresholds (anything beyond is 0)
+    if (hueDiff > 3 * adjustedHueSigma || 
+        satDiff > 3 * NORMAL_CONFIG.sigma.saturation || 
+        lightDiff > 3 * NORMAL_CONFIG.sigma.lightness) {
+        return 0;
+    }
+    
+    // Calculate normal distribution components
+    const hueComponent = Math.exp(-0.5 * Math.pow(hueDiff / adjustedHueSigma, 2));
+    const satComponent = Math.exp(-0.5 * Math.pow(satDiff / NORMAL_CONFIG.sigma.saturation, 2));
+    const lightComponent = Math.exp(-0.5 * Math.pow(lightDiff / NORMAL_CONFIG.sigma.lightness, 2));
+    
+    // Calculate composite score using geometric mean with weights as exponents
+    const score = Math.round(100 * Math.pow(
+        Math.pow(hueComponent, NORMAL_CONFIG.weights.hue) *
+        Math.pow(satComponent, NORMAL_CONFIG.weights.saturation) *
+        Math.pow(lightComponent, NORMAL_CONFIG.weights.lightness),
+        1 / (NORMAL_CONFIG.weights.hue + NORMAL_CONFIG.weights.saturation + NORMAL_CONFIG.weights.lightness)
+    ));
+    
+    return Math.max(0, score);
 }
 ```
 
-#### Scoring Zones
-- **Tolerance Zone**: Perfect score (1.0) within small differences
-  - Hue: ±5° | Saturation: ±2% | Lightness: ±1%
-- **Linear Penalty Zone**: Gradual score reduction
-  - Hue: 5-90° | Saturation: 2-50% | Lightness: 1-25%
-- **Failure Zone**: Zero score beyond thresholds
-  - Hue: >90° | Saturation: >50% | Lightness: >25%
+#### Scoring Characteristics
 
-#### Characteristics
-- **Weighted importance**: Hue most critical (7x), lightness moderate (2x), saturation baseline (1x)
-- **Forgiving thresholds**: Accounts for subjective nature of color communication
-- **No compensation**: Cannot make up for poor performance in one area with excellence in another
-- **Exponential weighting**: Components raised to power of their weights in geometric mean
+**Normal Distribution Curves**:
+- Each HSL component uses a Gaussian curve centered on the target value
+- Standard deviations (sigma) define tolerance levels
+- 3-sigma cutoff ensures completely wrong colors get 0 points
+
+**Dynamic Hue Tolerance**:
+- **L=20-80%**: Standard hue sigma (25°)
+- **L=15-20%**: Linear ramp from 3x to 1x multiplier (75° to 25°)
+- **L=80-85%**: Linear ramp from 1x to 3x multiplier (25° to 75°)
+- Reflects reduced hue perception at extreme lightness values
+
+**Component Weights**:
+- **Hue**: 6.0 (most important - color identity)
+- **Saturation**: 1.0 (baseline importance)
+- **Lightness**: 2.0 (moderate importance - brightness)
+
+**Geometric Mean Combination**:
+- Prevents compensation between components
+- Weighted by raising each component to its weight power
+- Normalized by total weight sum for 0-100 scale
+
+#### Scoring Zones
+
+**Perfect Match**: Score approaches 100 for identical colors
+**Gradual Falloff**: Smooth score reduction following normal curves
+**Hard Cutoffs**: Zero score beyond 3-sigma thresholds:
+- Hue: >75° (or >225° at extremes)
+- Saturation: >105%
+- Lightness: >45%
 
 ### Alternative Scoring Options
 
