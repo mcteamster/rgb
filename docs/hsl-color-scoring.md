@@ -185,7 +185,7 @@ function geometricNormalScoring(targetColor: HSLColor, guessedColor: HSLColor): 
 **Gradual Falloff**: Smooth score reduction following normal curves
 **Hard Cutoffs**: Zero score beyond 3-sigma thresholds:
 - Hue: >75° (or >225° at extremes)
-- Saturation: >105%
+- Saturation: >75%
 - Lightness: >45%
 
 ### Alternative Scoring Options
