@@ -6,28 +6,23 @@ interface HSLColor {
 
 export type ScoringAlgorithm = (targetColor: HSLColor, guessedColor: HSLColor) => number;
 
-// Configuration for threshold-based scoring
-const THRESHOLD_CONFIG = {
-    thresholds: {
-        hue: 90,        // degrees
-        saturation: 50, // percent
-        lightness: 25   // percent
-    },
-    tolerances: {
-        hue: 5,         // degrees - full marks within this range
-        saturation: 2,  // percent - full marks within this range
-        lightness: 1    // percent - full marks within this range
+// Configuration for normal distribution scoring
+const NORMAL_CONFIG = {
+    sigma: {
+        hue: 25,        // degrees (3-sigma = 75 degrees)
+        saturation: 35, // percent (3-sigma = 105 percent)
+        lightness: 15   // percent (3-sigma = 45 percent)
     },
     weights: {
-        hue: 7.0,
+        hue: 6.0,
         saturation: 1.0,
         lightness: 2.0
     }
 };
 
-// Threshold-based scoring with geometrically accurate bicone weighting
-export function geometricThresholdScoring(targetColor: HSLColor, guessedColor: HSLColor): number {
-    // Normalize hue difference (0-360 wraps around) - handle negative properly
+// Normal distribution scoring with 3-sigma thresholds
+export function geometricNormalScoring(targetColor: HSLColor, guessedColor: HSLColor): number {
+    // Normalize hue difference (0-360 wraps around)
     const hueDiff = Math.min(
         Math.abs(targetColor.h - guessedColor.h),
         360 - Math.abs(targetColor.h - guessedColor.h)
@@ -36,25 +31,24 @@ export function geometricThresholdScoring(targetColor: HSLColor, guessedColor: H
     const satDiff = Math.abs(targetColor.s - guessedColor.s);
     const lightDiff = Math.abs(targetColor.l - guessedColor.l);
     
-    // Apply thresholds with linear ramp
-    const hueComponent = hueDiff > THRESHOLD_CONFIG.thresholds.hue ? 0 : 
-                        hueDiff <= THRESHOLD_CONFIG.tolerances.hue ? 1.0 : 
-                        (THRESHOLD_CONFIG.thresholds.hue - hueDiff) / (THRESHOLD_CONFIG.thresholds.hue - THRESHOLD_CONFIG.tolerances.hue);
+    // Check 3-sigma thresholds (anything beyond is 0)
+    if (hueDiff > 3 * NORMAL_CONFIG.sigma.hue || 
+        satDiff > 3 * NORMAL_CONFIG.sigma.saturation || 
+        lightDiff > 3 * NORMAL_CONFIG.sigma.lightness) {
+        return 0;
+    }
     
-    const satComponent = satDiff > THRESHOLD_CONFIG.thresholds.saturation ? 0 : 
-                        satDiff <= THRESHOLD_CONFIG.tolerances.saturation ? 1.0 : 
-                        (THRESHOLD_CONFIG.thresholds.saturation - satDiff) / (THRESHOLD_CONFIG.thresholds.saturation - THRESHOLD_CONFIG.tolerances.saturation);
-    
-    const lightComponent = lightDiff > THRESHOLD_CONFIG.thresholds.lightness ? 0 : 
-                          lightDiff <= THRESHOLD_CONFIG.tolerances.lightness ? 1.0 : 
-                          (THRESHOLD_CONFIG.thresholds.lightness - lightDiff) / (THRESHOLD_CONFIG.thresholds.lightness - THRESHOLD_CONFIG.tolerances.lightness);
+    // Calculate normal distribution components
+    const hueComponent = Math.exp(-0.5 * Math.pow(hueDiff / NORMAL_CONFIG.sigma.hue, 2));
+    const satComponent = Math.exp(-0.5 * Math.pow(satDiff / NORMAL_CONFIG.sigma.saturation, 2));
+    const lightComponent = Math.exp(-0.5 * Math.pow(lightDiff / NORMAL_CONFIG.sigma.lightness, 2));
     
     // Calculate composite score using geometric mean with weights as exponents
     const score = Math.round(100 * Math.pow(
-        Math.pow(hueComponent, THRESHOLD_CONFIG.weights.hue) *
-        Math.pow(satComponent, THRESHOLD_CONFIG.weights.saturation) *
-        Math.pow(lightComponent, THRESHOLD_CONFIG.weights.lightness),
-        1 / (THRESHOLD_CONFIG.weights.hue + THRESHOLD_CONFIG.weights.saturation + THRESHOLD_CONFIG.weights.lightness)
+        Math.pow(hueComponent, NORMAL_CONFIG.weights.hue) *
+        Math.pow(satComponent, NORMAL_CONFIG.weights.saturation) *
+        Math.pow(lightComponent, NORMAL_CONFIG.weights.lightness),
+        1 / (NORMAL_CONFIG.weights.hue + NORMAL_CONFIG.weights.saturation + NORMAL_CONFIG.weights.lightness)
     ));
     
     return Math.max(0, score);

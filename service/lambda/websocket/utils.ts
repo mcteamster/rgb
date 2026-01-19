@@ -1,5 +1,5 @@
 import { HSLColor } from './types';
-import { ScoringAlgorithm, geometricThresholdScoring } from './scoring';
+import { ScoringAlgorithm, geometricNormalScoring } from './scoring';
 
 // ============================================================================
 // ID GENERATION
@@ -70,7 +70,7 @@ export function generateRandomHSLColor(): HSLColor {
     return {
         h: Math.floor(Math.random() * 361),
         s: Math.floor(Math.random() * 91) + 10, // 10-100%
-        l: Math.floor(Math.random() * 81) + 15  // 15-95%
+        l: Math.floor(Math.random() * 71) + 15  // 15-85%
     };
 }
 
@@ -79,7 +79,7 @@ export function generateRandomHSLColor(): HSLColor {
 // ============================================================================
 
 // Current scoring algorithm - easy to swap
-const CURRENT_SCORING_ALGORITHM: ScoringAlgorithm = geometricThresholdScoring;
+const CURRENT_SCORING_ALGORITHM: ScoringAlgorithm = geometricNormalScoring;
 
 export function calculateColorScore(targetColor: any, guessedColor: any): number {
     return CURRENT_SCORING_ALGORITHM(targetColor, guessedColor);
