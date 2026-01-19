@@ -22,10 +22,12 @@ export const GameNavbar: React.FC = () => {
     }
   }, [getCurrentRound()?.phase]);
 
-  // Open player sidebar when lobby is open
+  // Open player sidebar when lobby is open, close when game starts
   useEffect(() => {
     if (gameState?.meta?.status === 'waiting') {
       setActiveOverlay('players');
+    } else if (gameState?.meta?.status === 'playing') {
+      setActiveOverlay(null);
     }
   }, [gameState?.meta?.status]);
 
