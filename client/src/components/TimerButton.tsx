@@ -37,7 +37,6 @@ export const TimerButton: React.FC<TimerButtonProps> = ({
           ? `linear-gradient(to right, hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%) ${timerProgress}%, hsl(${targetColor.h}, 0%, ${Math.max(0, targetColor.l - 15)}%) ${timerProgress}%)`
           : `hsl(${targetColor.h}, 0%, ${Math.max(0, targetColor.l - 15)}%)`,
         color: targetColor.l > 50 ? '#000' : '#fff',
-        marginTop: '1rem',
         fontWeight: 'bold',
         border: '2px solid #888',
         width: '100%'

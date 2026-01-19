@@ -96,11 +96,11 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
             />
             <StatBox 
               label="Clues" 
-              value={gameState.config?.descriptionTimeLimit === 86400 ? 'Unlimited' : `${gameState.config?.descriptionTimeLimit}s`} 
+              value={gameState.config?.descriptionTimeLimit === 86400 ? '-' : `${gameState.config?.descriptionTimeLimit}s`} 
             />
             <StatBox 
               label="Guesses" 
-              value={gameState.config?.guessingTimeLimit === 86400 ? 'Unlimited' : `${gameState.config?.guessingTimeLimit}s`} 
+              value={gameState.config?.guessingTimeLimit === 86400 ? '-' : `${gameState.config?.guessingTimeLimit}s`} 
             />
           </div>
 

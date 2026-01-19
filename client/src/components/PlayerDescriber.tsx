@@ -83,7 +83,7 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
               bottom: 0,
               backgroundColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
               border: '2px solid #ccc',
-              borderRadius: '4px',
+              borderRadius: 'var(--border-radius-medium)',
               zIndex: 1
             }}
           />
@@ -164,7 +164,8 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
           </div>
         </div>
       </div>
-      <TimerButton
+      <div style={{ marginTop: '1rem' }}>
+        <TimerButton
         onClick={onSubmit}
         disabled={!description.trim()}
         timerUp={timer.isUp}
@@ -175,6 +176,7 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
       >
         {timer.isUp ? 'Sending' : showEnterAgain ? 'Press Enter Again' : 'Send Clue'}
       </TimerButton>
+      </div>
     </>
   );
 };

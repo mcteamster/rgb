@@ -57,51 +57,15 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
 
   return (
     <div className="guessing-phase">
-      <div className="guess-controls">
-        <div className="current-color-preview">
-          <div 
-            className="color-preview color-accurate"
-            onClick={() => !isColorLocked && setShowSliders(true)}
-            style={{
-              backgroundColor: `hsl(${Math.round(selectedColor.h)}, ${Math.round(selectedColor.s)}%, ${Math.round(selectedColor.l)}%)`,
-              cursor: isColorLocked ? 'not-allowed' : 'pointer',
-              width: '100%',
-              height: '60px',
-              position: 'relative',
-              borderRadius: '4px',
-              border: '2px solid #888'
-            }}
-          >
-            <div 
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-evenly',
-                width: '80%',
-                color: selectedColor.l > 50 ? 'black' : 'white'
-              }}
-            >
-              <div style={{ fontWeight: 'bold' }}>H: {Math.round(selectedColor.h)}°</div>
-              <div style={{ fontWeight: 'bold' }}>S: {Math.round(selectedColor.s)}%</div>
-              <div style={{ fontWeight: 'bold' }}>L: {Math.round(selectedColor.l)}%</div>
-            </div>
-            <div 
-              style={{
-                position: 'absolute',
-                top: '5px',
-                right: '5px',
-                fontSize: '12px',
-                color: selectedColor.l > 50 ? 'black' : 'white',
-                opacity: 0.8
-              }}
-            >
-              ✏️
-            </div>
-          </div>
+      <div className="guess-controls-container">
+        <div 
+          className={`color-preview-square ${isColorLocked ? 'locked' : ''}`}
+          onClick={() => !isColorLocked && setShowSliders(true)}
+          style={{
+            backgroundColor: `hsl(${Math.round(selectedColor.h)}, ${Math.round(selectedColor.s)}%, ${Math.round(selectedColor.l)}%)`
+          }}
+        >
+          ✏️
         </div>
         <TimerButton
           onClick={handleSubmit}

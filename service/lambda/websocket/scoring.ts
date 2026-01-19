@@ -10,7 +10,7 @@ export type ScoringAlgorithm = (targetColor: HSLColor, guessedColor: HSLColor) =
 const NORMAL_CONFIG = {
     sigma: {
         hue: 25,        // degrees (3-sigma = 75 degrees)
-        saturation: 35, // percent (3-sigma = 105 percent)
+        saturation: 25, // percent (3-sigma = 105 percent)
         lightness: 15   // percent (3-sigma = 45 percent)
     },
     weights: {
