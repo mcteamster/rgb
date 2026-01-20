@@ -61,7 +61,7 @@ export const GameDisplay: React.FC = () => {
             <p>Players are guessing{guessingTimer.countdown > 0 ? ` (${guessingTimer.countdown}s)` : ''}</p>
             <h3>"{currentRound.description}"</h3>
             <div className="submissions-count">
-              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} Locked In
+              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} 🔒
             </div>
           </div>
         </div>
