@@ -91,6 +91,13 @@ export const RoomMenu: React.FC<RoomMenuProps> = ({ isVisible, onClose }) => {
   return (
     <div className="room-menu">
       <div className="room-menu-content">
+        <button
+          onClick={onClose}
+          className="close-button"
+        >
+          ✕
+        </button>
+        {isLobbyOpen && qrCodeUrl && <img src={qrCodeUrl} alt="QR Code to join game" />}
         {isLobbyOpen && (
           <div 
             className="url-copy-section"
@@ -102,7 +109,6 @@ export const RoomMenu: React.FC<RoomMenuProps> = ({ isVisible, onClose }) => {
             </span>
           </div>
         )}
-        {isLobbyOpen && qrCodeUrl && <img src={qrCodeUrl} alt="QR Code to join game" />}
         <div className="menu-buttons">
           <div className="menu-buttons-row">
             {isHost ? (
@@ -119,11 +125,6 @@ export const RoomMenu: React.FC<RoomMenuProps> = ({ isVisible, onClose }) => {
                 Leave Game
               </Button>
             )}
-          </div>
-          <div className="menu-buttons-row">
-            <Button onClick={onClose} variant="primary">
-              Close
-            </Button>
           </div>
         </div>
       </div>

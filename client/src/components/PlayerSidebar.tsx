@@ -2,7 +2,6 @@ import React from 'react';
 import { useGame } from '../contexts/GameContext';
 import { useColor } from '../contexts/ColorContext';
 import { useIsHost } from '../hooks/useIsHost';
-import { Button } from './Button';
 
 const StatBox = ({ label, value }: { label: string; value: string | number }) => (
   <div className="stat-box">
@@ -83,8 +82,54 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
   // Full view
   if (isOpen) {
     return (
-      <div className="room-menu" style={{ left: '20px', right: 'auto', zIndex: 50 }}>
+      <div className="room-menu player-sidebar-expanded">
         <div className="room-menu-content">
+          <button
+            onClick={onToggle}
+            className="close-button"
+          >
+            ✕
+          </button>
+          
+          <div className="player-list">
+            {playerScores.map((player: any) => {
+              const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
+              const isDescriber = currentRound?.describerId === player.playerId;
+              const color = player.playerId === playerId ? selectedColor : player.draftColor;
+              
+              return (
+                <div
+                  key={player.playerId}
+                  className={`player-card ${isDescriber ? 'describer' : 'default'}`}
+                  style={{
+                    backgroundColor: isDescriber ? undefined : (color ? `hsl(${color.h}, ${color.s}%, ${color.l}%)` : undefined),
+                    color: isDescriber ? undefined : (color ? (color.l > 50 ? '#000' : '#fff') : undefined)
+                  }}
+                >
+                  <div className="player-info">
+                    <span>
+                      {isDescriber ? '📣 ' : ''}
+                      {player.playerName}
+                      {player.playerId === playerId && ' 👤'}
+                      {player.playerId === hostPlayer.playerId ? ' ⭐' : ''}
+                    </span>
+                  </div>
+                  <div className="player-score" style={{ color: 'inherit' }}>
+                    {player.totalScore}
+                  </div>
+                  {isHost && player.playerId !== playerId && (
+                    <button
+                      className="kick-button"
+                      onClick={() => kickPlayer(player.playerId)}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
           <div className="stat-boxes-container">
             <StatBox 
               label="Players" 
@@ -103,99 +148,6 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
               value={gameState.config?.guessingTimeLimit === 86400 ? '-' : `${gameState.config?.guessingTimeLimit}s`} 
             />
           </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            {playerScores.map((player: any) => (
-              <div
-                key={player.playerId}
-                className="color-accurate"
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '0.5rem 0.75rem',
-                  marginBottom: '0.75rem',
-                  minHeight: '45px',
-                  backgroundColor: (() => {
-                    const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                    const isDescriber = currentRound?.describerId === player.playerId;
-                    
-                    if (isDescriber) return '#e9ecef';
-                    
-                    if (player.draftColor) {
-                      return `hsl(${player.draftColor.h}, ${player.draftColor.s}%, ${player.draftColor.l}%)`;
-                    }
-                    
-                    return '#f8f9fa';
-                  })(),
-                  color: (() => {
-                    const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                    const isDescriber = currentRound?.describerId === player.playerId;
-                    
-                    if (isDescriber) return '#495057';
-                    
-                    if (player.draftColor) {
-                      return player.draftColor.l > 50 ? '#000' : '#fff';
-                    }
-                    
-                    return '#495057';
-                  })(),
-                  borderRadius: '6px',
-                  border: '1px solid #dee2e6'
-                }}
-              >
-                <div className="player-info">
-                  <span>
-                    {(() => {
-                      const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                      return currentRound?.describerId === player.playerId ? '📣 ' : '';
-                    })()}
-                    {player.playerName}
-                    {player.playerId === playerId && ' 👤'}
-                    {player.playerId === hostPlayer.playerId ? ' ⭐' : ''}
-                  </span>
-                </div>
-                <div style={{ fontWeight: 'bold', color: 'inherit', minWidth: '60px', textAlign: 'right' }}>
-                  {player.totalScore}
-                </div>
-                {isHost && player.playerId !== playerId && (
-                  <button
-                    style={{
-                      position: 'absolute',
-                      top: '-10px',
-                      right: '-10px',
-                      background: 'rgba(255, 0, 0, 0.8)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: '20px',
-                      height: '20px',
-                      fontSize: '10px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 1
-                    }}
-                    onClick={() => {
-                      kickPlayer(player.playerId);
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="menu-buttons">
-            <div className="menu-buttons-row">
-              <Button onClick={onToggle} variant="primary">
-                Close
-              </Button>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -208,74 +160,36 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
   
   return (
     <div className="player-view-sidebar" onClick={() => onToggle()}>
-      {playerScores.map((player: any) => (
-        <div key={player.playerId} className="player-tab">
-          <span 
-            className="color-accurate"
-            style={{ 
-              color: (() => {
-                // Check if this player is the current describer
-                const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                const isDescriber = currentRound?.describerId === player.playerId;
-                
-                if (isDescriber) return '#495057'; // Dark grey text on light grey background
-                
-                const color = player.playerId === playerId ? selectedColor : player.draftColor;
-                if (!color) return '#495057';
-                const lightness = color.l;
-                return lightness > 50 ? '#000' : '#fff';
-              })(),
-              backgroundColor: (() => {
-                // Check if this player is the current describer
-                const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                const isDescriber = currentRound?.describerId === player.playerId;
-                
-                if (isDescriber) return '#e9ecef'; // Light grey background for describer
-                
-                const color = player.playerId === playerId ? selectedColor : player.draftColor;
-                if (!color) return 'transparent';
-                const h = color.h;
-                const s = color.s;
-                const l = color.l;
-                return `hsl(${h}, ${s}%, ${l}%)`;
-              })(),
-              width: (() => {
-                const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                const isDescriber = currentRound?.describerId === player.playerId;
-                return isDescriber ? '48px' : '100%';
-              })(),
-              height: (() => {
-                const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                const isDescriber = currentRound?.describerId === player.playerId;
-                return isDescriber ? '50px' : '40px';
-              })(),
-              borderRadius: '10px',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '0.55rem',
-              fontWeight: 'bold',
-              border: 'none',
-              boxShadow: player.playerId === playerId ? 'inset 0 0 0 2px white' : 'none',
-              borderLeft: player.playerId === playerId ? 'none' : 'none',
-            }}
-          >
-            <div>
-              {player.playerName.substring(0, 4)}
-              {player.playerName.length > 4 ? '.' : ''}
-              {(() => {
-                const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
-                const isDescriber = currentRound?.describerId === player.playerId;
-                return isDescriber ? ' 📣' : '';
-              })()}
+      <div className="player-tab-container">
+        {playerScores.map((player: any) => {
+          const currentRound = gameState.meta?.currentRound != null ? gameState.gameplay?.rounds?.[gameState.meta.currentRound] : null;
+          const isDescriber = currentRound?.describerId === player.playerId;
+          const color = player.playerId === playerId ? selectedColor : player.draftColor;
+          
+          return (
+            <div key={player.playerId} className="player-tab">
+              <span 
+                className={`player-tab-item ${isDescriber ? 'describer' : ''} ${player.playerId === playerId ? 'current-player' : ''}`}
+                style={{ 
+                  color: isDescriber ? undefined : (color ? (color.l > 50 ? '#000' : '#fff') : '#495057'),
+                  backgroundColor: isDescriber ? undefined : (color ? `hsl(${color.h}, ${color.s}%, ${color.l}%)` : 'transparent'),
+                  width: isDescriber ? '48px' : '100%',
+                  height: isDescriber ? '50px' : '40px'
+                }}
+              >
+                <div>
+                  {player.playerName.substring(0, 4)}
+                  {player.playerName.length > 4 ? '.' : ''}
+                  {isDescriber ? ' 📣' : ''}
+                </div>
+                <div className="player-tab-name">
+                  {player.totalScore}
+                </div>
+              </span>
             </div>
-            <div style={{ fontSize: '0.7rem' }}>
-              {player.totalScore}
-            </div>
-          </span>
-        </div>
-      ))}
+          );
+        })}
+      </div>
     </div>
   );
 };

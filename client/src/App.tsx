@@ -12,7 +12,7 @@ const App: React.FC = () => {
         <ColorProvider>
           <Routes>
             <Route path="/" element={<GameContainer />} />
-            <Route path="/about" element={<AboutPage onClose={() => window.location.href = '/'} isRoute={true} />} />
+            <Route path="/about" element={<AboutPage onClose={() => window.location.href = '/'} />} />
             <Route path="/:roomCode" element={<GameContainer />} />
           </Routes>
         </ColorProvider>

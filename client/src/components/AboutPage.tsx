@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
-import { Button } from './Button';
 import { discordSdk } from '../services/discord';
 
 interface AboutPageProps {
   onClose: () => void;
-  isRoute?: boolean;
 }
 
-export const AboutPage: React.FC<AboutPageProps> = ({ onClose, isRoute = false }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'description' | 'privacy' | 'terms'>('description');
   const isInDiscord = !!discordSdk;
 
@@ -26,6 +24,12 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, isRoute = false }
   return (
     <div className="about-page">
       <div className="about-content">
+        <button
+          onClick={onClose}
+          className="close-button"
+        >
+          ✕
+        </button>
         <h1>On the Spectrum</h1>
         <p className="subtitle">
           a game by <span onClick={handleMcteamsterClick} className="link">mcteamster</span>
@@ -155,8 +159,6 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, isRoute = false }
             </div>
           )}
         </div>
-        
-        <Button onClick={onClose} variant="primary">{isRoute ? 'Play' : 'Close'}</Button>
       </div>
     </div>
   );
