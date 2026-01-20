@@ -69,19 +69,15 @@ body {
   transform: translate(-50%, -50%);
 }
 
-/* Modals */
-.hsl-slider-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  background: rgba(0, 0, 0, 0.9);
-  color: white;
-  padding: 20px;
-  border-radius: 20px;
-  font-family: monospace;
-  min-width: 300px;
-  z-index: 80;
-  transform: translate(-50%, calc(-50vh - 12%));
+/* Color Sliders */
+.hsl-slider-content {
+  background: white;
+  color: #333;
+  padding: 1rem;
+  border-radius: var(--border-radius-large);
+  border: 1px solid #dee2e6;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Sliders */
@@ -105,7 +101,7 @@ body {
 .slider-value-large {
   font-size: 16px;
   font-weight: bold;
-  color: #fff;
+  color: #333;
 }
 
 .slider-group label {
@@ -126,38 +122,27 @@ body {
 }
 
 .increment-btn {
-  width: 24px;
-  height: 24px;
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 3px;
+  width: 32px;
+  height: 32px;
+  background: #f8f9fa;
+  color: #333;
+  border: 1px solid #dee2e6;
+  border-radius: var(--border-radius-small);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 16px;
+  font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.2s ease;
 }
 
 .increment-btn:hover {
-  background: #555;
+  background: #e9ecef;
+  border-color: #adb5bd;
 }
 
-.modal-close {
-  display: block;
-  margin: 15px auto 0;
-  padding: 8px 16px;
-  background: #333;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: monospace;
-}
 
-.modal-close:hover {
-  background: #555;
-}
 
 /* Color Display Protection */
 .color-accurate {
@@ -541,7 +526,6 @@ body {
 /* Buttons */
 .create-game-btn,
 .join-game-btn,
-.submit-color-btn,
 .start-round-btn {
   background: linear-gradient(135deg, #4ecdc4, #44a08d);
   color: white;
@@ -561,7 +545,6 @@ body {
 
 .create-game-btn:hover,
 .join-game-btn:hover,
-.submit-color-btn:hover:not(:disabled),
 .start-round-btn:hover {
   background: linear-gradient(135deg, #45b7aa, #3d8b7a);
   transform: translateY(-2px);
@@ -575,11 +558,6 @@ body {
   padding: 1.2rem;
   border-radius: 8px;
   min-height: 52px;
-}
-
-.submit-color-btn:disabled {
-  background: #95a5a6;
-  cursor: not-allowed;
 }
 
 .back-btn,
@@ -694,10 +672,6 @@ body {
   text-align: center;
   color: #666;
   font-size: 0.9rem;
-}
-
-.current-color-preview {
-  text-align: center;
 }
 
 /* Color Preview */

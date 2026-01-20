@@ -1,5 +1,6 @@
 import React from 'react';
 import { TimerButton } from './TimerButton';
+import { ColorSliders } from './ColorSliders';
 import { useTimer } from '../hooks/useTimer';
 import { HSLColor } from '../types/game';
 import { useColor } from '../contexts/ColorContext';
@@ -8,6 +9,7 @@ interface PlayerGuesserProps {
   selectedColor: HSLColor;
   isColorLocked: boolean;
   setIsColorLocked: (locked: boolean) => void;
+  showSliders: boolean;
   setShowSliders: (show: boolean) => void;
   submitColor: (color: HSLColor) => void;
   deadline?: string;
@@ -18,6 +20,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
   selectedColor,
   isColorLocked,
   setIsColorLocked,
+  showSliders,
   setShowSliders,
   submitColor,
   deadline,
@@ -57,10 +60,13 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
 
   return (
     <div className="guessing-phase">
+      {showSliders && !isColorLocked && (
+        <ColorSliders />
+      )}
       <div className="guess-controls-container">
         <div 
           className={`color-preview-square ${isColorLocked ? 'locked' : ''}`}
-          onClick={() => !isColorLocked && setShowSliders(true)}
+          onClick={() => !isColorLocked && setShowSliders(!showSliders)}
           style={{
             backgroundColor: `hsl(${Math.round(selectedColor.h)}, ${Math.round(selectedColor.s)}%, ${Math.round(selectedColor.l)}%)`
           }}

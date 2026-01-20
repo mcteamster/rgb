@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useColor } from '../contexts/ColorContext';
 import { useGame } from '../contexts/GameContext';
-import { ColorSliders } from './ColorSliders';
 import { Button } from './Button';
 import { PlayerDescriber } from './PlayerDescriber';
 import { PlayerGuesser } from './PlayerGuesser';
@@ -135,6 +134,7 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout }) => {
               selectedColor={selectedColor}
               isColorLocked={isColorLocked}
               setIsColorLocked={setIsColorLocked}
+              showSliders={showSliders}
               setShowSliders={setShowSliders}
               submitColor={submitColor}
               deadline={currentRound.timers?.guessingDeadline}
@@ -177,8 +177,6 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout }) => {
           </Button>
         </div>
       )}
-
-      {showSliders && <ColorSliders onClose={() => setShowSliders(false)} />}
     </div>
   );
 };

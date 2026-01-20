@@ -83,9 +83,6 @@ export const RoomMenu: React.FC<RoomMenuProps> = ({ isVisible, onClose }) => {
       new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
     ).playerId === playerId : false;
 
-  // Check if lobby is open (game is in waiting state)
-  const isLobbyOpen = gameState?.meta?.status === 'waiting';
-
   if (!isVisible || !gameState) return null;
 
   return (
@@ -97,18 +94,16 @@ export const RoomMenu: React.FC<RoomMenuProps> = ({ isVisible, onClose }) => {
         >
           ✕
         </button>
-        {isLobbyOpen && qrCodeUrl && <img src={qrCodeUrl} alt="QR Code to join game" />}
-        {isLobbyOpen && (
-          <div 
-            className="url-copy-section"
-            onClick={copyUrlToClipboard}
-          >
-            <span className="copy-icon">{urlCopied ? '✅' : '📋'}</span>
-            <span className="url-text">
-              {urlCopied ? 'Copied!' : `https://rgb.mcteamster.com/${gameState.gameId}`}
-            </span>
-          </div>
-        )}
+        {qrCodeUrl && <img src={qrCodeUrl} alt="QR Code to join game" />}
+        <div 
+          className="url-copy-section"
+          onClick={copyUrlToClipboard}
+        >
+          <span className="copy-icon">{urlCopied ? '✅' : '📋'}</span>
+          <span className="url-text">
+            {urlCopied ? 'Copied!' : `https://rgb.mcteamster.com/${gameState.gameId}`}
+          </span>
+        </div>
         <div className="menu-buttons">
           <div className="menu-buttons-row">
             {isHost ? (

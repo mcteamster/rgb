@@ -27,8 +27,8 @@ const ColorSlider: React.FC<ColorSliderProps> = ({
         <span className="slider-value-large">{displayValue}</span>
       </div>
       <div className="slider-container">
-        <button 
-          className="increment-btn" 
+        <button
+          className="increment-btn"
           onClick={() => onChange(Math.max(min, value - 1))}
         >
           -
@@ -43,8 +43,8 @@ const ColorSlider: React.FC<ColorSliderProps> = ({
           onMouseUp={onRelease}
           onTouchEnd={onRelease}
         />
-        <button 
-          className="increment-btn" 
+        <button
+          className="increment-btn"
           onClick={() => onChange(Math.min(max, value + 1))}
         >
           +
@@ -54,11 +54,7 @@ const ColorSlider: React.FC<ColorSliderProps> = ({
   );
 };
 
-interface ColorSlidersProps {
-  onClose: () => void;
-}
-
-export const ColorSliders: React.FC<ColorSlidersProps> = ({ onClose }) => {
+export const ColorSliders: React.FC = () => {
   const { selectedColor, setSelectedColor, updateClickPositionFromColor, setSelectedHue } = useColor();
   const updateQueueRef = useRef<Array<{ h: number, s: number, l: number }>>([]);
 
@@ -94,7 +90,7 @@ export const ColorSliders: React.FC<ColorSlidersProps> = ({ onClose }) => {
   };
 
   return (
-    <div className="hsl-slider-modal">
+    <div className="hsl-slider-content">
       <ColorSlider
         label="Hue"
         value={Math.round(selectedColor.h)}
@@ -121,9 +117,6 @@ export const ColorSliders: React.FC<ColorSlidersProps> = ({ onClose }) => {
         onRelease={() => updateClickPositionFromColor()}
         displayValue={`${Math.round(selectedColor.l)}%`}
       />
-      <button className="modal-close" onClick={onClose}>
-        Close
-      </button>
     </div>
   );
 };
