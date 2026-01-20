@@ -70,10 +70,10 @@ export const GameDisplay: React.FC = () => {
       {currentRound?.phase === 'guessing' && !isDescriber && (
         <div className="status-bar">
           <div className="guessing-phase">
-            <p>{gameState.players.find(p => p.playerId === currentRound.describerId)?.playerName || 'Player'} says</p>
+            <p>{gameState.players.find(p => p.playerId === currentRound.describerId)?.playerName || 'Player'} said</p>
             <h3>"{currentRound.description}"</h3>
             <div className="submissions-count">
-              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} Locked In
+              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} 🔒
             </div>
           </div>
         </div>
