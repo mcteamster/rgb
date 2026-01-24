@@ -1,7 +1,7 @@
 import { UpdateCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { dynamodb, sendToConnection, broadcastToGame } from './aws-clients';
-import { generateGameId, generatePlayerId } from './utils';
+import { generateGameId, generatePlayerId, getCurrentRound } from './utils';
 import { checkAndEnforceDeadlines } from './deadlines';
 
 export async function handleCreateGame(connectionId: string, playerName: string, config?: { maxPlayers?: number; descriptionTimeLimit?: number; guessingTimeLimit?: number; turnsPerPlayer?: number }): Promise<APIGatewayProxyResultV2> {
@@ -385,14 +385,51 @@ export async function handleKickPlayer(
     
     const updatedPlayers = game.players.filter((p: any) => p.playerId !== targetPlayerId);
     
+    // Check if removing current describer - nullify round with zero points
+    const currentRound = getCurrentRound(game);
+    let updateExpression = 'SET players = :players';
+    let expressionAttributeValues: any = { ':players': updatedPlayers };
+    
+    if (currentRound && currentRound.describerId === targetPlayerId && currentRound.phase === 'describing') {
+        // Nullify current round - all players get 100 points
+        const roundScores: Record<string, number> = {};
+        updatedPlayers.forEach((player: any) => {
+            roundScores[player.playerId] = 100;
+        });
+        
+        const updatedRounds = [...game.gameplay.rounds];
+        updatedRounds[game.meta.currentRound] = {
+            ...currentRound,
+            description: null,
+            phase: 'reveal',
+            submissions: {},
+            scores: roundScores
+        };
+        
+        // Update player total scores
+        const playersWithScores = updatedPlayers.map((player: any) => {
+            let totalScore = 0;
+            updatedRounds.forEach(round => {
+                if (round.scores && round.scores[player.playerId]) {
+                    totalScore += round.scores[player.playerId];
+                }
+            });
+            return { ...player, score: totalScore };
+        });
+        
+        updateExpression = 'SET players = :players, gameplay.rounds = :rounds';
+        expressionAttributeValues = {
+            ':players': playersWithScores,
+            ':rounds': updatedRounds
+        };
+    }
+
     // Update game state to remove player
     await dynamodb.send(new UpdateCommand({
         TableName: process.env.GAMES_TABLE!,
         Key: { gameId },
-        UpdateExpression: 'SET players = :players',
-        ExpressionAttributeValues: {
-            ':players': updatedPlayers
-        }
+        UpdateExpression: updateExpression,
+        ExpressionAttributeValues: expressionAttributeValues
     }));
     
     // Find target player's connection to clear association

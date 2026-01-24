@@ -57,7 +57,7 @@ async function enforceDescriptionDeadline(gameId: string): Promise<void> {
         
         // Check if no clue was provided (blank draft) - skip to reveal with special scoring
         if (!draftDescription.trim()) {
-            // Give all other players +100 points, describer gets 0
+            // Give all current players +100 points (describer gets 0 if still in game)
             const roundScores: Record<string, number> = {};
             game.players.forEach((player: any) => {
                 if (player.playerId === currentRound.describerId) {
