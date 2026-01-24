@@ -96,9 +96,10 @@ RGB is a multiplayer color communication game where players must describe and gu
 - **Timeout Handling**: Incomplete guesses use the draft for scoring
 
 ### Color Validation
-- **HSL Bounds**: H: 0-360°, S: 10-100%, L: 15-95%
+- **HSL Bounds for Generated Colors**: H: 0-360°, S: 20-100%, L: 15-85%
+- **Player Selection Range**: Full HSL spectrum (H: 0-360°, S: 0-100%, L: 0-100%)
 - **Precision**: 1-degree hue, 1% saturation/lightness
-- **Input Validation**: Server-side color range checking
+- **Input Validation**: Server-side validation for generated colors only
 
 ### Concurrency Handling
 - **Atomic Operations**: DynamoDB conditional updates

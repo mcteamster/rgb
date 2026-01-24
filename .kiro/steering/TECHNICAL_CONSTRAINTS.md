@@ -73,7 +73,8 @@ inclusion: always
 - **Room capacity**: Hard limit of 10 players per game room
 - **Reconnection handling**: Allow reconnect within 30 seconds of disconnect
 - **Score tampering**: Server-only score calculation and persistence
-- **Color validation bounds**: Reject colors outside valid HSL ranges (H: 0-360, S/L: 0-100)
+- **Target color generation bounds**: Generated target colors use restricted HSL ranges (H: 0-360, S: 20-100, L: 15-85) for better gameplay
+- **Player color selection**: Players can select any HSL color (H: 0-360, S: 0-100, L: 0-100) to accurately guess targets
 - **Round timing integrity**: Server-enforced round durations, no client-side manipulation
 
 ## Development Constraints

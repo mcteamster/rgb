@@ -69,7 +69,7 @@ export function isValidHSLColor(color: HSLColor): boolean {
 export function generateRandomHSLColor(): HSLColor {
     return {
         h: Math.floor(Math.random() * 361),
-        s: Math.floor(Math.random() * 91) + 10, // 10-100%
+        s: Math.floor(Math.random() * 81) + 20, // 20-100%
         l: Math.floor(Math.random() * 71) + 15  // 15-85%
     };
 }
