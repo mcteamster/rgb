@@ -202,7 +202,9 @@ body {
   max-height: 90vh;
   line-height: 1.4;
   margin: 20px;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 
@@ -278,13 +280,15 @@ body {
 
 .tab-content {
   min-height: 120px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .privacy-content,
 .terms-content,
 .overview-content {
   text-align: left;
-  max-height: 60vh;
+  height: 100%;
   overflow-y: auto;
   padding-right: 10px;
 }
