@@ -1,4 +1,4 @@
-import { HSLColor } from './types';
+import { HSLColor, Player } from './types';
 import { ScoringAlgorithm, geometricNormalScoring } from './scoring';
 
 // ============================================================================
@@ -114,7 +114,7 @@ export function shouldEndGame(game: any): boolean {
     
     // Count how many times each player has been a describer
     const describerCounts: Record<string, number> = {};
-    players.forEach((player: any) => {
+    players.forEach((player: Player) => {
         describerCounts[player.playerId] = 0;
     });
     
@@ -125,7 +125,7 @@ export function shouldEndGame(game: any): boolean {
     });
     
     // Check if all players have given at least turnsPerPlayer clues
-    return players.every((player: any) => 
+    return players.every((player: Player) => 
         describerCounts[player.playerId] >= turnsPerPlayer
     );
 }

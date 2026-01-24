@@ -1,6 +1,6 @@
 import { UpdateCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
-import { HSLColor } from './types';
+import { HSLColor, Player } from './types';
 import { dynamodb, broadcastToGame, sendToConnection } from './aws-clients';
 import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame } from './utils';
 
@@ -446,7 +446,7 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
     
     // Select describer based on turn history
     const rounds = game.gameplay?.rounds || [];
-    const playerClueCount = players.map((player: any) => {
+    const playerClueCount = players.map((player: Player) => {
         const cluesGiven = rounds.filter((round: any) => round.describerId === player.playerId).length;
         const lastClueRound = rounds.findLastIndex((round: any) => round.describerId === player.playerId);
         return { playerId: player.playerId, cluesGiven, lastClueRound };
@@ -474,7 +474,7 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
         selectedPlayer = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
     } else {
         // Subsequent rounds - select who gave clue longest ago
-        selectedPlayer = eligiblePlayers.sort((a, b) => a.lastClueRound - b.lastClueRound)[0];
+        selectedPlayer = eligiblePlayers.sort((a: any, b: any) => a.lastClueRound - b.lastClueRound)[0];
     }
     const describerId = selectedPlayer.playerId;
     const targetColor = generateRandomHSLColor();

@@ -4,6 +4,15 @@ export interface HSLColor {
     l: number;
 }
 
+export interface Player {
+    playerId: string;
+    playerName: string;
+    joinedAt: string;
+    score?: number;
+    draftColor?: HSLColor;
+    draftDescription?: string;
+}
+
 export interface WebSocketMessage {
     action: string;
     gameId?: string;

@@ -3,6 +3,7 @@ import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { dynamodb, sendToConnection, broadcastToGame } from './aws-clients';
 import { generateGameId, generatePlayerId, getCurrentRound } from './utils';
 import { checkAndEnforceDeadlines } from './deadlines';
+import { Player } from './types';
 
 export async function handleCreateGame(connectionId: string, playerName: string, config?: { maxPlayers?: number; descriptionTimeLimit?: number; guessingTimeLimit?: number; turnsPerPlayer?: number }): Promise<APIGatewayProxyResultV2> {
     if (!playerName || playerName.length > 16) {
@@ -132,7 +133,7 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
     const game = result.Item;
     
     // Check if player name matches an existing player
-    const existingPlayer = game.players.find((player: any) => player.playerName === playerName);
+    const existingPlayer = game.players.find((player: Player) => player.playerName === playerName);
     
     if (existingPlayer) {
         // For games in progress, allow reconnection only if player is not currently connected
@@ -364,7 +365,7 @@ export async function handleKickPlayer(
     const game = gameResult.Item;
     
     // Find the host (player who joined earliest)
-    const hostPlayer = game.players.reduce((earliest: any, player: any) => 
+    const hostPlayer = game.players.reduce((earliest: Player, player: Player) => 
         new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
     );
     
@@ -377,13 +378,13 @@ export async function handleKickPlayer(
         return { statusCode: 403 };
     }
     
-    const targetPlayer = game.players.find((p: any) => p.playerId === targetPlayerId);
+    const targetPlayer = game.players.find((p: Player) => p.playerId === targetPlayerId);
     
     if (!targetPlayer) {
         return { statusCode: 404 };
     }
     
-    const updatedPlayers = game.players.filter((p: any) => p.playerId !== targetPlayerId);
+    const updatedPlayers = game.players.filter((p: Player) => p.playerId !== targetPlayerId);
     
     // Check if removing current describer - nullify round with zero points
     const currentRound = getCurrentRound(game);
@@ -393,7 +394,7 @@ export async function handleKickPlayer(
     if (currentRound && currentRound.describerId === targetPlayerId && currentRound.phase === 'describing') {
         // Nullify current round - all players get 100 points
         const roundScores: Record<string, number> = {};
-        updatedPlayers.forEach((player: any) => {
+        updatedPlayers.forEach((player: Player) => {
             roundScores[player.playerId] = 100;
         });
         
@@ -407,7 +408,7 @@ export async function handleKickPlayer(
         };
         
         // Update player total scores
-        const playersWithScores = updatedPlayers.map((player: any) => {
+        const playersWithScores = updatedPlayers.map((player: Player) => {
             let totalScore = 0;
             updatedRounds.forEach(round => {
                 if (round.scores && round.scores[player.playerId]) {
