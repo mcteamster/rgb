@@ -49,7 +49,7 @@ interface ColorProviderProps {
 export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
   const [selectedColor, setSelectedColor] = useState<HSLColor>(() => {
     const saved = localStorage.getItem('selectedColor');
-    return saved ? JSON.parse(saved) : { h: 270, s: 0, l: 0 };
+    return saved ? JSON.parse(saved) : { h: 270, s: 100, l: 25 };
   });
   const [selectedHue, setSelectedHue] = useState(() => {
     const saved = localStorage.getItem('selectedColor');

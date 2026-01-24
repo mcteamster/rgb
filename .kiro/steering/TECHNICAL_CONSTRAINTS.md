@@ -73,8 +73,12 @@ inclusion: always
 - **Room capacity**: Hard limit of 10 players per game room
 - **Reconnection handling**: Allow reconnect within 30 seconds of disconnect
 - **Score tampering**: Server-only score calculation and persistence
-- **Target color generation bounds**: Generated target colors use restricted HSL ranges (H: 0-360, S: 20-100, L: 15-85) for better gameplay
-- **Player color selection**: Players can select any HSL color (H: 0-360, S: 0-100, L: 0-100) to accurately guess targets
+### Color Wheel Optimization
+- **Saturation curve**: 0.2 exponent emphasizes high-saturation regions (20-100% generation range)
+- **Lightness mapping**: 15-85% generation range occupies 98% of wheel area with 3/4 exponent curve
+- **Extreme compression**: 0-15% and 85-100% lightness compressed to 1% radius each
+- **Playable precision**: 98% of wheel dedicated to colors actually generated in gameplay
+- **Full spectrum access**: Players can still select any HSL color (0-100% all components) for accurate guessing
 - **Round timing integrity**: Server-enforced round durations, no client-side manipulation
 
 ## Development Constraints

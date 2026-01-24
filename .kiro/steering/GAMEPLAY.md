@@ -95,11 +95,27 @@ RGB is a multiplayer color communication game where players must describe and gu
 - **Grace Period**: Brief buffer for network latency
 - **Timeout Handling**: Incomplete guesses use the draft for scoring
 
-### Color Validation
-- **HSL Bounds for Generated Colors**: H: 0-360°, S: 20-100%, L: 15-85%
-- **Player Selection Range**: Full HSL spectrum (H: 0-360°, S: 0-100%, L: 0-100%)
-- **Precision**: 1-degree hue, 1% saturation/lightness
-- **Input Validation**: Server-side validation for generated colors only
+## Color Wheel Implementation
+
+### HSL Color Space Mapping
+
+#### Saturation Curve
+- **Formula**: `Math.pow((-sin(angle) + 1) / 2, 0.2) × 100`
+- **Exponent**: 0.2 (emphasizes high-saturation regions for 20-100% generation range)
+- **Effect**: More angular space allocated to vibrant colors (80-100% saturation)
+
+#### Lightness Distribution
+- **Compression**: Top and bottom 15% compressed into 1% of radius each
+- **85-100% lightness**: First 1% of radius (center to 1%)
+- **15-85% lightness**: Middle 98% of radius (1% to 99%) with 3/4 exponent curve
+- **0-15% lightness**: Last 1% of radius (99% to 100% - edge)
+- **Playable area**: 98% of circle dedicated to 15-85% generation range
+- **Curve formula**: `Math.pow(1 - normalizedDistance, 3/4)` emphasizes higher lightness values
+
+#### Optimization Results
+- **Generation range coverage**: 98% of wheel area for 15-85% lightness, full angular space for 20-100% saturation
+- **Out-of-bounds compression**: Extreme values (0-15% and 85-100% lightness) compressed to 1% radius each
+- **Precision**: Maximum control over colors that will actually be generated in gameplay
 
 ### Concurrency Handling
 - **Atomic Operations**: DynamoDB conditional updates

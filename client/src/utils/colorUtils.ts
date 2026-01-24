@@ -53,11 +53,42 @@ export const calculateAngleFromSaturation = (s: number): number => {
 };
 
 export const calculateLightnessFromDistance = (normalizedDistance: number): number => {
-  return Math.pow(1 - normalizedDistance, 2/3) * 100;
+  // Map distance to lightness with 15-85% taking 98% of radius
+  // Center (0% distance): 100% lightness
+  // Edge (100% distance): 0% lightness
+  // 85-100%: first 1% of radius (center to 1%)
+  // 15-85%: middle 98% of radius (1% to 99%) with 3/4 exponent curve
+  // 0-15%: last 1% of radius (99% to 100%)
+  
+  if (normalizedDistance <= 0.01) {
+    // First 1% of radius: 85-100% lightness
+    return 100 - (normalizedDistance / 0.01) * 15;
+  } else if (normalizedDistance >= 0.99) {
+    // Last 1% of radius: 0-15% lightness  
+    return 15 - ((normalizedDistance - 0.99) / 0.01) * 15;
+  } else {
+    // Middle 98% of radius: 15-85% lightness with 3/4 exponent curve
+    // 3/4 exponent emphasizes values closer to center (higher lightness)
+    const normalizedMiddle = (normalizedDistance - 0.01) / 0.98;
+    const curvedValue = Math.pow(1 - normalizedMiddle, 3/4);
+    return 15 + curvedValue * 70;
+  }
 };
 
 export const calculateDistanceFromLightness = (l: number): number => {
-  return 1 - Math.pow(l / 100, 3/2);
+  // Inverse mapping
+  if (l >= 85) {
+    // 85-100% lightness: first 1% of radius (center)
+    return ((100 - l) / 15) * 0.01;
+  } else if (l <= 15) {
+    // 0-15% lightness: last 1% of radius (edge)
+    return 0.99 + ((15 - l) / 15) * 0.01;
+  } else {
+    // 15-85% lightness: middle 98% of radius with inverse 3/4 exponent
+    const normalizedL = (l - 15) / 70;
+    const curvedValue = 1 - Math.pow(normalizedL, 4/3);
+    return 0.01 + curvedValue * 0.98;
+  }
 };
 
 export const cartesianToPolar = (x: number, y: number, center: number) => {
