@@ -199,7 +199,7 @@ body {
   border-radius: var(--border-radius-large);
   text-align: center;
   max-width: 800px;
-  max-height: 90vh;
+  max-height: calc(90vh - 40px);
   line-height: 1.4;
   margin: 20px;
   overflow: hidden;
@@ -228,7 +228,7 @@ body {
 .about-content .subtitle {
   font-style: italic;
   font-size: 0.75rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   color: #888;
 }
 
@@ -254,7 +254,7 @@ body {
 .tabs {
   display: flex;
   justify-content: center;
-  margin: 1rem 0 0.5rem 0;
+  margin: 0.5rem 0 0.5rem 0;
   border-bottom: 1px solid #ddd;
 }
 
@@ -334,6 +334,8 @@ body {
 .overview-content em {
   font-style: italic;
   color: #888;
+  margin-top: 0.5rem;
+  display: block;
 }
 
 .game-title {

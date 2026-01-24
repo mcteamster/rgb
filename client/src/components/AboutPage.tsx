@@ -37,21 +37,21 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
             <> • play on <span onClick={handleDiscordClick} className="link">Discord</span></>
           )}
         </p>
-        
+
         <div className="tabs">
-          <button 
+          <button
             className={`tab ${activeTab === 'description' ? 'active' : ''}`}
             onClick={() => setActiveTab('description')}
           >
             Tutorial
           </button>
-          <button 
+          <button
             className={`tab ${activeTab === 'terms' ? 'active' : ''}`}
             onClick={() => setActiveTab('terms')}
           >
             Terms
           </button>
-          <button 
+          <button
             className={`tab ${activeTab === 'privacy' ? 'active' : ''}`}
             onClick={() => setActiveTab('privacy')}
           >
@@ -62,32 +62,21 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
         <div className="tab-content">
           {activeTab === 'description' && (
             <div className="overview-content">
-              <h4>🎯 Game Setup</h4>
-              <p>• Create or Join a room (2-10 players)</p>
-              <p>• Set time limits for clues and guesses</p>
-              <p>• Adjust the number of turns for game length</p>
-              
-              <h4>📝 Clue Giving</h4>
-              <p>• You get a mystery color to describe</p>
-              <p>• Write a clue in 50 characters or less</p>
-              <p>• Be creative! Use color names, objects, emotions, or emojis</p>
-              <p>• Submit your clue before time runs out</p>
-              
-              <h4>🎨 Color Guessing</h4>
-              <p>• Read the describer's clue carefully</p>
-              <p>• Use the color wheel to pick your best guess</p>
-              <p>• Adjust the Hue, Saturation, and Lightness</p>
-              <p>• Lock in! (or wait for time to run out)</p>
-              
-              <h4>🏆 Scoring</h4>
-              <p>• Closer guesses = more points (up to 100)</p>
-              <p>• Describer gets the average of all scores</p>
-              <p>• Highest total score after all rounds wins!</p>
+              <h4>🎯 Create or Join (2-10 Players)</h4>
+              <p>Set time limits and adjust the number of turns for game length</p>
 
+              <h4>📝 Clue Giver: describe your mystery color in under 50 characters</h4>
+              <p>Use color names, objects, emotions, or emojis - be creative!</p>
+
+              <h4>🎨 Guessers: select a matching Hue, Saturation, and Lightness</h4>
+              <p>Pick using the outer ring and inner circle. Fine-tune your color then lock in your guess</p>
+
+              <h4>🏆 Score (out of 100) for close guesses</h4>
+              <p>Clue Giver gets the average of all scores. Highest total after all rounds wins!</p>
               <p><em>Inspired by "Hues and Cues" by Scott Brady.</em></p>
             </div>
           )}
-          
+
           {activeTab === 'privacy' && (
             <div className="privacy-content">
               <h4>What We Collect</h4>
