@@ -444,10 +444,12 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
         return { statusCode: 409 }; // Cannot start round in current state
     }
     
-    // Select describer from players who have given the fewest clues
+    // Select describer based on turn history
+    const rounds = game.gameplay?.rounds || [];
     const playerClueCount = players.map((player: any) => {
-        const cluesGiven = (game.gameplay?.rounds || []).filter((round: any) => round.describerId === player.playerId).length;
-        return { playerId: player.playerId, cluesGiven };
+        const cluesGiven = rounds.filter((round: any) => round.describerId === player.playerId).length;
+        const lastClueRound = rounds.findLastIndex((round: any) => round.describerId === player.playerId);
+        return { playerId: player.playerId, cluesGiven, lastClueRound };
     });
     
     // Find the minimum number of clues given
@@ -465,8 +467,15 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
         }
     }
     
-    // Randomly select from eligible players
-    const selectedPlayer = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+    // Selection logic: random for first round, then longest ago
+    let selectedPlayer;
+    if (minClues === 0) {
+        // First round for these players - random selection
+        selectedPlayer = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+    } else {
+        // Subsequent rounds - select who gave clue longest ago
+        selectedPlayer = eligiblePlayers.sort((a, b) => a.lastClueRound - b.lastClueRound)[0];
+    }
     const describerId = selectedPlayer.playerId;
     const targetColor = generateRandomHSLColor();
     
