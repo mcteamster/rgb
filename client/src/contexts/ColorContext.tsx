@@ -124,7 +124,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     }
   }, [selectedColor, isColorLocked]);
 
-  // Send draft color whenever selectedColor changes (with throttling)
+  // Send draft color whenever selectedColor changes (with 250ms queue)
   useEffect(() => {
     if (playerId) {
       // Check if color has actually changed
@@ -142,9 +142,17 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
         draftUpdateTimeoutRef.current = setTimeout(() => {
           updateDraftColor(selectedColor);
           lastSentDraftColorRef.current = { ...selectedColor };
-        }, 100); // Throttle to 100ms
+        }, 250); // 250ms queue - most recent selection wins
       }
     }
+
+    // Cleanup: send final color on unmount if there's a pending update
+    return () => {
+      if (draftUpdateTimeoutRef.current && playerId) {
+        clearTimeout(draftUpdateTimeoutRef.current);
+        updateDraftColor(selectedColor);
+      }
+    };
   }, [selectedColor, playerId, updateDraftColor]);
 
   // Send initial draft color when player joins/creates game
