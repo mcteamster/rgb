@@ -475,7 +475,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateDraftColor = (color: HSLColor) => {
+  const updateDraftColor = useCallback((color: HSLColor) => {
     try {
       if (wsRef.current) {
         wsRef.current.updateDraftColor(color);
@@ -483,7 +483,7 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Error in updateDraftColor:', error);
     }
-  };
+  }, []);
 
   const kickPlayer = (targetPlayerId: string) => {
     try {

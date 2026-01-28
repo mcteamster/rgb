@@ -127,12 +127,13 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
   // Send draft color whenever selectedColor changes (with 250ms queue)
   useEffect(() => {
     if (playerId) {
-      // Check if color has actually changed
+      // Check if color has actually changed (with small tolerance for floating point precision)
       const lastSent = lastSentDraftColorRef.current;
+      const tolerance = 0.01;
       const hasChanged = !lastSent || 
-        lastSent.h !== selectedColor.h || 
-        lastSent.s !== selectedColor.s || 
-        lastSent.l !== selectedColor.l;
+        Math.abs(lastSent.h - selectedColor.h) > tolerance || 
+        Math.abs(lastSent.s - selectedColor.s) > tolerance || 
+        Math.abs(lastSent.l - selectedColor.l) > tolerance;
       
       if (hasChanged) {
         if (draftUpdateTimeoutRef.current) {
@@ -142,7 +143,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
         draftUpdateTimeoutRef.current = setTimeout(() => {
           updateDraftColor(selectedColor);
           lastSentDraftColorRef.current = { ...selectedColor };
-        }, 250); // 250ms queue - most recent selection wins
+        }, 100); // 100ms queue - most recent selection wins
       }
     }
 
@@ -161,7 +162,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
       updateDraftColor(selectedColor);
       lastSentDraftColorRef.current = { ...selectedColor };
     }
-  }, [playerId, selectedColor, updateDraftColor]);
+  }, [playerId, updateDraftColor]);
 
   const updateClickPositionFromColor = useCallback(() => {
     const radius = wheelGeometry.radius;
