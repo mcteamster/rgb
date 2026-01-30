@@ -62,9 +62,6 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
         <div className="tab-content">
           {activeTab === 'description' && (
             <div className="overview-content">
-              <h4>🎯 Create or Join (2-10 Players)</h4>
-              <p>Set time limits and adjust the number of turns for game length</p>
-
               <h4>📝 Clue Giver: describe your mystery color in under 50 characters</h4>
               <p>Use color names, objects, emotions, or emojis - be creative!</p>
 

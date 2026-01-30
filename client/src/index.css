@@ -25,6 +25,10 @@ html, input, textarea {
   user-select: text;
 }
 
+textarea::placeholder {
+  color: var(--placeholder-color);
+}
+
 body {
   width: 100%;
   height: 100%;

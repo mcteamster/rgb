@@ -144,7 +144,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
               </div>
 
               <div className="config-group">
-                <label>Guessing Time</label>
+                <label>Guess Time</label>
                 <div className="button-group">
                   {[10, 15, 20, 30, 60].map(time => (
                     <button

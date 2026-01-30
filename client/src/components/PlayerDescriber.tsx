@@ -46,7 +46,6 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
   useEffect(() => {
     if (deadline) {
       setDescription('');
-      setTimeout(() => textareaRef.current?.focus(), 100);
     }
   }, [deadline, setDescription]);
 
@@ -67,7 +66,7 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
 
   const formattedDescription = formatText(description);
   const lineCount = formattedDescription.split('\n').length;
-  const topPadding = Math.max(1, 3.25 - (lineCount - 1));
+  const topPadding = Math.max(1, 2.75 - (lineCount - 1));
 
   return (
     <>
@@ -107,9 +106,10 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
                 }
               }
             }}
-            placeholder="Describe this color"
+            placeholder="Describe THIS Color"
             maxLength={50}
             disabled={inputDisabled}
+            autoFocus
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -143,7 +143,8 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
               fontSize: '16px',
               color: targetColor.l > 50 ? '#000' : '#fff',
               backgroundColor: 'transparent',
-              border: 'none',
+              border: `2px dashed ${targetColor.l > 50 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)'}`,
+              borderRadius: 'var(--border-radius-medium)',
               outline: 'none',
               width: '100%',
               '--placeholder-color': targetColor.l > 50 ? '#666' : '#ccc'
