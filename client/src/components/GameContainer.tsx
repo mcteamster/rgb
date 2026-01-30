@@ -10,6 +10,7 @@ import { ConnectionStatus } from './ConnectionStatus';
 import { GameResults } from './GameResults';
 import { RainbowIcon } from './RainbowIcon';
 import { AboutPage } from './AboutPage';
+import { ColorWheelTips } from './ColorGuessingTips';
 import { useColor } from '../contexts/ColorContext';
 import { useGame, loadSession, clearSession } from '../contexts/GameContext';
 import { setBodyBackground } from '../utils/colorUtils';
@@ -27,6 +28,8 @@ export const GameContainer: React.FC = () => {
     return { width: window.innerWidth, height: window.innerHeight };
   });
   const [lastRoundId, setLastRoundId] = useState<string | null>(null);
+  const [showTips, setShowTips] = useState(false);
+  const [hasSeenTipsThisGame, setHasSeenTipsThisGame] = useState(false);
 
   useEffect(() => {
     const handleResize = () => {
@@ -50,6 +53,22 @@ export const GameContainer: React.FC = () => {
       setLastRoundId(currentRoundId);
     }
   }, [getCurrentRound, lastRoundId, setIsColorLocked]);
+
+  // Show tips on first guessing phase of each game
+  useEffect(() => {
+    const currentRound = getCurrentRound();
+    const isGuessing = currentRound?.phase === 'guessing';
+    const isDescriber = currentRound?.describerId === playerId;
+    
+    if (!hasSeenTipsThisGame && isGuessing && !isDescriber && gameState) {
+      setShowTips(true);
+    }
+  }, [hasSeenTipsThisGame, getCurrentRound, playerId, gameState]);
+
+  const handleDismissTips = () => {
+    setShowTips(false);
+    setHasSeenTipsThisGame(true);
+  };
 
   // Update body background to always match selected color
   useEffect(() => {
@@ -133,6 +152,7 @@ export const GameContainer: React.FC = () => {
 
       <GameManager onShowAbout={() => setShowAbout(true)} />
       {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
+      {showTips && <ColorWheelTips onDismiss={handleDismissTips} />}
     </div>
   );
 };

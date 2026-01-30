@@ -27,6 +27,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
   timeLimit
 }) => {
   const { setPendingSubmission } = useColor();
+  
   const timer = useTimer({
     deadline,
     timeLimit,
