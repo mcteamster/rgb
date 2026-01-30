@@ -143,7 +143,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
         draftUpdateTimeoutRef.current = setTimeout(() => {
           updateDraftColor(selectedColor);
           lastSentDraftColorRef.current = { ...selectedColor };
-        }, 100); // 100ms queue - most recent selection wins
+        }, 1000); // 1000ms debounce - 1 message/second max
       }
     }
 

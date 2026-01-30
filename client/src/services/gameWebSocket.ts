@@ -493,7 +493,7 @@ export class GameWebSocket {
       } else {
         console.debug('⏰ Sync polling skipped - no gameId');
       }
-    }, 5000);
+    }, 10000); // 10 second sync polling
   }
 
   private stopSyncPolling(): void {

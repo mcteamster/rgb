@@ -103,7 +103,7 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
                 if (deadline && !inputDisabled) {
                   draftUpdateTimeoutRef.current = setTimeout(() => {
                     updateDraftDescription(text.trim());
-                  }, 500);
+                  }, 1000);
                 }
               }
             }}
