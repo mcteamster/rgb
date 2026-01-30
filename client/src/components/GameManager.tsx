@@ -24,13 +24,13 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout }) => {
   const isReveal = currentRound?.phase === 'reveal';
   const isEndgame = currentRound?.phase === 'endgame';
 
-  // Disable Next Round button for 2 seconds when reveal phase starts
+  // Disable Next Round button for 3 seconds when reveal phase starts
   useEffect(() => {
     if (isReveal) {
       setNextRoundDisabled(true);
       const timer = setTimeout(() => {
         setNextRoundDisabled(false);
-      }, 2000);
+      }, 3000);
       return () => clearTimeout(timer);
     }
   }, [isReveal]);

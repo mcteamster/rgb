@@ -94,6 +94,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
   const { updateDraftColor, getCurrentRound, playerId, gameState } = useGame();
   const draftUpdateTimeoutRef = useRef<NodeJS.Timeout>();
   const lastSentDraftColorRef = useRef<HSLColor | null>(null);
+  const lastDraftSentTimeRef = useRef<number>(0);
   const pendingSubmissionRef = useRef(false);
 
   // Sync locked state with server submissions
@@ -124,18 +125,18 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     }
   }, [selectedColor, isColorLocked]);
 
-  // Send draft color whenever selectedColor changes (with 250ms queue)
+  // Send draft color whenever selectedColor changes (hybrid: immediate + debounce)
   useEffect(() => {
     if (playerId) {
-      // Check if color has actually changed (with small tolerance for floating point precision)
-      const lastSent = lastSentDraftColorRef.current;
-      const tolerance = 0.01;
-      const hasChanged = !lastSent || 
-        Math.abs(lastSent.h - selectedColor.h) > tolerance || 
-        Math.abs(lastSent.s - selectedColor.s) > tolerance || 
-        Math.abs(lastSent.l - selectedColor.l) > tolerance;
+      const now = Date.now();
       
-      if (hasChanged) {
+      // Send immediately if enough time has passed since last send
+      if (now - lastDraftSentTimeRef.current > 500) {
+        updateDraftColor(selectedColor);
+        lastSentDraftColorRef.current = { ...selectedColor };
+        lastDraftSentTimeRef.current = now;
+      } else {
+        // Otherwise debounce to capture latest change
         if (draftUpdateTimeoutRef.current) {
           clearTimeout(draftUpdateTimeoutRef.current);
         }
@@ -143,15 +144,14 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
         draftUpdateTimeoutRef.current = setTimeout(() => {
           updateDraftColor(selectedColor);
           lastSentDraftColorRef.current = { ...selectedColor };
-        }, 1000); // 1000ms debounce - 1 message/second max
+          lastDraftSentTimeRef.current = Date.now();
+        }, 500);
       }
     }
 
-    // Cleanup: send final color on unmount if there's a pending update
     return () => {
-      if (draftUpdateTimeoutRef.current && playerId) {
+      if (draftUpdateTimeoutRef.current) {
         clearTimeout(draftUpdateTimeoutRef.current);
-        updateDraftColor(selectedColor);
       }
     };
   }, [selectedColor, playerId, updateDraftColor]);
