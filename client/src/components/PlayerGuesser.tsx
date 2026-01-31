@@ -14,6 +14,7 @@ interface PlayerGuesserProps {
   submitColor: (color: HSLColor) => void;
   deadline?: string;
   timeLimit: number;
+  onShowTips?: () => void;
 }
 
 export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
@@ -24,7 +25,8 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
   setShowSliders,
   submitColor,
   deadline,
-  timeLimit
+  timeLimit,
+  onShowTips
 }) => {
   const { setPendingSubmission } = useColor();
   
@@ -62,7 +64,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
   return (
     <div className="guessing-phase">
       {showSliders && !isColorLocked && (
-        <ColorSliders />
+        <ColorSliders onShowTips={onShowTips} />
       )}
       <div className="guess-controls-container">
         <div 

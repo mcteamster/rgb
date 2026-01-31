@@ -8,9 +8,10 @@ import { useIsHost } from '../hooks/useIsHost';
 
 interface GameManagerProps {
   onShowAbout: () => void;
+  onShowTips?: () => void;
 }
 
-export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout }) => {
+export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTips }) => {
   const { selectedColor, isColorLocked, setIsColorLocked, showSliders, setShowSliders, setSelectedColor, setSelectedHue } = useColor();
   const { gameState, startRound, playerId, submitDescription, updateDraftDescription, submitColor, getCurrentRound, finaliseGame, resetGame, closeRoom } = useGame();
   const [description, setDescription] = useState('');
@@ -139,6 +140,7 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout }) => {
               submitColor={submitColor}
               deadline={currentRound.timers?.guessingDeadline}
               timeLimit={gameState.config.guessingTimeLimit}
+              onShowTips={onShowTips}
             />
           )}
 

@@ -54,7 +54,7 @@ const ColorSlider: React.FC<ColorSliderProps> = ({
   );
 };
 
-export const ColorSliders: React.FC = () => {
+export const ColorSliders: React.FC<{ onShowTips?: () => void }> = ({ onShowTips }) => {
   const { selectedColor, setSelectedColor, updateClickPositionFromColor, setSelectedHue } = useColor();
   const updateQueueRef = useRef<Array<{ h: number, s: number, l: number }>>([]);
 
@@ -91,6 +91,14 @@ export const ColorSliders: React.FC = () => {
 
   return (
     <div className="hsl-slider-content">
+      <div className="slider-header-with-help">
+        <h3>Color Picker</h3>
+        {onShowTips && (
+          <button className="help-btn" onClick={onShowTips} title="Show color wheel help">
+            ?
+          </button>
+        )}
+      </div>
       <ColorSlider
         label="Hue"
         value={Math.round(selectedColor.h)}

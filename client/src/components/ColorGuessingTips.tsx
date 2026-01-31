@@ -10,7 +10,12 @@ export const ColorWheelTips: React.FC<ColorWheelTipsProps> = ({ onDismiss }) => 
       <div className="color-wheel-tips-content">
         <div className="tip-visual">
           <div className="exploded-wheel">
-            <div className="outer-ring"></div>
+            <div className="outer-ring">
+              <div className="hue-arrow"></div>
+              <div className="hue-marker hue-marker-left"></div>
+              <div className="hue-marker hue-marker-right"></div>
+              <div className="hue-label">HUE</div>
+            </div>
             <div className="inner-circle saturation-circle">
               <div className="saturation-arrow"></div>
               <div className="saturation-marker saturation-marker-top"></div>
@@ -23,18 +28,14 @@ export const ColorWheelTips: React.FC<ColorWheelTipsProps> = ({ onDismiss }) => 
             </div>
           </div>
           
-          <div className="tip-arrows">
-            <div className="arrow arrow-outer">
-              <span>Click outer ring for color type</span>
-            </div>
-            <div className="arrow arrow-inner">
-              <span>Click inside for intensity & brightness</span>
-            </div>
+          <div className="tip-instructions">
+            <p>Outer Ring for Color Family</p>
+            <p>Inner Circle for Intensity & Brightness</p>
           </div>
         </div>
         
         <button className="tips-dismiss-btn" onClick={onDismiss}>
-          Got it! 🎯
+          Close
         </button>
       </div>
     </div>

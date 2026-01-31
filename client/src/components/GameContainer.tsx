@@ -29,7 +29,7 @@ export const GameContainer: React.FC = () => {
   });
   const [lastRoundId, setLastRoundId] = useState<string | null>(null);
   const [showTips, setShowTips] = useState(false);
-  const [hasSeenTipsThisGame, setHasSeenTipsThisGame] = useState(false);
+  const [shouldShowTips, setShouldShowTips] = useState<'auto' | 'manual' | 'dismissed'>('auto');
 
   useEffect(() => {
     const handleResize = () => {
@@ -54,20 +54,32 @@ export const GameContainer: React.FC = () => {
     }
   }, [getCurrentRound, lastRoundId, setIsColorLocked]);
 
-  // Show tips on first guessing phase of each game
+  // Show tips while waiting for first guessing phase of each game
   useEffect(() => {
     const currentRound = getCurrentRound();
+    const isDescribing = currentRound?.phase === 'describing';
     const isGuessing = currentRound?.phase === 'guessing';
     const isDescriber = currentRound?.describerId === playerId;
     
-    if (!hasSeenTipsThisGame && isGuessing && !isDescriber && gameState) {
+    if (shouldShowTips === 'auto' && isDescribing && !isDescriber && gameState) {
       setShowTips(true);
     }
-  }, [hasSeenTipsThisGame, getCurrentRound, playerId, gameState]);
+    
+    // Auto-close tips when guessing phase starts (only if auto-opened)
+    if (isGuessing && showTips && shouldShowTips === 'auto') {
+      setShowTips(false);
+      setShouldShowTips('dismissed');
+    }
+  }, [shouldShowTips, showTips, getCurrentRound, playerId, gameState]);
+
+  const handleShowTips = () => {
+    setShowTips(true);
+    setShouldShowTips('manual');
+  };
 
   const handleDismissTips = () => {
     setShowTips(false);
-    setHasSeenTipsThisGame(true);
+    setShouldShowTips('dismissed');
   };
 
   // Update body background to always match selected color
@@ -150,7 +162,10 @@ export const GameContainer: React.FC = () => {
       <GameDisplay />
       <ColorWheel size={size} />
 
-      <GameManager onShowAbout={() => setShowAbout(true)} />
+      <GameManager 
+        onShowAbout={() => setShowAbout(true)} 
+        onShowTips={handleShowTips} 
+      />
       {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
       {showTips && <ColorWheelTips onDismiss={handleDismissTips} />}
     </div>
