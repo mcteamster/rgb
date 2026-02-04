@@ -193,7 +193,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
                   </div>
 
                   <div style={{ flex: 1, textAlign: 'center' }}>
-                    <label>Clue Turns</label>
+                    <label>Turns</label>
                     <div className="number-input">
                       <button
                         type="button"
