@@ -37,17 +37,20 @@ export function geometricNormalScoring(targetColor: HSLColor, guessedColor: HSLC
     else if (targetColor.l > 80) multiplier = 1 + 2 * (targetColor.l - 80) / 5;
     const adjustedHueSigma = NORMAL_CONFIG.sigma.hue * multiplier;
     
+    // Adjust lightness sigma proportionally to target lightness
+    const adjustedLightnessSigma = NORMAL_CONFIG.sigma.lightness * (targetColor.l / 50);
+    
     // Check 3-sigma thresholds (anything beyond is 0)
     if (hueDiff > 3 * adjustedHueSigma || 
         satDiff > 3 * NORMAL_CONFIG.sigma.saturation || 
-        lightDiff > 3 * NORMAL_CONFIG.sigma.lightness) {
+        lightDiff > 3 * adjustedLightnessSigma) {
         return 0;
     }
     
     // Calculate normal distribution components
     const hueComponent = Math.exp(-0.5 * Math.pow(hueDiff / adjustedHueSigma, 2));
     const satComponent = Math.exp(-0.5 * Math.pow(satDiff / NORMAL_CONFIG.sigma.saturation, 2));
-    const lightComponent = Math.exp(-0.5 * Math.pow(lightDiff / NORMAL_CONFIG.sigma.lightness, 2));
+    const lightComponent = Math.exp(-0.5 * Math.pow(lightDiff / adjustedLightnessSigma, 2));
     
     // Calculate composite score using geometric mean with weights as exponents
     const score = Math.round(100 * Math.pow(
