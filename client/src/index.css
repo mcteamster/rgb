@@ -1634,3 +1634,6 @@ textarea:-ms-input-placeholder {
   z-index: 80;
   box-shadow: 0 0 4px rgba(0,0,0,0.3);
 }
+
+/* Daily Challenge Styles */
+@import './styles/daily-challenge.css';
