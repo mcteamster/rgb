@@ -6,7 +6,7 @@ import {
     HSLColor
 } from '../types/dailyChallenge';
 import { dailyChallengeApi } from '../services/dailyChallengeApi';
-import { getUserId, getUserName, setUserName, generateFingerprint } from '../utils/userId';
+import { getUserId, setUserName, generateFingerprint } from '../utils/userId';
 
 interface DailyChallengeState {
     currentChallenge: DailyChallenge | null;

@@ -1,3 +1,5 @@
+@import "./styles/daily-challenge.css";
+
 :root {
   --bg-white-95: rgba(255, 255, 255, 0.95);
   --bg-white-90: rgba(255, 255, 255, 0.9);
@@ -1634,6 +1636,3 @@ textarea:-ms-input-placeholder {
   z-index: 80;
   box-shadow: 0 0 4px rgba(0,0,0,0.3);
 }
-
-/* Daily Challenge Styles */
-@import './styles/daily-challenge.css';

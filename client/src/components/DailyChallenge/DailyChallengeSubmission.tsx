@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 import { useColor } from '../../contexts/ColorContext';
 import { getUserName } from '../../utils/userId';
@@ -13,6 +13,22 @@ export const DailyChallengeSubmission: React.FC = () => {
     const [userName, setLocalUserName] = useState(getUserName());
     const [confirming, setConfirming] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [size, setSize] = useState(() => {
+        return { width: window.innerWidth, height: window.innerHeight };
+    });
+
+    useEffect(() => {
+        const handleResize = () => {
+            setSize({ width: window.innerWidth, height: window.innerHeight });
+        };
+
+        window.addEventListener('resize', handleResize);
+        window.addEventListener('orientationchange', handleResize);
+        return () => {
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('orientationchange', handleResize);
+        };
+    }, []);
 
     if (!currentChallenge) return null;
 
@@ -56,7 +72,7 @@ export const DailyChallengeSubmission: React.FC = () => {
             </div>
 
             <div className="color-picker-section">
-                <ColorWheel />
+                <ColorWheel size={size} />
                 <ColorSliders />
             </div>
 
