@@ -1,3 +1,5 @@
+@import "./styles/daily-challenge.css";
+
 :root {
   --bg-white-95: rgba(255, 255, 255, 0.95);
   --bg-white-90: rgba(255, 255, 255, 0.9);

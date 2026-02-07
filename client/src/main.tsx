@@ -1,7 +1,7 @@
+import './index.css'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
-import './index.css'
 import { initClarity } from './services/clarity'
 import { initaliseDiscord } from './services/discord';
 
