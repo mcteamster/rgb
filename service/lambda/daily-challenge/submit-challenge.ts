@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { HSLColor, calculateAverageColor, distanceFromAverageScoring } from '../websocket/scoring';
+import { HSLColor, calculateAverageColor, distanceFromAverageScoring } from './scoring';
 
 const client = new DynamoDBClient({});
 const dynamodb = DynamoDBDocumentClient.from(client);
@@ -115,11 +115,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const existingColors: HSLColor[] = (existingSubmissionsResult.Items || []).map(item => item.submittedColor);
 
-        // Calculate current average (before this submission)
-        const averageColor = calculateAverageColor(existingColors);
+        let averageColor: HSLColor;
+        let score: number;
+        let distance: number;
 
-        // Score the new submission against the average
-        const { score, distance } = distanceFromAverageScoring(submission.color, averageColor);
+        // First two submissions get full points
+        if (existingColors.length < 2) {
+            averageColor = submission.color;
+            score = 100;
+            distance = 0;
+        } else {
+            // From third submission onwards, score against average of all submissions (including new one)
+            const allColors = [...existingColors, submission.color];
+            averageColor = calculateAverageColor(allColors);
+            const result = distanceFromAverageScoring(submission.color, averageColor);
+            score = result.score;
+            distance = result.distance;
+        }
 
         // Store submission with TTL (30 days) - use conditional write to prevent duplicates
         const submittedAt = new Date().toISOString();

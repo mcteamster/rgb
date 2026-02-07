@@ -73,11 +73,11 @@ export class RgbStack extends cdk.Stack {
       projectionType: dynamodb.ProjectionType.ALL
     });
 
-    const promptsQueueTable = new dynamodb.Table(this, 'DailyPromptsQueueTable', {
-      tableName: 'rgb-daily-prompts-queue',
-      partitionKey: { name: 'promptId', type: dynamodb.AttributeType.STRING },
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN
+    // Add GSI for querying queued prompts
+    dailyChallengesTable.addGlobalSecondaryIndex({
+      indexName: 'StatusIndex',
+      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING }
     });
 
     // WebSocket API
@@ -267,8 +267,7 @@ export class RgbStack extends cdk.Stack {
       code: lambda.Code.fromAsset('dist/lambda/daily-challenge'),
       role: lambdaExecutionRole,
       environment: {
-        CHALLENGES_TABLE: dailyChallengesTable.tableName,
-        PROMPTS_QUEUE_TABLE: promptsQueueTable.tableName
+        CHALLENGES_TABLE: dailyChallengesTable.tableName
       }
     });
 
@@ -286,7 +285,6 @@ export class RgbStack extends cdk.Stack {
     dailySubmissionsTable.grantReadData(getUserHistoryFunction);
 
     dailyChallengesTable.grantReadWriteData(createDailyChallengeFunction);
-    promptsQueueTable.grantReadWriteData(createDailyChallengeFunction);
 
     // API Routes
     const dailyChallengeResource = dailyChallengeApi.root.addResource('daily-challenge');

@@ -19,48 +19,56 @@ export const DailyChallengeLeaderboard: React.FC<DailyChallengeLeaderboardProps>
     if (!currentChallenge) return null;
 
     return (
-        <div className="daily-challenge-leaderboard">
-            <h2>Daily Challenge Leaderboard</h2>
-            <div className="prompt-card">
-                <p className="prompt">"{currentChallenge.prompt}"</p>
-                <p className="submissions-count">
-                    Total submissions: {currentChallenge.totalSubmissions}
-                </p>
-            </div>
+        <>
+            {/* Leaderboard in status bar area */}
+            <div className="status-bar daily-challenge-status">
+                <div className="leaderboard-container">
+                    <h2>Daily Challenge Leaderboard</h2>
+                    <div className="prompt-card">
+                        <p className="prompt">"{currentChallenge.prompt}"</p>
+                        <p className="submissions-count">
+                            Total submissions: {currentChallenge.totalSubmissions}
+                        </p>
+                    </div>
 
-            {isLoading ? (
-                <div className="loading-message">Loading leaderboard...</div>
-            ) : (
-                <div className="leaderboard-table">
-                    {leaderboard.length === 0 ? (
-                        <p className="no-submissions">No submissions yet. Be the first!</p>
+                    {isLoading ? (
+                        <div className="loading-message">Loading leaderboard...</div>
                     ) : (
-                        <div className="leaderboard-entries">
-                            {leaderboard.map((entry) => (
-                                <div key={`${entry.rank}-${entry.userName}`} className="leaderboard-row">
-                                    <span className="rank">#{entry.rank}</span>
-                                    <span className="name">{entry.userName || 'Anonymous'}</span>
-                                    <span className="score">{entry.score} pts</span>
-                                    <div className="color-preview">
-                                        <ColorBox
-                                            color={entry.submittedColor}
-                                            width="60px"
-                                            height="30px"
-                                            fontSize="8px"
-                                        />
-                                    </div>
+                        <div className="leaderboard-table">
+                            {leaderboard.length === 0 ? (
+                                <p className="no-submissions">No submissions yet. Be the first!</p>
+                            ) : (
+                                <div className="leaderboard-entries">
+                                    {leaderboard.map((entry) => (
+                                        <div key={`${entry.rank}-${entry.userName}`} className="leaderboard-row">
+                                            <span className="rank">#{entry.rank}</span>
+                                            <span className="name">{entry.userName || 'Anonymous'}</span>
+                                            <span className="score">{entry.score} pts</span>
+                                            <div className="color-preview">
+                                                <ColorBox
+                                                    color={entry.submittedColor}
+                                                    width="60px"
+                                                    height="30px"
+                                                    fontSize="8px"
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
+                            )}
                         </div>
                     )}
                 </div>
-            )}
-
-            <div className="leaderboard-actions">
-                <Button onClick={onBack} variant="back">
-                    Back to Results
-                </Button>
             </div>
-        </div>
+
+            {/* Actions in sidebar area */}
+            <div className="daily-challenge-sidebar">
+                <div className="leaderboard-actions">
+                    <Button onClick={onBack} variant="back">
+                        Back to Results
+                    </Button>
+                </div>
+            </div>
+        </>
     );
 };

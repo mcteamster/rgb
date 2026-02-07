@@ -1,62 +1,71 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 import { ColorBox } from '../ColorBox';
 import { Button } from '../Button';
+import { DailyChallengeLeaderboard } from './DailyChallengeLeaderboard';
 
-interface DailyChallengeResultsProps {
-    onViewLeaderboard: () => void;
-}
-
-export const DailyChallengeResults: React.FC<DailyChallengeResultsProps> = ({ onViewLeaderboard }) => {
+export const DailyChallengeResults: React.FC = () => {
+    const navigate = useNavigate();
     const { currentChallenge, userSubmission } = useDailyChallenge();
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
 
     if (!currentChallenge || !userSubmission) return null;
 
+    if (showLeaderboard) {
+        return <DailyChallengeLeaderboard onBack={() => setShowLeaderboard(false)} />;
+    }
+
     return (
-        <div className="daily-challenge-results">
-            <h2>Challenge Submitted!</h2>
-            <div className="prompt-card">
-                <p className="prompt">"{currentChallenge.prompt}"</p>
-            </div>
-
-            <div className="result-card">
-                <div className="colors-comparison">
-                    <div className="color-block">
-                        <h3>Your Color</h3>
-                        <ColorBox color={userSubmission.color} width="180px" height="80px" />
+        <>
+            {/* Results in status bar area */}
+            <div className="status-bar daily-challenge-status">
+                <div className="result-card">
+                    <div className="prompt-card">
+                        <p className="prompt">"{currentChallenge.prompt}"</p>
                     </div>
-                    {userSubmission.averageColor && (
+
+                    <div className="score-display">
+                        <h1 className="score">{userSubmission.score}</h1>
+                        <p className="score-label">points</p>
+                        {userSubmission.rank && (
+                            <p className="rank">
+                                Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
+                            </p>
+                        )}
+                        {userSubmission.distanceFromAverage !== undefined && (
+                            <p className="distance">
+                                Distance: {userSubmission.distanceFromAverage.toFixed(3)}
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="colors-comparison">
                         <div className="color-block">
-                            <h3>Average Color</h3>
-                            <ColorBox color={userSubmission.averageColor} width="180px" height="80px" />
+                            <h3>Your Color</h3>
+                            <ColorBox color={userSubmission.color} width="150px" height="60px" />
                         </div>
-                    )}
-                </div>
-
-                <div className="score-display">
-                    <h1 className="score">{userSubmission.score}</h1>
-                    <p className="score-label">points</p>
-                    {userSubmission.rank && (
-                        <p className="rank">
-                            Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
-                        </p>
-                    )}
-                    {userSubmission.distanceFromAverage !== undefined && (
-                        <p className="distance">
-                            Distance: {userSubmission.distanceFromAverage.toFixed(3)}
-                        </p>
-                    )}
+                        {userSubmission.averageColor && (
+                            <div className="color-block">
+                                <h3>Average Color</h3>
+                                <ColorBox color={userSubmission.averageColor} width="150px" height="60px" />
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
-            <div className="results-actions">
-                <Button onClick={onViewLeaderboard} variant="primary">
-                    View Full Leaderboard
-                </Button>
-                <Button onClick={() => window.location.href = '/'} variant="back">
-                    Back to Home
-                </Button>
+            {/* Actions in sidebar area */}
+            <div className="daily-challenge-sidebar">
+                <div className="results-actions">
+                    <Button onClick={() => setShowLeaderboard(true)} variant="primary">
+                        View Full Leaderboard
+                    </Button>
+                    <Button onClick={() => navigate('/')} variant="back">
+                        Back to Home
+                    </Button>
+                </div>
             </div>
-        </div>
+        </>
     );
 };

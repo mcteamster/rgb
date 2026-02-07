@@ -1,33 +1,82 @@
 /* Daily Challenge Mode Styles */
 
+.daily-challenge-status {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.daily-challenge-sidebar {
+  position: fixed;
+  right: 0;
+  top: 80px;
+  bottom: 0;
+  width: 320px;
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.leaderboard-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  max-width: 800px;
+  width: 100%;
+}
+
+.leaderboard-container h2 {
+  color: #333;
+  margin: 0;
+  font-size: 28px;
+}
+
+@media (max-width: 768px) {
+  .daily-challenge-sidebar {
+    position: static;
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  
+  .daily-challenge-status {
+    flex-direction: column;
+  }
+}
+
 .mode-selector {
   display: flex;
-  gap: 8px;
+  gap: 12px;
   margin-bottom: 24px;
   justify-content: center;
 }
 
 .mode-tab {
   padding: 12px 24px;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(100, 100, 255, 0.5);
+  background: linear-gradient(135deg, rgba(100, 100, 255, 0.15), rgba(150, 100, 255, 0.15));
+  color: #2a2a2a;
   border-radius: 8px;
   cursor: pointer;
   font-size: 16px;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-weight: 600;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(100, 100, 255, 0.2);
 }
 
 .mode-tab:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.mode-tab.active {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border-color: rgba(255, 255, 255, 0.4);
+  background: linear-gradient(135deg, rgba(100, 100, 255, 0.25), rgba(150, 100, 255, 0.25));
+  color: #1a1a1a;
+  border-color: rgba(100, 100, 255, 0.7);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(100, 100, 255, 0.3);
 }
 
 .daily-challenge-container,
@@ -58,18 +107,18 @@
   font-weight: bold;
   font-style: italic;
   margin-bottom: 12px;
-  color: white;
+  color: #333;
 }
 
 .timer {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(51, 51, 51, 0.8);
   margin-bottom: 8px;
 }
 
 .submissions-count {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(51, 51, 51, 0.7);
 }
 
 .color-picker-section {
@@ -149,7 +198,7 @@
 
 .color-block h3 {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.8);
+  color: #333;
   margin: 0;
 }
 
@@ -160,26 +209,26 @@
 .score {
   font-size: 72px;
   font-weight: bold;
-  color: white;
+  color: #333;
   margin: 0;
   line-height: 1;
 }
 
 .score-label {
   font-size: 18px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(51, 51, 51, 0.8);
   margin: 8px 0;
 }
 
 .rank {
   font-size: 20px;
-  color: rgba(255, 255, 255, 0.9);
+  color: #333;
   margin: 8px 0;
 }
 
 .distance {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(51, 51, 51, 0.7);
   margin: 4px 0;
 }
 
@@ -220,7 +269,7 @@
 .leaderboard-row .rank {
   font-size: 18px;
   font-weight: bold;
-  color: rgba(255, 255, 255, 0.8);
+  color: #333;
   min-width: 40px;
   margin: 0;
 }
@@ -228,7 +277,7 @@
 .leaderboard-row .name {
   flex: 1;
   font-size: 16px;
-  color: white;
+  color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -237,7 +286,7 @@
 .leaderboard-row .score {
   font-size: 18px;
   font-weight: bold;
-  color: white;
+  color: #333;
   min-width: 80px;
   text-align: right;
   margin: 0;
@@ -250,7 +299,7 @@
 
 .no-submissions {
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(51, 51, 51, 0.7);
   padding: 40px;
   font-size: 16px;
 }
@@ -263,7 +312,7 @@
 }
 
 .loading-message {
-  color: rgba(255, 255, 255, 0.7);
+  color: #333;
 }
 
 .error-message {

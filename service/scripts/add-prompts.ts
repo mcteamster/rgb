@@ -5,7 +5,7 @@ import { DynamoDBDocumentClient, PutCommand } from '@aws-sdk/lib-dynamodb';
 const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-southeast-2' });
 const dynamodb = DynamoDBDocumentClient.from(client);
 
-const PROMPTS_QUEUE_TABLE = process.env.PROMPTS_QUEUE_TABLE || 'rgb-daily-prompts-queue';
+const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE || 'rgb-daily-challenges';
 
 // Sample prompts - customize as needed
 const prompts = [
@@ -26,16 +26,19 @@ const prompts = [
 ];
 
 async function addPrompts() {
-    console.log(`Adding ${prompts.length} prompts to ${PROMPTS_QUEUE_TABLE}...`);
+    console.log(`Adding ${prompts.length} prompts to ${CHALLENGES_TABLE}...`);
 
     for (const { date, prompt } of prompts) {
         try {
             await dynamodb.send(new PutCommand({
-                TableName: PROMPTS_QUEUE_TABLE,
+                TableName: CHALLENGES_TABLE,
                 Item: {
-                    promptId: date,
+                    challengeId: date,
                     prompt: prompt,
                     status: 'queued',
+                    validFrom: null,
+                    validUntil: null,
+                    totalSubmissions: 0,
                     createdAt: new Date().toISOString()
                 }
             }));

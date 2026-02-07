@@ -16,7 +16,7 @@ Add a single-player daily challenge mode to the RGB color guessing game where al
 
 ### Technical Requirements
 - REST API (separate from existing WebSocket API) for daily challenge operations
-- 3 new DynamoDB tables: challenges, submissions, prompt queue
+- 2 new DynamoDB tables: challenges (with status field for queued/active prompts), submissions
 - Dynamic average color calculation in HSL bicone space
 - Distance-based scoring algorithm (0-100 points, closer to average = higher score)
 - Manual prompt curation system (admin tools to populate queue)
@@ -47,7 +47,8 @@ Add a single-player daily challenge mode to the RGB color guessing game where al
 ## Proposed Solution
 
 ### Backend
-- Add 3 DynamoDB tables for persistent storage (no TTL on challenges/prompts, 30-day TTL on submissions)
+- Add 2 DynamoDB tables for persistent storage (no TTL on challenges, 30-day TTL on submissions)
+- Challenges table uses status field ('queued'|'active'|'completed') to manage prompt queue and active challenges
 - Create REST API with API Gateway + 5 Lambda functions (GET current challenge, POST submission, GET leaderboard, GET history, scheduled challenge creator)
 - Implement average color calculation with new `biconeCartesianToHSL()` inverse transformation
 - Add `distanceFromAverageScoring()` algorithm in scoring.ts
@@ -70,12 +71,13 @@ Add a single-player daily challenge mode to the RGB color guessing game where al
 **Goal**: Set up DynamoDB tables, REST API, and Lambda functions
 
 **Subtasks**:
-- Modify `/service/lib/rgb-stack.ts` to add 3 new DynamoDB tables:
-  - `rgb-daily-challenges` (PK: challengeId) - stores daily challenge metadata
+- Modify `/service/lib/rgb-stack.ts` to add 2 new DynamoDB tables:
+  - `rgb-daily-challenges` (PK: challengeId) - stores daily challenge metadata and queued prompts
+    - Attributes: challengeId, prompt, status ('queued'|'active'|'completed'), validFrom (null when queued), validUntil (null when queued), totalSubmissions, createdAt
+    - GSI: StatusIndex (PK: status, SK: challengeId) for querying queued prompts
   - `rgb-daily-submissions` (PK: challengeId, SK: userId) - stores all player submissions
     - GSI 1: UserIdIndex (PK: userId, SK: challengeId) for history queries
     - GSI 2: ChallengeLeaderboardIndex (PK: challengeId, SK: score DESC) for leaderboard
-  - `rgb-daily-prompts-queue` (PK: promptId) - stores future prompts
 - Create REST API Gateway with CORS configuration
 - Set up Lambda execution roles with DynamoDB permissions
 - Add EventBridge rule for daily challenge creation (cron: `0 0 * * ? *`)
@@ -133,10 +135,9 @@ Add a single-player daily challenge mode to the RGB color guessing game where al
 - Create `/service/lambda/daily-challenge/create-daily-challenge.ts`:
   - Triggered by EventBridge at midnight UTC
   - Calculate today's challengeId (YYYY-MM-DD)
-  - Query `rgb-daily-prompts-queue` for today's prompt
-  - Create challenge in `rgb-daily-challenges` with 24-hour window
-  - Mark prompt as "used"
-  - Handle missing prompt case (fallback or alert)
+  - Query `rgb-daily-challenges` for today's queued prompt
+  - Update challenge status to 'active' with 24-hour window (or create new if using fallback)
+  - Handle missing prompt case (use fallback prompt)
 
 **Demo**: All endpoints respond correctly with Postman/curl, scoring logic verified with test data
 
@@ -229,14 +230,14 @@ Add a single-player daily challenge mode to the RGB color guessing game where al
 
 **Subtasks**:
 - Create `/service/scripts/add-prompts.ts`:
-  - CLI script to add prompts to queue
+  - CLI script to add prompts to challenges table with 'queued' status
   - Accept CSV or JSON file with dates and prompts
-  - Batch insert into `rgb-daily-prompts-queue` table
+  - Batch insert into `rgb-daily-challenges` table with status='queued', validFrom=null, validUntil=null
   - Usage: `npm run add-prompts -- --file prompts.csv`
 - Create `/service/scripts/create-challenge-manual.ts`:
   - CLI script to manually create a challenge
   - Accept date and prompt as arguments
-  - Insert into `rgb-daily-challenges` table
+  - Insert into `rgb-daily-challenges` table with status='active'
   - Usage: `npm run create-challenge -- --date 2026-02-07 --prompt "Sunset"`
 - Test EventBridge scheduled rule:
   - Verify challenge creation at midnight UTC

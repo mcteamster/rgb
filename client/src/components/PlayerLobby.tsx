@@ -1,21 +1,19 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
 import { Notification } from './Notices';
-import { DailyChallengeProvider } from '../contexts/DailyChallengeContext';
-import { DailyChallengeContainer } from './DailyChallenge/DailyChallengeContainer';
 
 type LobbyStep = 'choose' | 'create' | 'join';
-type GameMode = 'multiplayer' | 'daily';
 
 interface PlayerLobbyProps {
   roomCode?: string;
 }
 
 export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
+  const navigate = useNavigate();
   const { createGame, joinGame, error, clearError, savedPlayerName, currentRegion, setRegion } = useGame();
-  const [mode, setMode] = useState<GameMode>('multiplayer');
   const [step, setStep] = useState<LobbyStep>(() => {
     // If there's a valid room code or stored session, go to join form
     if (roomCode && /^[BCDFGHJKLMNPQRSTVWXZ]{4}$/.test(roomCode)) {
@@ -90,29 +88,14 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
     <div className="join-controls">
       <Notification region={currentRegion} errors={error} onClearError={clearError} />
 
-      {/* Mode selector tabs */}
+      {/* Mode selector */}
       <div className="mode-selector">
-        <button
-          className={mode === 'multiplayer' ? 'mode-tab active' : 'mode-tab'}
-          onClick={() => setMode('multiplayer')}
-        >
-          Multiplayer
-        </button>
-        <button
-          className={mode === 'daily' ? 'mode-tab active' : 'mode-tab'}
-          onClick={() => setMode('daily')}
-        >
+        <button className="mode-tab" onClick={() => navigate('/daily-challenge')}>
           Daily Challenge
         </button>
       </div>
 
-      {mode === 'daily' ? (
-        <DailyChallengeProvider>
-          <DailyChallengeContainer />
-        </DailyChallengeProvider>
-      ) : (
-        <>
-          {step === 'choose' && (
+      {step === 'choose' && (
         <div className="lobby-actions">
           <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
             Create
@@ -326,8 +309,6 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
           </div>
         )
       }
-        </>
-      )}
-    </div >
+    </div>
   );
 };

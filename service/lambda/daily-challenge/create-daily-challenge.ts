@@ -1,12 +1,11 @@
 import { EventBridgeEvent } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 
 const client = new DynamoDBClient({});
 const dynamodb = DynamoDBDocumentClient.from(client);
 
 const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE || '';
-const PROMPTS_QUEUE_TABLE = process.env.PROMPTS_QUEUE_TABLE || '';
 
 export const handler = async (event: EventBridgeEvent<string, any>): Promise<void> => {
     try {
@@ -22,33 +21,15 @@ export const handler = async (event: EventBridgeEvent<string, any>): Promise<voi
             Key: { challengeId }
         }));
 
-        if (existingChallenge.Item) {
-            console.log(`Challenge for ${challengeId} already exists`);
+        if (existingChallenge.Item && existingChallenge.Item.status === 'active') {
+            console.log(`Challenge for ${challengeId} already active`);
             return;
         }
 
-        // Query prompts queue for today's prompt
-        const promptResult = await dynamodb.send(new GetCommand({
-            TableName: PROMPTS_QUEUE_TABLE,
-            Key: { promptId: challengeId }
-        }));
-
+        // Get prompt (either queued or create new)
         let prompt: string;
-        if (promptResult.Item && promptResult.Item.status === 'queued') {
-            prompt = promptResult.Item.prompt;
-
-            // Mark prompt as used
-            await dynamodb.send(new UpdateCommand({
-                TableName: PROMPTS_QUEUE_TABLE,
-                Key: { promptId: challengeId },
-                UpdateExpression: 'SET #status = :used',
-                ExpressionAttributeNames: {
-                    '#status': 'status'
-                },
-                ExpressionAttributeValues: {
-                    ':used': 'used'
-                }
-            }));
+        if (existingChallenge.Item && existingChallenge.Item.status === 'queued') {
+            prompt = existingChallenge.Item.prompt;
         } else {
             // Fallback prompt if no prompt queued
             prompt = 'A color that makes you happy';
@@ -62,19 +43,24 @@ export const handler = async (event: EventBridgeEvent<string, any>): Promise<voi
         const validUntil = new Date(validFrom);
         validUntil.setUTCDate(validFrom.getUTCDate() + 1);
 
-        // Create challenge
-        await dynamodb.send(new PutCommand({
+        // Activate challenge
+        await dynamodb.send(new UpdateCommand({
             TableName: CHALLENGES_TABLE,
-            Item: {
-                challengeId,
-                prompt,
-                createdAt: new Date().toISOString(),
-                validFrom: validFrom.toISOString(),
-                validUntil: validUntil.toISOString(),
-                metadata: {
-                    totalSubmissions: 0
-                },
-                status: 'active'
+            Key: { challengeId },
+            UpdateExpression: 'SET #status = :active, #prompt = :prompt, validFrom = :from, validUntil = :until, totalSubmissions = :zero, updatedAt = :now',
+            ConditionExpression: 'attribute_not_exists(#status) OR #status = :queued',
+            ExpressionAttributeNames: {
+                '#status': 'status',
+                '#prompt': 'prompt'
+            },
+            ExpressionAttributeValues: {
+                ':active': 'active',
+                ':queued': 'queued',
+                ':prompt': prompt,
+                ':from': validFrom.toISOString(),
+                ':until': validUntil.toISOString(),
+                ':zero': 0,
+                ':now': new Date().toISOString()
             }
         }));
 
