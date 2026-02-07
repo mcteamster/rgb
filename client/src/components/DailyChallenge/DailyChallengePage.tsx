@@ -3,11 +3,14 @@ import { ColorWheel } from '../ColorWheel';
 import { RainbowIcon } from '../RainbowIcon';
 import { ConnectionStatus } from '../ConnectionStatus';
 import { GameNavbar } from '../GameNavbar';
+import { GameTitle } from '../GameTitle';
+import { GameManager } from '../GameManager';
 import { AboutPage } from '../AboutPage';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 import { useColor } from '../../contexts/ColorContext';
 import { setBodyBackground } from '../../utils/colorUtils';
 import { DailyChallengeSubmission } from './DailyChallengeSubmission';
+import { DailyChallengePrompt } from './DailyChallengePrompt';
 import { DailyChallengeResults } from './DailyChallengeResults';
 
 export const DailyChallengePage: React.FC = () => {
@@ -73,9 +76,21 @@ export const DailyChallengePage: React.FC = () => {
         <div className="app-container">
             <RainbowIcon onShowAbout={() => setShowAbout(true)} />
             <ConnectionStatus />
-            <GameNavbar />
+            <GameNavbar dailyChallengeMode={true} />
+            <GameTitle prefix="Off" />
             
-            {userSubmission ? <DailyChallengeResults /> : <DailyChallengeSubmission />}
+            {userSubmission ? (
+                <DailyChallengeResults />
+            ) : (
+                <>
+                    <DailyChallengePrompt />
+                    <GameManager 
+                        onShowAbout={() => setShowAbout(true)}
+                        dailyChallengeMode={true}
+                        dailyChallengeSubmission={<DailyChallengeSubmission />}
+                    />
+                </>
+            )}
             
             <ColorWheel size={size} />
             {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}

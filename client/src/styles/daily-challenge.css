@@ -4,23 +4,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding: 1rem;
 }
 
-.daily-challenge-sidebar {
-  position: fixed;
-  right: 0;
-  top: 80px;
-  bottom: 0;
-  width: 320px;
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
-  padding: 20px;
+.daily-challenge-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  overflow-y: auto;
-  z-index: 100;
+  gap: 16px;
+  width: 100%;
 }
 
 .leaderboard-container {
@@ -39,13 +30,6 @@
 }
 
 @media (max-width: 768px) {
-  .daily-challenge-sidebar {
-    position: static;
-    width: 100%;
-    max-width: 400px;
-    margin: 0 auto;
-  }
-  
   .daily-challenge-status {
     flex-direction: column;
   }

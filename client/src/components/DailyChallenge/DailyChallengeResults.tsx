@@ -55,16 +55,14 @@ export const DailyChallengeResults: React.FC = () => {
                 </div>
             </div>
 
-            {/* Actions in sidebar area */}
-            <div className="daily-challenge-sidebar">
-                <div className="results-actions">
-                    <Button onClick={() => setShowLeaderboard(true)} variant="primary">
-                        View Full Leaderboard
-                    </Button>
-                    <Button onClick={() => navigate('/')} variant="back">
-                        Back to Home
-                    </Button>
-                </div>
+            {/* Actions in GameManager area */}
+            <div className="daily-challenge-form">
+                <Button onClick={() => setShowLeaderboard(true)} variant="primary">
+                    View Full Leaderboard
+                </Button>
+                <Button onClick={() => navigate('/')} variant="back">
+                    Back to Home
+                </Button>
             </div>
         </>
     );

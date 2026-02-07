@@ -8,103 +8,85 @@ import { ColorBox } from '../ColorBox';
 
 export const DailyChallengeSubmission: React.FC = () => {
     const { currentChallenge, submitColor, error } = useDailyChallenge();
-    const { selectedColor } = useColor();
-    const [userName, setLocalUserName] = useState(getUserName());
+    const { selectedColor, showSliders, setShowSliders } = useColor();
+    const [userName] = useState(getUserName());
     const [confirming, setConfirming] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     if (!currentChallenge) return null;
 
     const handleSubmit = async () => {
-        if (!userName.trim()) {
-            alert('Please enter your name');
-            return;
-        }
-
         setIsSubmitting(true);
         try {
-            await submitColor(selectedColor, userName.trim());
+            await submitColor(selectedColor, userName);
         } catch (error) {
             setIsSubmitting(false);
             setConfirming(false);
         }
     };
 
-    const formatTimeRemaining = (validUntil: string) => {
-        const now = new Date();
-        const end = new Date(validUntil);
-        const diff = end.getTime() - now.getTime();
-
-        if (diff <= 0) return 'Expired';
-
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-        return `${hours}h ${minutes}m remaining`;
-    };
+    const buttonColor = `hsl(${Math.round(selectedColor.h)}, ${Math.round(selectedColor.s)}%, ${Math.round(selectedColor.l)}%)`;
+    const textColor = selectedColor.l > 50 ? '#000' : '#fff';
 
     return (
-        <>
-            {/* Prompt in status bar area */}
-            <div className="status-bar daily-challenge-status">
-                <div className="prompt-card">
-                    <p className="prompt">"{currentChallenge.prompt}"</p>
-                    <p className="timer">{formatTimeRemaining(currentChallenge.validUntil)}</p>
-                    <p className="submissions-count">
-                        {currentChallenge.totalSubmissions} {currentChallenge.totalSubmissions === 1 ? 'submission' : 'submissions'} so far
-                    </p>
-                </div>
-            </div>
+        <div className="daily-challenge-form">
+            {showSliders && <ColorSliders />}
 
-            {/* Submission form in sidebar area */}
-            <div className="daily-challenge-sidebar">
-                <ColorSliders />
-                
-                <div className="submission-form">
-                    <input
-                        type="text"
-                        placeholder="Your name (optional)"
-                        value={userName}
-                        onChange={(e) => setLocalUserName(e.target.value)}
-                        maxLength={20}
-                        className="name-input"
+            {!confirming ? (
+                <div className="guess-controls-container">
+                    <div 
+                        className="color-preview-square"
+                        onClick={() => setShowSliders(!showSliders)}
+                        style={{ backgroundColor: buttonColor }}
+                    >
+                        ✏️
+                    </div>
+                    <Button
+                        onClick={() => setConfirming(true)}
                         disabled={isSubmitting}
-                    />
-
-                    {!confirming ? (
-                        <Button
-                            onClick={() => setConfirming(true)}
-                            disabled={isSubmitting}
-                            variant="primary"
-                        >
+                        style={{ 
+                            background: buttonColor,
+                            color: textColor,
+                            fontWeight: 'bold',
+                            border: '2px solid #888',
+                            flex: 1
+                        }}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                             Submit Color
-                        </Button>
-                    ) : (
-                        <div className="confirmation-dialog">
-                            <p>Submit this color?</p>
-                            <ColorBox color={selectedColor} width="150px" height="50px" />
-                            <div className="confirmation-buttons">
-                                <Button
-                                    onClick={handleSubmit}
-                                    disabled={isSubmitting}
-                                    variant="primary"
-                                >
-                                    {isSubmitting ? 'Submitting...' : 'Confirm'}
-                                </Button>
-                                <Button
-                                    onClick={() => setConfirming(false)}
-                                    disabled={isSubmitting}
-                                    variant="secondary"
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
+                            <span>✅</span>
                         </div>
-                    )}
-
-                    {error && <div className="error-message">{error}</div>}
+                    </Button>
                 </div>
-            </div>
-        </>
+            ) : (
+                <div className="confirmation-dialog">
+                    <p>Submit this color?</p>
+                    <ColorBox color={selectedColor} width="150px" height="50px" />
+                    <div className="confirmation-buttons">
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            style={{ 
+                                background: buttonColor,
+                                color: textColor,
+                                fontWeight: 'bold',
+                                border: '2px solid #888'
+                            }}
+                        >
+                            {isSubmitting ? 'Submitting...' : 'Confirm'}
+                        </Button>
+                        <Button
+                            onClick={() => setConfirming(false)}
+                            disabled={isSubmitting}
+                            variant="secondary"
+                        >
+                            Cancel
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {error && <div className="error-message">{error}</div>}
+        </div>
     );
 };

@@ -3,7 +3,11 @@ import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
 
-export const GameNavbar: React.FC = () => {
+interface GameNavbarProps {
+  dailyChallengeMode?: boolean;
+}
+
+export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode }) => {
   const { gameState, playerName, getCurrentRound } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
 
@@ -30,6 +34,25 @@ export const GameNavbar: React.FC = () => {
       setActiveOverlay(null);
     }
   }, [gameState?.meta?.status]);
+
+  // Daily challenge mode
+  if (dailyChallengeMode) {
+    const today = new Date();
+    const dateString = today.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+
+    return (
+      <div className="game-header">
+        <div className="header-main">
+          <div className="game-status">Daily Challenge</div>
+          <div className="room-code">{dateString}</div>
+        </div>
+      </div>
+    );
+  }
 
   if (!gameState) {
     return null;

@@ -33,7 +33,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const submission: SubmissionRequest = JSON.parse(event.body);
 
         // Validate required fields
-        if (!submission.challengeId || !submission.userId || !submission.userName || !submission.color) {
+        if (!submission.challengeId || !submission.userId || !submission.color) {
             return {
                 statusCode: 400,
                 headers: {
@@ -59,8 +59,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        // Validate userName length
-        if (submission.userName.length > 50 || submission.userName.length < 1) {
+        // Validate userName length if provided
+        if (submission.userName && (submission.userName.length > 50 || submission.userName.length < 1)) {
             return {
                 statusCode: 400,
                 headers: {
@@ -143,7 +143,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 Item: {
                     challengeId: submission.challengeId,
                     userId: submission.userId,
-                    userName: submission.userName,
+                    userName: submission.userName || 'Anonymous',
                     submittedColor: submission.color,
                     submittedAt,
                     score,

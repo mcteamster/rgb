@@ -9,9 +9,11 @@ import { useIsHost } from '../hooks/useIsHost';
 interface GameManagerProps {
   onShowAbout: () => void;
   onShowTips?: () => void;
+  dailyChallengeMode?: boolean;
+  dailyChallengeSubmission?: React.ReactNode;
 }
 
-export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTips }) => {
+export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTips, dailyChallengeMode, dailyChallengeSubmission }) => {
   const { selectedColor, isColorLocked, setIsColorLocked, showSliders, setShowSliders, setSelectedColor, setSelectedHue } = useColor();
   const { gameState, startRound, playerId, submitDescription, updateDraftDescription, submitColor, getCurrentRound, finaliseGame, resetGame, closeRoom } = useGame();
   const [description, setDescription] = useState('');
@@ -101,6 +103,15 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
     submitDescription(description.trim());
     setDescription('');
   };
+
+  // Handle daily challenge mode separately
+  if (dailyChallengeMode) {
+    return (
+      <div className="game-controls">
+        {dailyChallengeSubmission}
+      </div>
+    );
+  }
 
   if (!gameState || !playerId) return null;
 

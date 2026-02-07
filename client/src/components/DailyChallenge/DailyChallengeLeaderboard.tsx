@@ -61,13 +61,11 @@ export const DailyChallengeLeaderboard: React.FC<DailyChallengeLeaderboardProps>
                 </div>
             </div>
 
-            {/* Actions in sidebar area */}
-            <div className="daily-challenge-sidebar">
-                <div className="leaderboard-actions">
-                    <Button onClick={onBack} variant="back">
-                        Back to Results
-                    </Button>
-                </div>
+            {/* Actions in GameManager area */}
+            <div className="daily-challenge-form">
+                <Button onClick={onBack} variant="back">
+                    Back to Results
+                </Button>
             </div>
         </>
     );
