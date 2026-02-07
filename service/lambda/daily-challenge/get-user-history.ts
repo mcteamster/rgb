@@ -22,7 +22,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        const limit = parseInt(event.queryStringParameters?.limit || '30');
+        const limit = Math.min(parseInt(event.queryStringParameters?.limit || '30'), 100);
 
         // Query user's submissions using GSI
         const submissionsResult = await dynamodb.send(new QueryCommand({

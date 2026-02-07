@@ -2,7 +2,7 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-southeast-2' });
 const dynamodb = DynamoDBDocumentClient.from(client);
 
 const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE || 'rgb-daily-challenges';

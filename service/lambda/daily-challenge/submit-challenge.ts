@@ -44,6 +44,33 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
+        // Validate HSL color values
+        const { h, s, l } = submission.color;
+        if (typeof h !== 'number' || typeof s !== 'number' || typeof l !== 'number' ||
+            h < 0 || h > 360 || s < 0 || s > 100 || l < 0 || l > 100 ||
+            !isFinite(h) || !isFinite(s) || !isFinite(l)) {
+            return {
+                statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ error: 'Invalid color values. H: 0-360, S: 0-100, L: 0-100' })
+            };
+        }
+
+        // Validate userName length
+        if (submission.userName.length > 50 || submission.userName.length < 1) {
+            return {
+                statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ error: 'userName must be 1-50 characters' })
+            };
+        }
+
         // Validate challenge exists and is active
         const challengeResult = await dynamodb.send(new GetCommand({
             TableName: CHALLENGES_TABLE,
@@ -77,23 +104,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        // Check if user has already submitted
-        const existingSubmission = await dynamodb.send(new GetCommand({
-            TableName: SUBMISSIONS_TABLE,
-            Key: { challengeId: submission.challengeId, userId: submission.userId }
-        }));
-
-        if (existingSubmission.Item) {
-            return {
-                statusCode: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({ error: "You've already submitted today" })
-            };
-        }
-
         // Query all existing submissions for this challenge
         const existingSubmissionsResult = await dynamodb.send(new QueryCommand({
             TableName: SUBMISSIONS_TABLE,
@@ -111,25 +121,40 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         // Score the new submission against the average
         const { score, distance } = distanceFromAverageScoring(submission.color, averageColor);
 
-        // Store submission with TTL (30 days)
+        // Store submission with TTL (30 days) - use conditional write to prevent duplicates
         const submittedAt = new Date().toISOString();
         const ttl = Math.floor(Date.now() / 1000) + (30 * 24 * 60 * 60); // 30 days
 
-        await dynamodb.send(new PutCommand({
-            TableName: SUBMISSIONS_TABLE,
-            Item: {
-                challengeId: submission.challengeId,
-                userId: submission.userId,
-                userName: submission.userName,
-                submittedColor: submission.color,
-                submittedAt,
-                score,
-                averageAtSubmission: averageColor,
-                distanceFromAverage: distance,
-                fingerprint: submission.fingerprint,
-                ttl
+        try {
+            await dynamodb.send(new PutCommand({
+                TableName: SUBMISSIONS_TABLE,
+                Item: {
+                    challengeId: submission.challengeId,
+                    userId: submission.userId,
+                    userName: submission.userName,
+                    submittedColor: submission.color,
+                    submittedAt,
+                    score,
+                    averageAtSubmission: averageColor,
+                    distanceFromAverage: distance,
+                    fingerprint: submission.fingerprint,
+                    ttl
+                },
+                ConditionExpression: 'attribute_not_exists(challengeId) AND attribute_not_exists(userId)'
+            }));
+        } catch (error: any) {
+            if (error.name === 'ConditionalCheckFailedException') {
+                return {
+                    statusCode: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    body: JSON.stringify({ error: "You've already submitted today" })
+                };
             }
-        }));
+            throw error;
+        }
 
         // Update challenge metadata (increment totalSubmissions)
         await dynamodb.send(new UpdateCommand({

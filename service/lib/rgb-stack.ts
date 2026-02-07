@@ -206,6 +206,10 @@ export class RgbStack extends cdk.Stack {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: ['GET', 'POST', 'OPTIONS']
+      },
+      deployOptions: {
+        throttlingRateLimit: 100,
+        throttlingBurstLimit: 200
       }
     });
 
@@ -291,7 +295,13 @@ export class RgbStack extends cdk.Stack {
     currentResource.addMethod('GET', new apigateway.LambdaIntegration(getCurrentChallengeFunction));
 
     const submitResource = dailyChallengeResource.addResource('submit');
-    submitResource.addMethod('POST', new apigateway.LambdaIntegration(submitChallengeFunction));
+    submitResource.addMethod('POST', new apigateway.LambdaIntegration(submitChallengeFunction), {
+      methodResponses: [{ statusCode: '200' }],
+      requestValidatorOptions: {
+        validateRequestBody: true,
+        validateRequestParameters: false
+      }
+    });
 
     const leaderboardResource = dailyChallengeResource.addResource('leaderboard');
     const leaderboardChallengeResource = leaderboardResource.addResource('{challengeId}');

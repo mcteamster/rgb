@@ -23,7 +23,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         }
 
         const userId = event.queryStringParameters?.userId;
-        const limit = parseInt(event.queryStringParameters?.limit || '100');
+        const limit = Math.min(parseInt(event.queryStringParameters?.limit || '100'), 500);
 
         // Get challenge metadata
         const challengeResult = await dynamodb.send(new GetCommand({
