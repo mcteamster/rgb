@@ -20,8 +20,8 @@ export const DailyChallengeLeaderboard: React.FC<DailyChallengeLeaderboardProps>
 
     return (
         <>
-            {/* Leaderboard in status bar area */}
-            <div className="status-bar daily-challenge-status">
+            {/* Leaderboard in game results area */}
+            <div className="game-summary-bar">
                 <div className="leaderboard-container">
                     <h2>Daily Challenge Leaderboard</h2>
                     <div className="prompt-card">
@@ -61,9 +61,9 @@ export const DailyChallengeLeaderboard: React.FC<DailyChallengeLeaderboardProps>
                 </div>
             </div>
 
-            {/* Actions in GameManager area */}
-            <div className="daily-challenge-form">
-                <Button onClick={onBack} variant="back">
+            {/* Actions in game manager area */}
+            <div className="game-controls">
+                <Button onClick={onBack} variant="back" style={{ width: '100%' }}>
                     Back to Results
                 </Button>
             </div>
