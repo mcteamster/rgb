@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
 import {
     DailyChallenge,
     Submission,
@@ -132,7 +132,7 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
         }
     };
 
-    const loadLeaderboard = async (challengeId: string) => {
+    const loadLeaderboard = useCallback(async (challengeId: string) => {
         try {
             dispatch({ type: 'SET_LOADING', payload: true });
             const userId = getUserId();
@@ -145,7 +145,7 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
                 payload: error instanceof Error ? error.message : 'Failed to load leaderboard'
             });
         }
-    };
+    }, []);
 
     const clearError = () => {
         dispatch({ type: 'SET_ERROR', payload: null });

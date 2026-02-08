@@ -16,9 +16,10 @@ import { setBodyBackground } from '../utils/colorUtils';
 
 export const DailyChallenge: React.FC = () => {
     const { selectedColor } = useColor();
-    const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading } = useDailyChallenge();
+    const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading, loadLeaderboard } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const loadedChallengeId = React.useRef<string | null>(null);
     const [size, setSize] = useState(() => {
         return { width: window.innerWidth, height: window.innerHeight };
     });
@@ -26,6 +27,13 @@ export const DailyChallenge: React.FC = () => {
     useEffect(() => {
         loadCurrentChallenge();
     }, []);
+
+    useEffect(() => {
+        if (showLeaderboard && currentChallenge && loadedChallengeId.current !== currentChallenge.challengeId) {
+            loadedChallengeId.current = currentChallenge.challengeId;
+            loadLeaderboard(currentChallenge.challengeId);
+        }
+    }, [showLeaderboard, currentChallenge, loadLeaderboard]);
 
     useEffect(() => {
         const handleResize = () => {
@@ -83,7 +91,7 @@ export const DailyChallenge: React.FC = () => {
             
             {showLeaderboard ? (
                 <>
-                    <GameResults dailyChallengeMode={true} />
+                    <GameResults dailyChallengeMode={true} skipLoad={true} />
                     <div className="game-controls">
                         <Button onClick={() => setShowLeaderboard(false)} variant="back" style={{ width: '100%' }}>
                             Back to Results

@@ -8,16 +8,19 @@ interface GameResultsProps {
   players?: Player[];
   rounds?: any[];
   dailyChallengeMode?: boolean;
+  skipLoad?: boolean;
 }
 
-export const GameResults: React.FC<GameResultsProps> = ({ players, rounds, dailyChallengeMode = false }) => {
+export const GameResults: React.FC<GameResultsProps> = ({ players, rounds, dailyChallengeMode = false, skipLoad = false }) => {
   const { currentChallenge, leaderboard, loadLeaderboard, isLoading } = useDailyChallenge();
+  const loadedChallengeId = React.useRef<string | null>(null);
 
   useEffect(() => {
-    if (dailyChallengeMode && currentChallenge) {
+    if (!skipLoad && dailyChallengeMode && currentChallenge && loadedChallengeId.current !== currentChallenge.challengeId) {
+      loadedChallengeId.current = currentChallenge.challengeId;
       loadLeaderboard(currentChallenge.challengeId);
     }
-  }, [dailyChallengeMode, currentChallenge]);
+  }, [skipLoad, dailyChallengeMode, currentChallenge, loadLeaderboard]);
 
   // Daily challenge leaderboard
   if (dailyChallengeMode && currentChallenge) {
