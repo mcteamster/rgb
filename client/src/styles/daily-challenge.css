@@ -39,7 +39,7 @@
 .stat-card {
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  border-radius: var(--border-radius-medium);
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -98,7 +98,7 @@
   border: 2px solid rgba(100, 100, 255, 0.5);
   background: linear-gradient(135deg, rgba(100, 100, 255, 0.15), rgba(150, 100, 255, 0.15));
   color: #2a2a2a;
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
@@ -130,7 +130,7 @@
 .prompt-card {
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  border-radius: var(--border-radius-medium);
   padding: 12px 16px;
   text-align: center;
   width: 100%;
@@ -179,7 +179,7 @@
   border: 2px solid rgba(255, 255, 255, 0.2);
   background: rgba(255, 255, 255, 0.05);
   color: white;
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   font-size: 16px;
   text-align: center;
 }
@@ -192,16 +192,25 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  gap: 16px;
+  width: 100%;
+}
+
+.confirmation-dialog p {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #333;
 }
 
 .confirmation-buttons {
   display: flex;
   gap: 12px;
+  width: 100%;
+}
+
+.confirmation-buttons button {
+  flex: 1;
 }
 
 .result-card {
@@ -212,7 +221,7 @@
   padding: 24px;
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
+  border-radius: var(--border-radius-medium);
   width: 100%;
   max-width: 600px;
 }
@@ -301,7 +310,7 @@
   padding: 8px 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   transition: background 0.2s;
 }
 
@@ -362,7 +371,7 @@
   color: #ff6b6b;
   background: rgba(255, 107, 107, 0.1);
   border: 1px solid rgba(255, 107, 107, 0.3);
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   padding: 12px 20px;
 }
 

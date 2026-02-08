@@ -77,27 +77,21 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
   if (dailyChallengeMode && confirming) {
     return (
       <div className="confirmation-dialog">
-        <p>Submit this color?</p>
-        <ColorBox color={selectedColor} width="150px" height="50px" />
+        <ColorBox color={selectedColor} label="Your Selected Color" />
         <div className="confirmation-buttons">
-          <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            style={{ 
-              background: buttonColor,
-              color: textColor,
-              fontWeight: 'bold',
-              border: '2px solid #888'
-            }}
-          >
-            {isSubmitting ? 'Submitting...' : 'Confirm'}
-          </Button>
           <Button
             onClick={() => setConfirming(false)}
             disabled={isSubmitting}
-            variant="secondary"
+            variant="exit"
           >
             Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            variant="primary"
+          >
+            {isSubmitting ? 'Submitting...' : 'Confirm'}
           </Button>
         </div>
       </div>
