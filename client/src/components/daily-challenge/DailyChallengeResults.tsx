@@ -39,8 +39,8 @@ export const DailyChallengeResults: React.FC = () => {
             <div className="stat-card">
               <div className="stat-row">
                 <h3>H</h3>
-                <span className="stat-label">μ: <span className="stat-value">{Math.round(stats.hue!.avg)}°</span></span>
-                <span className="stat-label">σ: <span className="stat-value">{Math.round(stats.hue!.stdDev)}°</span></span>
+                <span className="stat-label">Avg: <span className="stat-value">{Math.round(stats.hue!.avg)}°</span></span>
+                <span className="stat-label">SD: <span className="stat-value">{Math.round(stats.hue!.stdDev)}°</span></span>
               </div>
               <div 
                 className="hue-spectrum"
@@ -70,8 +70,8 @@ export const DailyChallengeResults: React.FC = () => {
             <div className="stat-card">
               <div className="stat-row">
                 <h3>S</h3>
-                <span className="stat-label">μ: <span className="stat-value">{Math.round(stats.saturation!.avg)}%</span></span>
-                <span className="stat-label">σ: <span className="stat-value">{Math.round(stats.saturation!.stdDev)}%</span></span>
+                <span className="stat-label">Avg: <span className="stat-value">{Math.round(stats.saturation!.avg)}%</span></span>
+                <span className="stat-label">SD: <span className="stat-value">{Math.round(stats.saturation!.stdDev)}%</span></span>
               </div>
               <div 
                 className="hue-spectrum"
@@ -101,8 +101,8 @@ export const DailyChallengeResults: React.FC = () => {
             <div className="stat-card">
               <div className="stat-row">
                 <h3>L</h3>
-                <span className="stat-label">μ: <span className="stat-value">{Math.round(stats.lightness!.avg)}%</span></span>
-                <span className="stat-label">σ: <span className="stat-value">{Math.round(stats.lightness!.stdDev)}%</span></span>
+                <span className="stat-label">Avg: <span className="stat-value">{Math.round(stats.lightness!.avg)}%</span></span>
+                <span className="stat-label">SD: <span className="stat-value">{Math.round(stats.lightness!.stdDev)}%</span></span>
               </div>
               <div 
                 className="hue-spectrum"
