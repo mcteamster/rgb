@@ -1,6 +1,6 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, QueryCommand, BatchGetCommand } from '@aws-sdk/lib-dynamodb';
 
 const client = new DynamoDBClient({});
 const dynamodb = DynamoDBDocumentClient.from(client);
@@ -36,15 +36,44 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             Limit: limit
         }));
 
-        const submissions = await Promise.all((submissionsResult.Items || []).map(async (item) => {
-            // Get challenge details
-            const challengeResult = await dynamodb.send(new GetCommand({
-                TableName: CHALLENGES_TABLE,
-                Key: { challengeId: item.challengeId }
-            }));
+        const items = submissionsResult.Items || [];
+        
+        if (items.length === 0) {
+            return {
+                statusCode: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    userId,
+                    submissions: [],
+                    stats: {
+                        totalPlayed: 0,
+                        averageScore: 0,
+                        bestScore: 0,
+                        currentStreak: 0
+                    }
+                })
+            };
+        }
 
-            const challenge = challengeResult.Item;
+        // Batch get challenge details (max 100 items per batch)
+        const challengeIds = [...new Set(items.map(item => item.challengeId))];
+        const challengesResult = await dynamodb.send(new BatchGetCommand({
+            RequestItems: {
+                [CHALLENGES_TABLE]: {
+                    Keys: challengeIds.map(id => ({ challengeId: id }))
+                }
+            }
+        }));
 
+        const challengesMap = new Map(
+            (challengesResult.Responses?.[CHALLENGES_TABLE] || []).map(c => [c.challengeId, c])
+        );
+
+        const submissions = items.map(item => {
+            const challenge = challengesMap.get(item.challengeId);
             return {
                 challengeId: item.challengeId,
                 prompt: challenge?.prompt || 'Unknown',
@@ -53,7 +82,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 score: item.score,
                 totalSubmissions: challenge?.totalSubmissions || 0
             };
-        }));
+        });
 
         // Calculate aggregate statistics
         const stats = {

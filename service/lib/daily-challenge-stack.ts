@@ -21,12 +21,6 @@ export class DailyChallengeStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.RETAIN
     });
 
-    dailyChallengesTable.addGlobalSecondaryIndex({
-      indexName: 'StatusIndex',
-      partitionKey: { name: 'status', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING }
-    });
-
     const dailySubmissionsTable = new dynamodb.Table(this, 'DailySubmissionsTable', {
       tableName: 'rgb-daily-submissions',
       partitionKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING },
