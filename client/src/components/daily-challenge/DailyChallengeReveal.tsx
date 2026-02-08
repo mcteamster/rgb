@@ -23,11 +23,6 @@ export const DailyChallengeReveal: React.FC = () => {
         <div className="score-display">
           <h1 className="score">{userSubmission.score}</h1>
           <p className="score-label">points</p>
-          {userSubmission.rank && (
-            <p className="rank">
-              Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
-            </p>
-          )}
           {userSubmission.distanceFromAverage !== undefined && (
             <p className="distance">
               Distance: {userSubmission.distanceFromAverage.toFixed(3)}

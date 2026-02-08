@@ -67,6 +67,67 @@ export function calculateAverageColor(colors: HSLColor[]): HSLColor {
     return biconeCartesianToHSL({ x: avgX, y: avgY, z: avgZ });
 }
 
+export interface ComponentStats {
+    mean: number;
+    m2: number; // Sum of squared differences from mean (for variance calculation)
+}
+
+/**
+ * Incrementally update average color and variance using Welford's algorithm
+ * More efficient than recalculating from all colors
+ */
+export function updateAverageColor(
+    previousAverage: HSLColor,
+    previousCount: number,
+    newColor: HSLColor,
+    previousStats?: { h: ComponentStats; s: ComponentStats; l: ComponentStats }
+): { 
+    averageColor: HSLColor;
+    stats: { h: ComponentStats; s: ComponentStats; l: ComponentStats };
+} {
+    if (previousCount === 0) {
+        return {
+            averageColor: newColor,
+            stats: {
+                h: { mean: newColor.h, m2: 0 },
+                s: { mean: newColor.s, m2: 0 },
+                l: { mean: newColor.l, m2: 0 }
+            }
+        };
+    }
+
+    // Convert to Cartesian coordinates for average
+    const prevCart = hslToBiconeCartesian(previousAverage);
+    const newCart = hslToBiconeCartesian(newColor);
+
+    // Incremental average: new_avg = (old_avg * n + new_value) / (n + 1)
+    const newCount = previousCount + 1;
+    const avgX = (prevCart.x * previousCount + newCart.x) / newCount;
+    const avgY = (prevCart.y * previousCount + newCart.y) / newCount;
+    const avgZ = (prevCart.z * previousCount + newCart.z) / newCount;
+
+    // Welford's algorithm for variance (per component)
+    const updateComponentStats = (prev: ComponentStats, newValue: number): ComponentStats => {
+        const delta = newValue - prev.mean;
+        const newMean = prev.mean + delta / newCount;
+        const delta2 = newValue - newMean;
+        const newM2 = prev.m2 + delta * delta2;
+        return { mean: newMean, m2: newM2 };
+    };
+
+    const stats = {
+        h: updateComponentStats(previousStats?.h || { mean: previousAverage.h, m2: 0 }, newColor.h),
+        s: updateComponentStats(previousStats?.s || { mean: previousAverage.s, m2: 0 }, newColor.s),
+        l: updateComponentStats(previousStats?.l || { mean: previousAverage.l, m2: 0 }, newColor.l)
+    };
+
+    // Convert back to HSL
+    return {
+        averageColor: biconeCartesianToHSL({ x: avgX, y: avgY, z: avgZ }),
+        stats
+    };
+}
+
 /**
  * Score based on distance from average (for daily challenge)
  * Closer to average = higher score

@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
-import { HSLColor, calculateAverageColor, distanceFromAverageScoring } from './scoring';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { HSLColor, updateAverageColor, distanceFromAverageScoring } from './scoring';
 
 const client = new DynamoDBClient({});
 const dynamodb = DynamoDBDocumentClient.from(client);
@@ -104,33 +104,30 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        // Query all existing submissions for this challenge
-        const existingSubmissionsResult = await dynamodb.send(new QueryCommand({
-            TableName: SUBMISSIONS_TABLE,
-            KeyConditionExpression: 'challengeId = :challengeId',
-            ExpressionAttributeValues: {
-                ':challengeId': submission.challengeId
-            }
-        }));
-
-        const existingColors: HSLColor[] = (existingSubmissionsResult.Items || []).map(item => item.submittedColor);
+        const existingCount = challenge.totalSubmissions || 0;
+        const previousAverage = challenge.averageColor;
+        const previousStats = challenge.componentStats;
 
         let averageColor: HSLColor;
+        let componentStats: any;
         let score: number;
         let distance: number;
 
         // First two submissions get full points
-        if (existingColors.length < 2) {
-            averageColor = submission.color;
+        if (existingCount < 2) {
+            const result = updateAverageColor(submission.color, 0, submission.color);
+            averageColor = result.averageColor;
+            componentStats = result.stats;
             score = 100;
             distance = 0;
         } else {
-            // From third submission onwards, score against average of all submissions (including new one)
-            const allColors = [...existingColors, submission.color];
-            averageColor = calculateAverageColor(allColors);
-            const result = distanceFromAverageScoring(submission.color, averageColor);
-            score = result.score;
-            distance = result.distance;
+            // Incrementally update average with new submission
+            const result = updateAverageColor(previousAverage, existingCount, submission.color, previousStats);
+            averageColor = result.averageColor;
+            componentStats = result.stats;
+            const scoreResult = distanceFromAverageScoring(submission.color, averageColor);
+            score = scoreResult.score;
+            distance = scoreResult.distance;
         }
 
         // Store submission with TTL (30 days) - use conditional write to prevent duplicates
@@ -168,30 +165,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             throw error;
         }
 
-        // Update challenge metadata (increment totalSubmissions)
+        // Update challenge metadata (increment totalSubmissions and update averageColor)
         await dynamodb.send(new UpdateCommand({
             TableName: CHALLENGES_TABLE,
             Key: { challengeId: submission.challengeId },
-            UpdateExpression: 'SET totalSubmissions = if_not_exists(totalSubmissions, :zero) + :inc',
+            UpdateExpression: 'SET totalSubmissions = if_not_exists(totalSubmissions, :zero) + :inc, averageColor = :avgColor, componentStats = :stats',
             ExpressionAttributeValues: {
                 ':inc': 1,
-                ':zero': 0
+                ':zero': 0,
+                ':avgColor': averageColor,
+                ':stats': componentStats
             }
         }));
-
-        // Calculate rank (count submissions with higher scores)
-        const rankResult = await dynamodb.send(new QueryCommand({
-            TableName: SUBMISSIONS_TABLE,
-            IndexName: 'ChallengeLeaderboardIndex',
-            KeyConditionExpression: 'challengeId = :challengeId AND score >= :score',
-            ExpressionAttributeValues: {
-                ':challengeId': submission.challengeId,
-                ':score': score
-            },
-            Select: 'COUNT'
-        }));
-
-        const rank = rankResult.Count || 1;
 
         return {
             statusCode: 200,
@@ -204,7 +189,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 submission: {
                     challengeId: submission.challengeId,
                     score,
-                    rank,
                     distanceFromAverage: distance,
                     averageColor,
                     submittedAt

@@ -16,17 +16,8 @@ export interface Submission {
     color: HSLColor;
     score: number;
     submittedAt: string;
-    rank?: number;
     distanceFromAverage?: number;
     averageColor?: HSLColor;
-}
-
-export interface LeaderboardEntry {
-    rank: number;
-    userName: string;
-    score: number;
-    submittedColor: HSLColor;
-    userId?: string;
 }
 
 export interface CurrentChallengeResponse {
@@ -51,24 +42,26 @@ export interface SubmissionResponse {
     submission: {
         challengeId: string;
         score: number;
-        rank: number;
         distanceFromAverage: number;
         averageColor: HSLColor;
         submittedAt: string;
     };
 }
 
-export interface LeaderboardResponse {
-    challengeId: string;
-    prompt: string;
-    status: string;
+export interface StatsResponse {
     totalSubmissions: number;
-    topScores: LeaderboardEntry[];
-    yourSubmission: {
-        rank: number;
-        score: number;
-        submittedColor: HSLColor;
-        distanceFromAverage: number;
+    averageColor: HSLColor | null;
+    hue: {
+        avg: number;
+        stdDev: number;
+    } | null;
+    saturation: {
+        avg: number;
+        stdDev: number;
+    } | null;
+    lightness: {
+        avg: number;
+        stdDev: number;
     } | null;
 }
 
@@ -78,7 +71,6 @@ export interface HistorySubmission {
     submittedColor: HSLColor;
     averageAtSubmission: HSLColor;
     score: number;
-    rank: number;
     totalSubmissions: number;
 }
 

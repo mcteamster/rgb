@@ -9,7 +9,6 @@ import { DailyChallengeLayout } from './DailyChallengeLayout';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 import { useColor } from '../../contexts/ColorContext';
 import { useWindowSize } from '../../hooks/useWindowSize';
-import { useLeaderboardLoader } from '../../hooks/useLeaderboardLoader';
 import { setBodyBackground } from '../../utils/colorUtils';
 import { ColorWheelTips } from '../ColorGuessingTips';
 
@@ -17,13 +16,11 @@ const DAILY_CHALLENGE_TIPS_KEY = 'dailyChallengeTipsSeen';
 
 export const DailyChallenge: React.FC = () => {
     const { selectedColor } = useColor();
-    const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading, loadLeaderboard } = useDailyChallenge();
+    const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showTips, setShowTips] = useState(false);
     const size = useWindowSize();
-
-    useLeaderboardLoader(showLeaderboard, currentChallenge?.challengeId, loadLeaderboard);
 
     useEffect(() => {
         loadCurrentChallenge();

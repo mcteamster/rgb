@@ -45,27 +45,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
             const challenge = challengeResult.Item;
 
-            // Calculate rank for this submission
-            const rankResult = await dynamodb.send(new QueryCommand({
-                TableName: SUBMISSIONS_TABLE,
-                IndexName: 'ChallengeLeaderboardIndex',
-                KeyConditionExpression: 'challengeId = :challengeId AND score > :score',
-                ExpressionAttributeValues: {
-                    ':challengeId': item.challengeId,
-                    ':score': item.score
-                },
-                Select: 'COUNT'
-            }));
-
-            const rank = (rankResult.Count || 0) + 1;
-
             return {
                 challengeId: item.challengeId,
                 prompt: challenge?.prompt || 'Unknown',
                 submittedColor: item.submittedColor,
                 averageAtSubmission: item.averageAtSubmission,
                 score: item.score,
-                rank,
                 totalSubmissions: challenge?.totalSubmissions || 0
             };
         }));

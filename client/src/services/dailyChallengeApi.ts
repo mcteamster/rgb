@@ -2,8 +2,8 @@ import {
     CurrentChallengeResponse,
     SubmissionRequest,
     SubmissionResponse,
-    LeaderboardResponse,
-    HistoryResponse
+    HistoryResponse,
+    StatsResponse
 } from '../types/dailyChallenge';
 
 export class DailyChallengeAPI {
@@ -35,12 +35,12 @@ export class DailyChallengeAPI {
         return response.json();
     }
 
-    async getLeaderboard(challengeId: string, userId: string): Promise<LeaderboardResponse> {
+    async getStats(challengeId: string): Promise<StatsResponse> {
         const response = await fetch(
-            `${this.baseUrl}/daily-challenge/leaderboard/${challengeId}?userId=${userId}`
+            `${this.baseUrl}/daily-challenge/stats/${challengeId}`
         );
         if (!response.ok) {
-            throw new Error(`Failed to fetch leaderboard: ${response.statusText}`);
+            throw new Error(`Failed to fetch stats: ${response.statusText}`);
         }
         return response.json();
     }

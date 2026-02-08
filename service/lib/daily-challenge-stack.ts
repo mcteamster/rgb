@@ -42,13 +42,6 @@ export class DailyChallengeStack extends cdk.Stack {
       sortKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING }
     });
 
-    dailySubmissionsTable.addGlobalSecondaryIndex({
-      indexName: 'ChallengeLeaderboardIndex',
-      partitionKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'score', type: dynamodb.AttributeType.NUMBER },
-      projectionType: dynamodb.ProjectionType.ALL
-    });
-
     // Lambda Execution Role
     const lambdaExecutionRole = new iam.Role(this, 'DailyChallengeLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
@@ -127,9 +120,9 @@ export class DailyChallengeStack extends cdk.Stack {
       }
     });
 
-    const getLeaderboardFunction = new lambda.Function(this, 'GetLeaderboardFunction', {
+    const getStatsFunction = new lambda.Function(this, 'GetStatsFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
-      handler: 'get-leaderboard.handler',
+      handler: 'get-stats.handler',
       code: lambda.Code.fromAsset('dist/lambda/daily-challenge'),
       role: lambdaExecutionRole,
       timeout: cdk.Duration.seconds(10),
@@ -168,8 +161,8 @@ export class DailyChallengeStack extends cdk.Stack {
     dailyChallengesTable.grantReadWriteData(submitChallengeFunction);
     dailySubmissionsTable.grantReadWriteData(submitChallengeFunction);
 
-    dailyChallengesTable.grantReadData(getLeaderboardFunction);
-    dailySubmissionsTable.grantReadData(getLeaderboardFunction);
+    dailyChallengesTable.grantReadData(getStatsFunction);
+    dailySubmissionsTable.grantReadData(getStatsFunction);
 
     dailyChallengesTable.grantReadData(getUserHistoryFunction);
     dailySubmissionsTable.grantReadData(getUserHistoryFunction);
@@ -185,9 +178,9 @@ export class DailyChallengeStack extends cdk.Stack {
     const submitResource = dailyChallengeResource.addResource('submit');
     submitResource.addMethod('POST', new apigateway.LambdaIntegration(submitChallengeFunction));
 
-    const leaderboardResource = dailyChallengeResource.addResource('leaderboard');
-    const leaderboardChallengeResource = leaderboardResource.addResource('{challengeId}');
-    leaderboardChallengeResource.addMethod('GET', new apigateway.LambdaIntegration(getLeaderboardFunction));
+    const statsResource = dailyChallengeResource.addResource('stats');
+    const statsIdResource = statsResource.addResource('{challengeId}');
+    statsIdResource.addMethod('GET', new apigateway.LambdaIntegration(getStatsFunction));
 
     const historyResource = dailyChallengeResource.addResource('history');
     const historyUserResource = historyResource.addResource('{userId}');

@@ -2,7 +2,6 @@ import React, { createContext, useContext, useReducer, useCallback, ReactNode } 
 import {
     DailyChallenge,
     Submission,
-    LeaderboardEntry,
     HSLColor
 } from '../types/dailyChallenge';
 import { dailyChallengeApi } from '../services/dailyChallengeApi';
@@ -11,7 +10,6 @@ import { getUserId, setUserName, generateFingerprint } from '../utils/userId';
 interface DailyChallengeState {
     currentChallenge: DailyChallenge | null;
     userSubmission: Submission | null;
-    leaderboard: LeaderboardEntry[];
     isLoading: boolean;
     error: string | null;
 }
@@ -19,7 +17,6 @@ interface DailyChallengeState {
 interface DailyChallengeActions {
     loadCurrentChallenge: () => Promise<void>;
     submitColor: (color: HSLColor, userName: string) => Promise<void>;
-    loadLeaderboard: (challengeId: string) => Promise<void>;
     clearError: () => void;
 }
 
@@ -28,13 +25,11 @@ type DailyChallengeAction =
     | { type: 'SET_ERROR'; payload: string | null }
     | { type: 'SET_CURRENT_CHALLENGE'; payload: { challenge: DailyChallenge; submission: Submission | null } }
     | { type: 'SET_USER_SUBMISSION'; payload: Submission }
-    | { type: 'SET_LEADERBOARD'; payload: LeaderboardEntry[] }
     | { type: 'UPDATE_TOTAL_SUBMISSIONS'; payload: number };
 
 const initialState: DailyChallengeState = {
     currentChallenge: null,
     userSubmission: null,
-    leaderboard: [],
     isLoading: false,
     error: null
 };
@@ -55,8 +50,6 @@ function dailyChallengeReducer(state: DailyChallengeState, action: DailyChalleng
             };
         case 'SET_USER_SUBMISSION':
             return { ...state, userSubmission: action.payload, isLoading: false };
-        case 'SET_LEADERBOARD':
-            return { ...state, leaderboard: action.payload, isLoading: false };
         case 'UPDATE_TOTAL_SUBMISSIONS':
             return {
                 ...state,
@@ -124,7 +117,6 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
                 color,
                 score: response.submission.score,
                 submittedAt: response.submission.submittedAt,
-                rank: response.submission.rank,
                 distanceFromAverage: response.submission.distanceFromAverage,
                 averageColor: response.submission.averageColor
             };
@@ -140,22 +132,6 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
         }
     }, [state.currentChallenge]);
 
-    const loadLeaderboard = useCallback(async (challengeId: string) => {
-        try {
-            dispatch({ type: 'SET_LOADING', payload: true });
-            const userId = getUserId();
-            const response = await dailyChallengeApi.getLeaderboard(challengeId, userId);
-            dispatch({ type: 'SET_LEADERBOARD', payload: response.topScores });
-            dispatch({ type: 'UPDATE_TOTAL_SUBMISSIONS', payload: response.totalSubmissions });
-        } catch (error) {
-            console.error('Failed to load leaderboard:', error);
-            dispatch({
-                type: 'SET_ERROR',
-                payload: error instanceof Error ? error.message : 'Failed to load leaderboard'
-            });
-        }
-    }, []);
-
     const clearError = useCallback(() => {
         dispatch({ type: 'SET_ERROR', payload: null });
     }, []);
@@ -164,7 +140,6 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
         ...state,
         loadCurrentChallenge,
         submitColor,
-        loadLeaderboard,
         clearError
     };
 
