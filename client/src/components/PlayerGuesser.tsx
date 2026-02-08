@@ -77,7 +77,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
   if (dailyChallengeMode && confirming) {
     return (
       <div className="confirmation-dialog">
-        <ColorBox color={selectedColor} label="Your Selected Color" />
+        <ColorBox color={selectedColor} label="Your Selected Color" width="100%" />
         <div className="confirmation-buttons">
           <Button
             onClick={() => setConfirming(false)}
@@ -100,13 +100,13 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
 
   return (
     <div className="guessing-phase">
-      {showSliders && !isColorLocked && (
+      {showSliders && !isColorLocked && !confirming && (
         <ColorSliders onShowTips={onShowTips} />
       )}
       <div className="guess-controls-container">
         <div 
-          className={`color-preview-square ${isColorLocked ? 'locked' : ''}`}
-          onClick={() => !isColorLocked && setShowSliders(!showSliders)}
+          className={`color-preview-square ${isColorLocked || confirming ? 'locked' : ''}`}
+          onClick={() => !isColorLocked && !confirming && setShowSliders(!showSliders)}
           style={{
             backgroundColor: buttonColor
           }}

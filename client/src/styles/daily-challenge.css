@@ -4,6 +4,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 1rem;
 }
 
 .daily-challenge-form {
@@ -128,10 +129,6 @@
 }
 
 .prompt-card {
-  background: rgba(255, 255, 255, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  border-radius: var(--border-radius-medium);
-  padding: 12px 16px;
   text-align: center;
   width: 100%;
   max-width: 500px;
@@ -227,30 +224,24 @@
 }
 
 .colors-comparison,
-.color-comparison {
+.reveal-content {
   display: flex;
   gap: 24px;
-  flex-wrap: wrap;
+  width: 100%;
+  align-items: center;
   justify-content: center;
 }
 
-.color-block,
-.color-box-container {
+.color-comparison {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.color-block h3,
-.color-box-container h3 {
-  font-size: 14px;
-  color: #333;
-  margin: 0;
+  gap: 16px;
 }
 
 .score-display {
   text-align: center;
+  flex: 1;
+  max-width: 180px;
 }
 
 .score {
@@ -381,8 +372,7 @@
     font-size: 18px;
   }
 
-  .colors-comparison,
-  .color-comparison {
+  .colors-comparison {
     flex-direction: column;
   }
 

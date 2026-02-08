@@ -11,33 +11,29 @@ export const DailyChallengeReveal: React.FC = () => {
     <div className="round-reveal">
       <p className="prompt">"{currentChallenge.prompt}"</p>
       
-      <div className="score-display">
-        <h1 className="score">{userSubmission.score}</h1>
-        <p className="score-label">points</p>
-        {userSubmission.rank && (
-          <p className="rank">
-            Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
-          </p>
-        )}
-        {userSubmission.distanceFromAverage !== undefined && (
-          <p className="distance">
-            Distance: {userSubmission.distanceFromAverage.toFixed(3)}
-          </p>
-        )}
-      </div>
+      <div className="reveal-content">
+        <div className="color-comparison">
+          <ColorBox color={userSubmission.color} label="Your Color" width="180px" />
 
-      <div className="color-comparison">
-        <div className="color-box-container">
-          <h3>Your Color</h3>
-          <ColorBox color={userSubmission.color} width="200px" height="60px" />
+          {userSubmission.averageColor && (
+            <ColorBox color={userSubmission.averageColor} label="Average Color" width="180px" />
+          )}
         </div>
 
-        {userSubmission.averageColor && (
-          <div className="color-box-container">
-            <h3>Average Color</h3>
-            <ColorBox color={userSubmission.averageColor} width="200px" height="60px" />
-          </div>
-        )}
+        <div className="score-display">
+          <h1 className="score">{userSubmission.score}</h1>
+          <p className="score-label">points</p>
+          {userSubmission.rank && (
+            <p className="rank">
+              Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
+            </p>
+          )}
+          {userSubmission.distanceFromAverage !== undefined && (
+            <p className="distance">
+              Distance: {userSubmission.distanceFromAverage.toFixed(3)}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
