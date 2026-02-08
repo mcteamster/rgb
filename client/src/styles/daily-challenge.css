@@ -4,7 +4,6 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1rem;
 }
 
 .daily-challenge-form {
@@ -18,7 +17,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   max-width: 800px;
   width: 100%;
 }
@@ -26,7 +25,7 @@
 .leaderboard-container h2 {
   color: #333;
   margin: 0;
-  font-size: 28px;
+  font-size: 24px;
 }
 
 @media (max-width: 768px) {
@@ -80,24 +79,24 @@
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
-  padding: 20px;
+  padding: 12px 16px;
   text-align: center;
   width: 100%;
   max-width: 500px;
 }
 
 .prompt {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: bold;
   font-style: italic;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   color: #333;
 }
 
 .timer {
   font-size: 14px;
   color: rgba(51, 51, 51, 0.8);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .submissions-count {
@@ -141,8 +140,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 20px;
+  gap: 12px;
+  padding: 16px;
   background: rgba(255, 255, 255, 0.1);
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 12px;
@@ -168,7 +167,7 @@
 
 .colors-comparison {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
   justify-content: center;
 }
@@ -177,11 +176,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
 .color-block h3 {
-  font-size: 16px;
+  font-size: 14px;
   color: #333;
   margin: 0;
 }
@@ -191,7 +190,7 @@
 }
 
 .score {
-  font-size: 72px;
+  font-size: 56px;
   font-weight: bold;
   color: #333;
   margin: 0;
@@ -199,15 +198,15 @@
 }
 
 .score-label {
-  font-size: 18px;
+  font-size: 16px;
   color: rgba(51, 51, 51, 0.8);
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .rank {
-  font-size: 20px;
+  font-size: 18px;
   color: #333;
-  margin: 8px 0;
+  margin: 4px 0;
 }
 
 .distance {
@@ -232,14 +231,14 @@
 .leaderboard-entries {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .leaderboard-row {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 8px 12px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
@@ -251,7 +250,7 @@
 }
 
 .leaderboard-row .rank {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: #333;
   min-width: 40px;
@@ -260,7 +259,7 @@
 
 .leaderboard-row .name {
   flex: 1;
-  font-size: 16px;
+  font-size: 14px;
   color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -268,10 +267,10 @@
 }
 
 .leaderboard-row .score {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
   color: #333;
-  min-width: 80px;
+  min-width: 70px;
   text-align: right;
   margin: 0;
   line-height: 1.2;
@@ -310,7 +309,7 @@
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .prompt {
-    font-size: 20px;
+    font-size: 18px;
   }
 
   .colors-comparison {
@@ -318,11 +317,15 @@
   }
 
   .score {
-    font-size: 56px;
+    font-size: 48px;
   }
 
   .mode-tab {
     padding: 10px 16px;
     font-size: 14px;
+  }
+
+  .leaderboard-container h2 {
+    font-size: 20px;
   }
 }

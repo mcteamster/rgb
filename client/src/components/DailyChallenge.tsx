@@ -92,7 +92,9 @@ export const DailyChallenge: React.FC = () => {
                 </>
             ) : userSubmission ? (
                 <>
-                    <RoundReveal dailyChallengeMode={true} />
+                    <div className="status-bar">
+                        <RoundReveal dailyChallengeMode={true} />
+                    </div>
                     <GameManager 
                         onShowAbout={() => setShowAbout(true)}
                         dailyChallengeMode={true}

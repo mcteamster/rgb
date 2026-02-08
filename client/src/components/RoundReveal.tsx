@@ -49,38 +49,36 @@ export const RoundReveal: React.FC<RoundRevealProps> = ({
   if (dailyChallengeMode && currentChallenge && userSubmission) {
     return (
       <div className="reveal-phase" style={{ textAlign: 'center', paddingBottom: '20px' }}>
-        <div className="result-card">
-          <div className="prompt-card">
-            <p className="prompt">"{currentChallenge.prompt}"</p>
-          </div>
+        <div className="prompt-card" style={{ marginBottom: '12px' }}>
+          <p className="prompt">"{currentChallenge.prompt}"</p>
+        </div>
 
-          <div className="score-display">
-            <h1 className="score">{userSubmission.score}</h1>
-            <p className="score-label">points</p>
-            {userSubmission.rank && (
-              <p className="rank">
-                Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
-              </p>
-            )}
-            {userSubmission.distanceFromAverage !== undefined && (
-              <p className="distance">
-                Distance: {userSubmission.distanceFromAverage.toFixed(3)}
-              </p>
-            )}
-          </div>
+        <div className="score-display">
+          <h1 className="score">{userSubmission.score}</h1>
+          <p className="score-label">points</p>
+          {userSubmission.rank && (
+            <p className="rank">
+              Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
+            </p>
+          )}
+          {userSubmission.distanceFromAverage !== undefined && (
+            <p className="distance">
+              Distance: {userSubmission.distanceFromAverage.toFixed(3)}
+            </p>
+          )}
+        </div>
 
-          <div className="colors-comparison">
+        <div className="colors-comparison">
+          <div className="color-block">
+            <h3>Your Color</h3>
+            <ColorBox color={userSubmission.color} width="150px" height="60px" />
+          </div>
+          {userSubmission.averageColor && (
             <div className="color-block">
-              <h3>Your Color</h3>
-              <ColorBox color={userSubmission.color} width="150px" height="60px" />
+              <h3>Average Color</h3>
+              <ColorBox color={userSubmission.averageColor} width="150px" height="60px" />
             </div>
-            {userSubmission.averageColor && (
-              <div className="color-block">
-                <h3>Average Color</h3>
-                <ColorBox color={userSubmission.averageColor} width="150px" height="60px" />
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     );
