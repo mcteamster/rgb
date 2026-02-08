@@ -28,7 +28,8 @@ type DailyChallengeAction =
     | { type: 'SET_ERROR'; payload: string | null }
     | { type: 'SET_CURRENT_CHALLENGE'; payload: { challenge: DailyChallenge; submission: Submission | null } }
     | { type: 'SET_USER_SUBMISSION'; payload: Submission }
-    | { type: 'SET_LEADERBOARD'; payload: LeaderboardEntry[] };
+    | { type: 'SET_LEADERBOARD'; payload: LeaderboardEntry[] }
+    | { type: 'UPDATE_TOTAL_SUBMISSIONS'; payload: number };
 
 const initialState: DailyChallengeState = {
     currentChallenge: null,
@@ -56,6 +57,13 @@ function dailyChallengeReducer(state: DailyChallengeState, action: DailyChalleng
             return { ...state, userSubmission: action.payload, isLoading: false };
         case 'SET_LEADERBOARD':
             return { ...state, leaderboard: action.payload, isLoading: false };
+        case 'UPDATE_TOTAL_SUBMISSIONS':
+            return {
+                ...state,
+                currentChallenge: state.currentChallenge
+                    ? { ...state.currentChallenge, totalSubmissions: action.payload }
+                    : null
+            };
         default:
             return state;
     }
@@ -138,6 +146,7 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
             const userId = getUserId();
             const response = await dailyChallengeApi.getLeaderboard(challengeId, userId);
             dispatch({ type: 'SET_LEADERBOARD', payload: response.topScores });
+            dispatch({ type: 'UPDATE_TOTAL_SUBMISSIONS', payload: response.totalSubmissions });
         } catch (error) {
             console.error('Failed to load leaderboard:', error);
             dispatch({

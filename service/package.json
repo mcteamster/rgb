@@ -7,8 +7,7 @@
   "scripts": {
     "build": "tsc",
     "deploy": "npm run build; npx cdk deploy --all --concurrency=9",
-    "add-prompts": "npm run build && node dist/scripts/add-prompts.js",
-    "create-challenge": "npm run build && node dist/scripts/create-challenge-manual.js"
+    "manage-challenges": "npm run build && node dist/scripts/manage-challenges.js"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
