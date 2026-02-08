@@ -3,26 +3,20 @@ import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 import { dailyChallengeApi } from '../../services/dailyChallengeApi';
 import { StatsResponse } from '../../types/dailyChallenge';
 
-interface DailyChallengeResultsProps {
-  skipLoad?: boolean;
-}
-
-export const DailyChallengeResults: React.FC<DailyChallengeResultsProps> = ({ skipLoad = false }) => {
+export const DailyChallengeResults: React.FC = () => {
   const { currentChallenge } = useDailyChallenge();
   const [stats, setStats] = useState<StatsResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const loadedChallengeId = React.useRef<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!skipLoad && currentChallenge && loadedChallengeId.current !== currentChallenge.challengeId) {
-      loadedChallengeId.current = currentChallenge.challengeId;
+    if (currentChallenge) {
       setIsLoading(true);
       dailyChallengeApi.getStats(currentChallenge.challengeId)
         .then(setStats)
         .catch(console.error)
         .finally(() => setIsLoading(false));
     }
-  }, [skipLoad, currentChallenge]);
+  }, [currentChallenge]);
 
   if (!currentChallenge) return null;
 
@@ -32,7 +26,7 @@ export const DailyChallengeResults: React.FC<DailyChallengeResultsProps> = ({ sk
         <div className="prompt-card">
           <p className="prompt">"{currentChallenge.prompt}"</p>
           <p className="submissions-count">
-            Total submissions: {currentChallenge.totalSubmissions}
+            Total submissions: {isLoading ? '...' : stats?.totalSubmissions ?? 0}
           </p>
         </div>
 

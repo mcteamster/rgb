@@ -73,7 +73,7 @@ export const DailyChallenge: React.FC = () => {
             
             {showLeaderboard ? (
                 <>
-                    <DailyChallengeResults skipLoad />
+                    <DailyChallengeResults />
                     <div className="game-controls results-actions">
                         <Button onClick={() => setShowLeaderboard(false)} variant="back">
                             Back to Results

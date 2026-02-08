@@ -60,6 +60,24 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
+        // If no componentStats (legacy challenge), return null stats but keep totalSubmissions
+        if (!componentStats) {
+            return {
+                statusCode: 200,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({
+                    totalSubmissions,
+                    averageColor,
+                    hue: null,
+                    saturation: null,
+                    lightness: null
+                })
+            };
+        }
+
         // Calculate standard deviation from stored variance (m2)
         const stdDev = (m2: number, n: number) => Math.sqrt(m2 / n);
 

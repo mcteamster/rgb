@@ -41,6 +41,8 @@ async function createChallenge(challengeId: string, prompt: string, status: 'act
             validFrom,
             validUntil,
             totalSubmissions: 0,
+            averageColor: null,
+            componentStats: null,
             createdAt: now,
             updatedAt: now
         }
