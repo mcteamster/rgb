@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
@@ -12,7 +11,6 @@ interface PlayerLobbyProps {
 }
 
 export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
-  const navigate = useNavigate();
   const { createGame, joinGame, error, clearError, savedPlayerName, currentRegion, setRegion } = useGame();
   const [step, setStep] = useState<LobbyStep>(() => {
     // If there's a valid room code or stored session, go to join form
@@ -87,13 +85,6 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
   return (
     <div className="join-controls">
       <Notification region={currentRegion} errors={error} onClearError={clearError} />
-
-      {/* Mode selector */}
-      <div className="mode-selector">
-        <button className="mode-tab" onClick={() => navigate('/daily-challenge')}>
-          Daily Challenge
-        </button>
-      </div>
 
       {step === 'choose' && (
         <div className="lobby-actions">

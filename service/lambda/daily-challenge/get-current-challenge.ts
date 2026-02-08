@@ -64,7 +64,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 prompt: challenge.prompt,
                 validFrom: challenge.validFrom,
                 validUntil: challenge.validUntil,
-                totalSubmissions: challenge.metadata?.totalSubmissions || 0,
+                totalSubmissions: challenge.totalSubmissions || 0,
                 userSubmission
             })
         };

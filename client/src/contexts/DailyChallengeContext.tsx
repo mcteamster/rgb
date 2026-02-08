@@ -66,7 +66,7 @@ const DailyChallengeContext = createContext<(DailyChallengeState & DailyChalleng
 export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [state, dispatch] = useReducer(dailyChallengeReducer, initialState);
 
-    const loadCurrentChallenge = async () => {
+    const loadCurrentChallenge = useCallback(async () => {
         try {
             dispatch({ type: 'SET_LOADING', payload: true });
             const userId = getUserId();
@@ -91,9 +91,9 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
                 payload: error instanceof Error ? error.message : 'Failed to load challenge'
             });
         }
-    };
+    }, []);
 
-    const submitColor = async (color: HSLColor, userName: string) => {
+    const submitColor = useCallback(async (color: HSLColor, userName: string) => {
         try {
             dispatch({ type: 'SET_LOADING', payload: true });
 
@@ -130,7 +130,7 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
             });
             throw error;
         }
-    };
+    }, [state.currentChallenge]);
 
     const loadLeaderboard = useCallback(async (challengeId: string) => {
         try {
@@ -147,9 +147,9 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
         }
     }, []);
 
-    const clearError = () => {
+    const clearError = useCallback(() => {
         dispatch({ type: 'SET_ERROR', payload: null });
-    };
+    }, []);
 
     const value = {
         ...state,

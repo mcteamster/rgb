@@ -66,7 +66,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 averageAtSubmission: item.averageAtSubmission,
                 score: item.score,
                 rank,
-                totalSubmissions: challenge?.metadata?.totalSubmissions || 0
+                totalSubmissions: challenge?.totalSubmissions || 0
             };
         }));
 

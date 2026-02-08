@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
+import { getUserName } from '../utils/userId';
 
 interface GameNavbarProps {
   dailyChallengeMode?: boolean;
@@ -38,15 +39,13 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode }) =>
   // Daily challenge mode
   if (dailyChallengeMode) {
     const today = new Date();
-    const dateString = today.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+    const dateString = today.toISOString().split('T')[0];
+    const userName = getUserName() || 'Anonymous';
 
     return (
       <div className="game-header">
         <div className="header-main">
+          <div className="player-name">{userName}</div>
           <div className="game-status">Daily Challenge</div>
           <div className="room-code">{dateString}</div>
         </div>

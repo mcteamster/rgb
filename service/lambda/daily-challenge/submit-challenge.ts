@@ -172,7 +172,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         await dynamodb.send(new UpdateCommand({
             TableName: CHALLENGES_TABLE,
             Key: { challengeId: submission.challengeId },
-            UpdateExpression: 'SET metadata.totalSubmissions = if_not_exists(metadata.totalSubmissions, :zero) + :inc',
+            UpdateExpression: 'SET totalSubmissions = if_not_exists(totalSubmissions, :zero) + :inc',
             ExpressionAttributeValues: {
                 ':inc': 1,
                 ':zero': 0

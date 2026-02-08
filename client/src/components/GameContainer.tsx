@@ -140,7 +140,7 @@ export const GameContainer: React.FC = () => {
         <RainbowIcon onShowAbout={() => setShowAbout(true)} />
         <ConnectionStatus />
         <GameNavbar />
-        <GameTitle />
+        <GameTitle showDailyChallengeLink />
         <ColorWheel size={size} />
         <PlayerLobby roomCode={roomCode} />
         {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}

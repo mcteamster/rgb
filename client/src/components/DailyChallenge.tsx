@@ -1,17 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { ColorWheel } from './ColorWheel';
-import { RainbowIcon } from './RainbowIcon';
-import { ConnectionStatus } from './ConnectionStatus';
-import { GameNavbar } from './GameNavbar';
 import { GameTitle } from './GameTitle';
 import { GameManager } from './GameManager';
 import { GameDisplay } from './GameDisplay';
 import { RoundReveal } from './RoundReveal';
 import { GameResults } from './GameResults';
 import { Button } from './Button';
-import { AboutPage } from './AboutPage';
+import { DailyChallengeLayout } from './DailyChallengeLayout';
 import { useDailyChallenge } from '../contexts/DailyChallengeContext';
 import { useColor } from '../contexts/ColorContext';
+import { useWindowSize } from '../hooks/useWindowSize';
+import { useLeaderboardLoader } from '../hooks/useLeaderboardLoader';
 import { setBodyBackground } from '../utils/colorUtils';
 
 export const DailyChallenge: React.FC = () => {
@@ -19,33 +17,12 @@ export const DailyChallenge: React.FC = () => {
     const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading, loadLeaderboard } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
-    const loadedChallengeId = React.useRef<string | null>(null);
-    const [size, setSize] = useState(() => {
-        return { width: window.innerWidth, height: window.innerHeight };
-    });
+    const size = useWindowSize();
+
+    useLeaderboardLoader(showLeaderboard, currentChallenge?.challengeId, loadLeaderboard);
 
     useEffect(() => {
         loadCurrentChallenge();
-    }, []);
-
-    useEffect(() => {
-        if (showLeaderboard && currentChallenge && loadedChallengeId.current !== currentChallenge.challengeId) {
-            loadedChallengeId.current = currentChallenge.challengeId;
-            loadLeaderboard(currentChallenge.challengeId);
-        }
-    }, [showLeaderboard, currentChallenge, loadLeaderboard]);
-
-    useEffect(() => {
-        const handleResize = () => {
-            setSize({ width: window.innerWidth, height: window.innerHeight });
-        };
-
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleResize);
-        return () => {
-            window.removeEventListener('resize', handleResize);
-            window.removeEventListener('orientationchange', handleResize);
-        };
     }, []);
 
     useEffect(() => {
@@ -54,44 +31,31 @@ export const DailyChallenge: React.FC = () => {
 
     if (isLoading) {
         return (
-            <div className="app-container">
-                <RainbowIcon onShowAbout={() => setShowAbout(true)} />
-                <ConnectionStatus />
-                <GameNavbar />
+            <DailyChallengeLayout size={size} showAbout={showAbout} onShowAbout={() => setShowAbout(true)} onCloseAbout={() => setShowAbout(false)}>
                 <div className="status-bar">
                     <div className="loading-message">Loading today's challenge...</div>
                 </div>
-                <ColorWheel size={size} />
-                {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
-            </div>
+            </DailyChallengeLayout>
         );
     }
 
     if (!currentChallenge) {
         return (
-            <div className="app-container">
-                <RainbowIcon onShowAbout={() => setShowAbout(true)} />
-                <ConnectionStatus />
-                <GameNavbar />
+            <DailyChallengeLayout size={size} showAbout={showAbout} onShowAbout={() => setShowAbout(true)} onCloseAbout={() => setShowAbout(false)}>
                 <div className="status-bar">
                     <div className="error-message">No challenge available today</div>
                 </div>
-                <ColorWheel size={size} />
-                {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
-            </div>
+            </DailyChallengeLayout>
         );
     }
 
     return (
-        <div className="app-container">
-            <RainbowIcon onShowAbout={() => setShowAbout(true)} />
-            <ConnectionStatus />
-            <GameNavbar dailyChallengeMode={true} />
+        <DailyChallengeLayout size={size} showAbout={showAbout} onShowAbout={() => setShowAbout(true)} onCloseAbout={() => setShowAbout(false)} dailyChallengeMode>
             <GameTitle prefix="Off" />
             
             {showLeaderboard ? (
                 <>
-                    <GameResults dailyChallengeMode={true} skipLoad={true} />
+                    <GameResults dailyChallengeMode skipLoad />
                     <div className="game-controls">
                         <Button onClick={() => setShowLeaderboard(false)} variant="back" style={{ width: '100%' }}>
                             Back to Results
@@ -101,26 +65,23 @@ export const DailyChallenge: React.FC = () => {
             ) : userSubmission ? (
                 <>
                     <div className="status-bar">
-                        <RoundReveal dailyChallengeMode={true} />
+                        <RoundReveal dailyChallengeMode />
                     </div>
                     <GameManager 
                         onShowAbout={() => setShowAbout(true)}
-                        dailyChallengeMode={true}
+                        dailyChallengeMode
                         onShowLeaderboard={() => setShowLeaderboard(true)}
                     />
                 </>
             ) : (
                 <>
-                    <GameDisplay dailyChallengeMode={true} />
+                    <GameDisplay dailyChallengeMode />
                     <GameManager 
                         onShowAbout={() => setShowAbout(true)}
-                        dailyChallengeMode={true}
+                        dailyChallengeMode
                     />
                 </>
             )}
-            
-            <ColorWheel size={size} />
-            {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
-        </div>
+        </DailyChallengeLayout>
     );
 };

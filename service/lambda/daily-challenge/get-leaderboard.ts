@@ -107,7 +107,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 challengeId: challenge.challengeId,
                 prompt: challenge.prompt,
                 status: challenge.status,
-                totalSubmissions: challenge.metadata?.totalSubmissions || 0,
+                totalSubmissions: challenge.totalSubmissions || 0,
                 topScores,
                 yourSubmission
             })
