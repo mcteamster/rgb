@@ -5,7 +5,7 @@ import { GameProvider } from './contexts/GameContext';
 import { DailyChallengeProvider } from './contexts/DailyChallengeContext';
 import { GameContainer } from './components/GameContainer';
 import { AboutPage } from './components/AboutPage';
-import { DailyChallenge } from './components/DailyChallenge';
+import { DailyChallenge } from './components/daily-challenge/DailyChallenge';
 
 const App: React.FC = () => {
   return (
@@ -16,7 +16,7 @@ const App: React.FC = () => {
             <Route path="/" element={<GameContainer />} />
             <Route path="/about" element={<AboutPage onClose={() => window.location.href = '/'} />} />
             <Route
-              path="/daily-challenge"
+              path="/daily"
               element={
                 <DailyChallengeProvider>
                   <DailyChallenge />

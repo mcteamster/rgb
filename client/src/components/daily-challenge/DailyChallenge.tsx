@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { GameTitle } from './GameTitle';
-import { GameManager } from './GameManager';
-import { GameDisplay } from './GameDisplay';
-import { RoundReveal } from './RoundReveal';
-import { GameResults } from './GameResults';
-import { Button } from './Button';
+import { GameTitle } from '../GameTitle';
+import { DailyChallengeManager } from './DailyChallengeManager';
+import { DailyChallengeDisplay } from './DailyChallengeDisplay';
+import { DailyChallengeReveal } from './DailyChallengeReveal';
+import { DailyChallengeResults } from './DailyChallengeResults';
+import { Button } from '../Button';
 import { DailyChallengeLayout } from './DailyChallengeLayout';
-import { useDailyChallenge } from '../contexts/DailyChallengeContext';
-import { useColor } from '../contexts/ColorContext';
-import { useWindowSize } from '../hooks/useWindowSize';
-import { useLeaderboardLoader } from '../hooks/useLeaderboardLoader';
-import { setBodyBackground } from '../utils/colorUtils';
+import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
+import { useColor } from '../../contexts/ColorContext';
+import { useWindowSize } from '../../hooks/useWindowSize';
+import { useLeaderboardLoader } from '../../hooks/useLeaderboardLoader';
+import { setBodyBackground } from '../../utils/colorUtils';
 
 export const DailyChallenge: React.FC = () => {
     const { selectedColor } = useColor();
@@ -55,7 +55,7 @@ export const DailyChallenge: React.FC = () => {
             
             {showLeaderboard ? (
                 <>
-                    <GameResults dailyChallengeMode skipLoad />
+                    <DailyChallengeResults skipLoad />
                     <div className="game-controls">
                         <Button onClick={() => setShowLeaderboard(false)} variant="back" style={{ width: '100%' }}>
                             Back to Results
@@ -65,20 +65,18 @@ export const DailyChallenge: React.FC = () => {
             ) : userSubmission ? (
                 <>
                     <div className="status-bar">
-                        <RoundReveal dailyChallengeMode />
+                        <DailyChallengeReveal />
                     </div>
-                    <GameManager 
+                    <DailyChallengeManager 
                         onShowAbout={() => setShowAbout(true)}
-                        dailyChallengeMode
                         onShowLeaderboard={() => setShowLeaderboard(true)}
                     />
                 </>
             ) : (
                 <>
-                    <GameDisplay dailyChallengeMode />
-                    <GameManager 
+                    <DailyChallengeDisplay />
+                    <DailyChallengeManager 
                         onShowAbout={() => setShowAbout(true)}
-                        dailyChallengeMode
                     />
                 </>
             )}

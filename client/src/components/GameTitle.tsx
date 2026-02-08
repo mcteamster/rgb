@@ -33,7 +33,7 @@ export const GameTitle: React.FC<GameTitleProps> = ({ prefix = 'On', showDailyCh
             opacity: 0.8,
             pointerEvents: 'auto'
           }}
-          onClick={() => navigate('/daily-challenge')}
+          onClick={() => navigate('/daily')}
         >
           Daily Challenge →
         </div>

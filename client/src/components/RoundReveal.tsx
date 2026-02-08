@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { ColorBox } from './ColorBox';
 import { GameRound, Player } from '../types/game';
 import { usePlayerRankings } from '../hooks/usePlayerRankings';
-import { useDailyChallenge } from '../contexts/DailyChallengeContext';
 import { getOrdinalSuffix } from '../utils/formatUtils';
 
 interface RoundRevealProps {
-  currentRound?: GameRound;
-  players?: Player[];
-  dailyChallengeMode?: boolean;
+  currentRound: GameRound;
+  players: Player[];
 }
 
 const AnimatedScore: React.FC<{ finalScore: number; roundScore: number }> = ({ finalScore, roundScore }) => {
@@ -37,55 +35,8 @@ const AnimatedScore: React.FC<{ finalScore: number; roundScore: number }> = ({ f
   return <span>{displayScore}</span>;
 };
 
-export const RoundReveal: React.FC<RoundRevealProps> = ({
-  currentRound,
-  players,
-  dailyChallengeMode = false
-}) => {
-  const { currentChallenge, userSubmission } = useDailyChallenge();
-  const playerRankings = players ? usePlayerRankings(players) : {};
-
-  // Daily challenge results
-  if (dailyChallengeMode && currentChallenge && userSubmission) {
-    return (
-      <div className="reveal-phase" style={{ textAlign: 'center', paddingBottom: '20px' }}>
-        <div className="prompt-card" style={{ marginBottom: '12px' }}>
-          <p className="prompt">"{currentChallenge.prompt}"</p>
-        </div>
-
-        <div className="score-display">
-          <h1 className="score">{userSubmission.score}</h1>
-          <p className="score-label">points</p>
-          {userSubmission.rank && (
-            <p className="rank">
-              Rank: #{userSubmission.rank} of {currentChallenge.totalSubmissions}
-            </p>
-          )}
-          {userSubmission.distanceFromAverage !== undefined && (
-            <p className="distance">
-              Distance: {userSubmission.distanceFromAverage.toFixed(3)}
-            </p>
-          )}
-        </div>
-
-        <div className="colors-comparison">
-          <div className="color-block">
-            <h3>Your Color</h3>
-            <ColorBox color={userSubmission.color} width="150px" height="60px" />
-          </div>
-          {userSubmission.averageColor && (
-            <div className="color-block">
-              <h3>Average Color</h3>
-              <ColorBox color={userSubmission.averageColor} width="150px" height="60px" />
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // Multiplayer round reveal
-  if (!currentRound || !players) return null;
+export const RoundReveal: React.FC<RoundRevealProps> = ({ currentRound, players }) => {
+  const playerRankings = usePlayerRankings(players);
 
   return (
     <div className="reveal-phase" style={{ textAlign: 'center', paddingBottom: '20px' }}>

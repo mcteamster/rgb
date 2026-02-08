@@ -1,9 +1,9 @@
 import React from 'react';
-import { RainbowIcon } from './RainbowIcon';
-import { ConnectionStatus } from './ConnectionStatus';
-import { GameNavbar } from './GameNavbar';
-import { ColorWheel } from './ColorWheel';
-import { AboutPage } from './AboutPage';
+import { RainbowIcon } from '../RainbowIcon';
+import { ConnectionStatus } from '../ConnectionStatus';
+import { GameNavbar } from '../GameNavbar';
+import { ColorWheel } from '../ColorWheel';
+import { AboutPage } from '../AboutPage';
 
 interface DailyChallengeLayoutProps {
   children: React.ReactNode;

@@ -1,72 +1,13 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { Player } from '../types/game';
-import { useDailyChallenge } from '../contexts/DailyChallengeContext';
-import { ColorBox } from './ColorBox';
 import { getOrdinalSuffix } from '../utils/formatUtils';
 
 interface GameResultsProps {
   players?: Player[];
   rounds?: any[];
-  dailyChallengeMode?: boolean;
-  skipLoad?: boolean;
 }
 
-export const GameResults: React.FC<GameResultsProps> = ({ players, rounds, dailyChallengeMode = false, skipLoad = false }) => {
-  const { currentChallenge, leaderboard, loadLeaderboard, isLoading } = useDailyChallenge();
-  const loadedChallengeId = React.useRef<string | null>(null);
-
-  useEffect(() => {
-    if (!skipLoad && dailyChallengeMode && currentChallenge && loadedChallengeId.current !== currentChallenge.challengeId) {
-      loadedChallengeId.current = currentChallenge.challengeId;
-      loadLeaderboard(currentChallenge.challengeId);
-    }
-  }, [skipLoad, dailyChallengeMode, currentChallenge, loadLeaderboard]);
-
-  // Daily challenge leaderboard
-  if (dailyChallengeMode && currentChallenge) {
-    return (
-      <div className="game-summary-bar">
-        <div className="leaderboard-container">
-          <h2>Daily Challenge Leaderboard</h2>
-          <div className="prompt-card">
-            <p className="prompt">"{currentChallenge.prompt}"</p>
-            <p className="submissions-count">
-              Total submissions: {currentChallenge.totalSubmissions}
-            </p>
-          </div>
-
-          {isLoading ? (
-            <div className="loading-message">Loading leaderboard...</div>
-          ) : (
-            <div className="leaderboard-table">
-              {leaderboard.length === 0 ? (
-                <p className="no-submissions">No submissions yet. Be the first!</p>
-              ) : (
-                <div className="leaderboard-entries">
-                  {leaderboard.map((entry) => (
-                    <div key={`${entry.rank}-${entry.userName}`} className="leaderboard-row">
-                      <span className="rank">#{entry.rank}</span>
-                      <span className="name">{entry.userName || 'Anonymous'}</span>
-                      <span className="score">{entry.score} pts</span>
-                      <div className="color-preview">
-                        <ColorBox
-                          color={entry.submittedColor}
-                          width="60px"
-                          height="30px"
-                          fontSize="8px"
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
+export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => {
   // Multiplayer game results
   if (!players || !rounds) return null;
 
