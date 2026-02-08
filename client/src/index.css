@@ -1325,7 +1325,7 @@ textarea:-ms-input-placeholder {
 .color-wheel-tips-content {
   background: white;
   border-radius: var(--border-radius-medium);
-  padding: 32px;
+  padding: 1.5rem;
   max-width: 400px;
   margin: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -1333,13 +1333,13 @@ textarea:-ms-input-placeholder {
 }
 
 .color-wheel-tips-content h3 {
-  margin: 0 0 24px 0;
+  margin: 0 0 1rem 0;
   color: #333;
   font-size: 20px;
 }
 
 .tip-visual {
-  margin-bottom: 24px;
+  margin-bottom: 1rem;
 }
 
 .exploded-wheel {
@@ -1595,6 +1595,7 @@ textarea:-ms-input-placeholder {
   margin-top: 8px;
   box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
   touch-action: manipulation;
+  width: 100%;
 }
 
 .tips-dismiss-btn:hover {

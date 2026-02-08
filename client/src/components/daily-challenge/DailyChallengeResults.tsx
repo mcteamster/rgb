@@ -44,7 +44,6 @@ export const DailyChallengeResults: React.FC<DailyChallengeResultsProps> = ({ sk
   return (
     <div className="game-summary-bar">
       <div className="stats-container">
-        <h2>Color Distribution</h2>
         <div className="prompt-card">
           <p className="prompt">"{currentChallenge.prompt}"</p>
           <p className="submissions-count">

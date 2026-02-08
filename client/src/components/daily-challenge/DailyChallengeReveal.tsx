@@ -10,7 +10,7 @@ export const DailyChallengeReveal: React.FC = () => {
   return (
     <div className="round-reveal">
       <p className="prompt">"{currentChallenge.prompt}"</p>
-      
+      <div style={{ width: '100%', height: '2px', backgroundColor: '#ccc', margin: '1em 0' }}></div>      
       <div className="reveal-content">
         <div className="color-comparison">
           <ColorBox color={userSubmission.color} label="Your Color" width="180px" />

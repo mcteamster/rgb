@@ -11,12 +11,16 @@ import { useColor } from '../../contexts/ColorContext';
 import { useWindowSize } from '../../hooks/useWindowSize';
 import { useLeaderboardLoader } from '../../hooks/useLeaderboardLoader';
 import { setBodyBackground } from '../../utils/colorUtils';
+import { ColorWheelTips } from '../ColorGuessingTips';
+
+const DAILY_CHALLENGE_TIPS_KEY = 'dailyChallengeTipsSeen';
 
 export const DailyChallenge: React.FC = () => {
     const { selectedColor } = useColor();
     const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading, loadLeaderboard } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [showTips, setShowTips] = useState(false);
     const size = useWindowSize();
 
     useLeaderboardLoader(showLeaderboard, currentChallenge?.challengeId, loadLeaderboard);
@@ -28,6 +32,21 @@ export const DailyChallenge: React.FC = () => {
     useEffect(() => {
         setBodyBackground(selectedColor);
     }, [selectedColor]);
+
+    useEffect(() => {
+        // Show tips on first visit if not submitted yet
+        if (currentChallenge && !userSubmission && !isLoading) {
+            const tipsSeen = localStorage.getItem(DAILY_CHALLENGE_TIPS_KEY);
+            if (!tipsSeen) {
+                setShowTips(true);
+            }
+        }
+    }, [currentChallenge, userSubmission, isLoading]);
+
+    const handleCloseTips = () => {
+        localStorage.setItem(DAILY_CHALLENGE_TIPS_KEY, 'true');
+        setShowTips(false);
+    };
 
     if (isLoading) {
         return (
@@ -53,6 +72,8 @@ export const DailyChallenge: React.FC = () => {
         <DailyChallengeLayout size={size} showAbout={showAbout} onShowAbout={() => setShowAbout(true)} onCloseAbout={() => setShowAbout(false)} dailyChallengeMode>
             <GameTitle prefix="Off" />
             
+            {showTips && <ColorWheelTips onDismiss={handleCloseTips} />}
+            
             {showLeaderboard ? (
                 <>
                     <DailyChallengeResults skipLoad />
@@ -77,6 +98,7 @@ export const DailyChallenge: React.FC = () => {
                     <DailyChallengeDisplay />
                     <DailyChallengeManager 
                         onShowAbout={() => setShowAbout(true)}
+                        onShowTips={() => setShowTips(true)}
                     />
                 </>
             )}
