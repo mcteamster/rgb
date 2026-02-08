@@ -6,6 +6,7 @@ interface ButtonProps {
   type?: 'button' | 'submit';
   variant?: 'primary' | 'secondary' | 'create' | 'join' | 'back' | 'exit' | 'close' | 'disabled';
   style?: React.CSSProperties;
+  fullWidth?: boolean;
   children: React.ReactNode;
 }
 
@@ -15,6 +16,7 @@ export const Button: React.FC<ButtonProps> = ({
   type = 'button',
   variant = 'primary',
   style,
+  fullWidth = false,
   children
 }) => {
   const getClassName = () => {
@@ -36,7 +38,7 @@ export const Button: React.FC<ButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       className={getClassName()}
-      style={style}
+      style={{ ...style, ...(fullWidth && { width: '100%' }) }}
     >
       {children}
     </button>

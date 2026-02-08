@@ -149,6 +149,7 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
               onClick={handleNextRound} 
               variant={nextRoundDisabled ? 'disabled' : 'primary'}
               disabled={nextRoundDisabled}
+              fullWidth
             >
               {isReadyForEndgame() ? 'Game Summary' : 'Next Round'}
             </Button>
