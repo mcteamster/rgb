@@ -6,7 +6,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "deploy": "npm run build; npx cdk deploy --all --concurrency=9",
+    "deploy": "npm run build; npx cdk deploy --all --concurrency=10",
     "manage-challenges": "npm run build && node dist/scripts/manage-challenges.js"
   },
   "devDependencies": {
