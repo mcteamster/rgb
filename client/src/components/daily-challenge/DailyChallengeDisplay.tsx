@@ -16,17 +16,17 @@ export const DailyChallengeDisplay: React.FC = () => {
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-    return `${hours}h ${minutes}m remaining`;
+    return `⏳ ${hours}h ${minutes}m left`;
   };
 
   return (
     <div className="status-bar daily-challenge-status">
       <div className="prompt-card">
         <p className="prompt">"{currentChallenge.prompt}"</p>
-        <p className="timer">{formatTimeRemaining(currentChallenge.validUntil)}</p>
         <p className="submissions-count">
-          {currentChallenge.totalSubmissions} {currentChallenge.totalSubmissions === 1 ? 'submission' : 'submissions'} so far
+          🎨 {currentChallenge.totalSubmissions} {currentChallenge.totalSubmissions === 1 ? 'player' : 'players'} today
         </p>
+        <p className="timer">{formatTimeRemaining(currentChallenge.validUntil)}</p>
       </div>
     </div>
   );

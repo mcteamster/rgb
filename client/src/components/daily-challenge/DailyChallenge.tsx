@@ -33,7 +33,7 @@ export const DailyChallenge: React.FC = () => {
         return (
             <DailyChallengeLayout size={size} showAbout={showAbout} onShowAbout={() => setShowAbout(true)} onCloseAbout={() => setShowAbout(false)}>
                 <div className="status-bar">
-                    <div className="loading-message">Loading today's challenge...</div>
+                  Loading...
                 </div>
             </DailyChallengeLayout>
         );
