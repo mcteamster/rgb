@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TimerButton } from './TimerButton';
 import { ColorSliders } from './ColorSliders';
+import { Button } from './Button';
+import { ColorBox } from './ColorBox';
 import { useTimer } from '../hooks/useTimer';
 import { HSLColor } from '../types/game';
 import { useColor } from '../contexts/ColorContext';
@@ -15,6 +17,8 @@ interface PlayerGuesserProps {
   deadline?: string;
   timeLimit: number;
   onShowTips?: () => void;
+  dailyChallengeMode?: boolean;
+  isSubmitting?: boolean;
 }
 
 export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
@@ -26,9 +30,12 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
   submitColor,
   deadline,
   timeLimit,
-  onShowTips
+  onShowTips,
+  dailyChallengeMode = false,
+  isSubmitting = false
 }) => {
   const { setPendingSubmission } = useColor();
+  const [confirming, setConfirming] = useState(false);
   
   const timer = useTimer({
     deadline,
@@ -44,7 +51,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
         submitColor(serverColor);
       }
     },
-    active: !!deadline
+    active: !!deadline && !dailyChallengeMode
   });
 
   const handleSubmit = () => {
@@ -59,7 +66,43 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
       submitColor(serverColor);
     }
     setShowSliders(false);
+    if (dailyChallengeMode) {
+      setConfirming(false);
+    }
   };
+
+  const buttonColor = `hsl(${Math.round(selectedColor.h)}, ${Math.round(selectedColor.s)}%, ${Math.round(selectedColor.l)}%)`;
+  const textColor = selectedColor.l > 50 ? '#000' : '#fff';
+
+  if (dailyChallengeMode && confirming) {
+    return (
+      <div className="confirmation-dialog">
+        <p>Submit this color?</p>
+        <ColorBox color={selectedColor} width="150px" height="50px" />
+        <div className="confirmation-buttons">
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            style={{ 
+              background: buttonColor,
+              color: textColor,
+              fontWeight: 'bold',
+              border: '2px solid #888'
+            }}
+          >
+            {isSubmitting ? 'Submitting...' : 'Confirm'}
+          </Button>
+          <Button
+            onClick={() => setConfirming(false)}
+            disabled={isSubmitting}
+            variant="secondary"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="guessing-phase">
@@ -71,37 +114,56 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
           className={`color-preview-square ${isColorLocked ? 'locked' : ''}`}
           onClick={() => !isColorLocked && setShowSliders(!showSliders)}
           style={{
-            backgroundColor: `hsl(${Math.round(selectedColor.h)}, ${Math.round(selectedColor.s)}%, ${Math.round(selectedColor.l)}%)`
+            backgroundColor: buttonColor
           }}
         >
           ✏️
         </div>
-        <TimerButton
-          onClick={handleSubmit}
-          disabled={isColorLocked}
-          timerUp={timer.isUp}
-          timerActive={timer.isActive}
-          timerProgress={timer.progress}
-          countdown={timer.countdown}
-          targetColor={{
-            h: selectedColor.h,
-            s: selectedColor.s,
-            l: selectedColor.l
-          }}
-        >
-          {timer.isUp ? (
-            <>
-              Submitting
-            </>
-          ) : isColorLocked ? (
-            <>
-              Locked In
-              <span style={{ fontSize: '16px' }}>🔒</span>
-            </>
-          ) : (
-            'Submit'
-          )}
-        </TimerButton>
+        {dailyChallengeMode ? (
+          <Button
+            onClick={() => setConfirming(true)}
+            disabled={isSubmitting}
+            style={{ 
+              background: buttonColor,
+              color: textColor,
+              fontWeight: 'bold',
+              border: '2px solid #888',
+              flex: 1
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              Submit Color
+              <span>✅</span>
+            </div>
+          </Button>
+        ) : (
+          <TimerButton
+            onClick={handleSubmit}
+            disabled={isColorLocked}
+            timerUp={timer.isUp}
+            timerActive={timer.isActive}
+            timerProgress={timer.progress}
+            countdown={timer.countdown}
+            targetColor={{
+              h: selectedColor.h,
+              s: selectedColor.s,
+              l: selectedColor.l
+            }}
+          >
+            {timer.isUp ? (
+              <>
+                Submitting
+              </>
+            ) : isColorLocked ? (
+              <>
+                Locked In
+                <span style={{ fontSize: '16px' }}>🔒</span>
+              </>
+            ) : (
+              'Submit'
+            )}
+          </TimerButton>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { GameProvider } from './contexts/GameContext';
 import { DailyChallengeProvider } from './contexts/DailyChallengeContext';
 import { GameContainer } from './components/GameContainer';
 import { AboutPage } from './components/AboutPage';
-import { DailyChallengePage } from './components/DailyChallenge/DailyChallengePage';
+import { DailyChallenge } from './components/DailyChallenge';
 
 const App: React.FC = () => {
   return (
@@ -19,7 +19,7 @@ const App: React.FC = () => {
               path="/daily-challenge"
               element={
                 <DailyChallengeProvider>
-                  <DailyChallengePage />
+                  <DailyChallenge />
                 </DailyChallengeProvider>
               }
             />

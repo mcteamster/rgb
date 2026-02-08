@@ -1,11 +1,46 @@
 import React from 'react';
 import { useGame } from '../contexts/GameContext';
+import { useDailyChallenge } from '../contexts/DailyChallengeContext';
 import { useTimer } from '../hooks/useTimer';
 import { RoundReveal } from './RoundReveal';
 
-export const GameDisplay: React.FC = () => {
-  const { gameState, playerId, getCurrentRound } = useGame();
+interface GameDisplayProps {
+  dailyChallengeMode?: boolean;
+}
 
+export const GameDisplay: React.FC<GameDisplayProps> = ({ dailyChallengeMode = false }) => {
+  const { gameState, playerId, getCurrentRound } = useGame();
+  const { currentChallenge } = useDailyChallenge();
+
+  // Daily challenge mode
+  if (dailyChallengeMode && currentChallenge) {
+    const formatTimeRemaining = (validUntil: string) => {
+      const now = new Date();
+      const end = new Date(validUntil);
+      const diff = end.getTime() - now.getTime();
+
+      if (diff <= 0) return 'Expired';
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      return `${hours}h ${minutes}m remaining`;
+    };
+
+    return (
+      <div className="status-bar daily-challenge-status">
+        <div className="prompt-card">
+          <p className="prompt">"{currentChallenge.prompt}"</p>
+          <p className="timer">{formatTimeRemaining(currentChallenge.validUntil)}</p>
+          <p className="submissions-count">
+            {currentChallenge.totalSubmissions} {currentChallenge.totalSubmissions === 1 ? 'submission' : 'submissions'} so far
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Multiplayer mode
   if (!gameState || !playerId) return null;
 
   const currentRound = getCurrentRound();

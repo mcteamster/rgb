@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useColor } from '../contexts/ColorContext';
 import { useGame } from '../contexts/GameContext';
+import { useDailyChallenge } from '../contexts/DailyChallengeContext';
+import { getUserName } from '../utils/userId';
 import { Button } from './Button';
 import { PlayerDescriber } from './PlayerDescriber';
 import { PlayerGuesser } from './PlayerGuesser';
@@ -10,16 +13,63 @@ interface GameManagerProps {
   onShowAbout: () => void;
   onShowTips?: () => void;
   dailyChallengeMode?: boolean;
-  dailyChallengeSubmission?: React.ReactNode;
+  onShowLeaderboard?: () => void;
 }
 
-export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTips, dailyChallengeMode, dailyChallengeSubmission }) => {
+export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTips, dailyChallengeMode, onShowLeaderboard }) => {
+  const navigate = useNavigate();
   const { selectedColor, isColorLocked, setIsColorLocked, showSliders, setShowSliders, setSelectedColor, setSelectedHue } = useColor();
   const { gameState, startRound, playerId, submitDescription, updateDraftDescription, submitColor, getCurrentRound, finaliseGame, resetGame, closeRoom } = useGame();
+  const { currentChallenge, userSubmission, submitColor: submitDailyColor, error, isLoading } = useDailyChallenge();
   const [description, setDescription] = useState('');
   const [inputDisabled, setInputDisabled] = useState(false);
   const [nextRoundDisabled, setNextRoundDisabled] = useState(false);
+  const [userName] = useState(getUserName());
 
+  // Daily challenge mode
+  if (dailyChallengeMode) {
+    if (!currentChallenge) return null;
+
+    const handleDailyChallengeSubmit = async (color: { h: number; s: number; l: number }) => {
+      await submitDailyColor(color, userName);
+    };
+
+    // Show results with leaderboard button
+    if (userSubmission) {
+      return (
+        <div className="game-controls">
+          <Button onClick={onShowLeaderboard} variant="primary" style={{ width: '100%' }}>
+            View Full Leaderboard
+          </Button>
+          <Button onClick={() => navigate('/')} variant="back" style={{ width: '100%', marginTop: '10px' }}>
+            Back to Home
+          </Button>
+        </div>
+      );
+    }
+
+    // Show submission form
+    return (
+      <div className="game-controls">
+        <PlayerGuesser
+          selectedColor={selectedColor}
+          isColorLocked={isColorLocked}
+          setIsColorLocked={setIsColorLocked}
+          showSliders={showSliders}
+          setShowSliders={setShowSliders}
+          submitColor={handleDailyChallengeSubmit}
+          deadline={undefined}
+          timeLimit={0}
+          onShowTips={onShowTips}
+          dailyChallengeMode={true}
+          isSubmitting={isLoading}
+        />
+        {error && <div className="error-message">{error}</div>}
+      </div>
+    );
+  }
+
+  // Multiplayer mode
   const currentRound = getCurrentRound();
   const isDescriber = currentRound?.describerId === playerId;
   const isDescribing = currentRound?.phase === 'describing';
@@ -103,15 +153,6 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
     submitDescription(description.trim());
     setDescription('');
   };
-
-  // Handle daily challenge mode separately
-  if (dailyChallengeMode) {
-    return (
-      <div className="game-controls">
-        {dailyChallengeSubmission}
-      </div>
-    );
-  }
 
   if (!gameState || !playerId) return null;
 
