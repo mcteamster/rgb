@@ -48,7 +48,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 userSubmission = {
                     color: submissionResult.Item.submittedColor,
                     score: submissionResult.Item.score,
-                    submittedAt: submissionResult.Item.submittedAt
+                    submittedAt: submissionResult.Item.submittedAt,
+                    distanceFromAverage: submissionResult.Item.distanceFromAverage,
+                    averageColor: submissionResult.Item.averageAtSubmission
                 };
             }
         }

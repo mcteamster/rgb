@@ -13,7 +13,7 @@
   width: 100%;
 }
 
-.leaderboard-container {
+.stats-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -22,10 +22,62 @@
   width: 100%;
 }
 
-.leaderboard-container h2 {
+.stats-container h2 {
   color: #333;
   margin: 0;
   font-size: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 700px;
+}
+
+.stat-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-card h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  color: #333;
+  text-align: center;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.stat-label {
+  color: rgba(51, 51, 51, 0.7);
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #333;
+  font-weight: bold;
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-container h2 {
+    font-size: 20px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -165,21 +217,24 @@
   max-width: 600px;
 }
 
-.colors-comparison {
+.colors-comparison,
+.color-comparison {
   display: flex;
-  gap: 16px;
+  gap: 24px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-.color-block {
+.color-block,
+.color-box-container {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
 
-.color-block h3 {
+.color-block h3,
+.color-box-container h3 {
   font-size: 14px;
   color: #333;
   margin: 0;
@@ -218,9 +273,14 @@
 .results-actions,
 .leaderboard-actions {
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  flex-wrap: wrap;
-  justify-content: center;
+  width: 100%;
+}
+
+.results-actions button,
+.leaderboard-actions button {
+  width: 100%;
 }
 
 .leaderboard-table {
@@ -312,7 +372,8 @@
     font-size: 18px;
   }
 
-  .colors-comparison {
+  .colors-comparison,
+  .color-comparison {
     flex-direction: column;
   }
 
@@ -325,7 +386,11 @@
     font-size: 14px;
   }
 
-  .leaderboard-container h2 {
+  .stats-container h2 {
     font-size: 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
   }
 }

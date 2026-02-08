@@ -29,23 +29,13 @@ export const DailyChallengeReveal: React.FC = () => {
       <div className="color-comparison">
         <div className="color-box-container">
           <h3>Your Color</h3>
-          <ColorBox color={userSubmission.color} size="large" />
-          <div className="color-values">
-            <div>H: {userSubmission.color.h}°</div>
-            <div>S: {userSubmission.color.s}%</div>
-            <div>L: {userSubmission.color.l}%</div>
-          </div>
+          <ColorBox color={userSubmission.color} width="200px" height="60px" />
         </div>
 
         {userSubmission.averageColor && (
           <div className="color-box-container">
             <h3>Average Color</h3>
-            <ColorBox color={userSubmission.averageColor} size="large" />
-            <div className="color-values">
-              <div>H: {Math.round(userSubmission.averageColor.h)}°</div>
-              <div>S: {Math.round(userSubmission.averageColor.s)}%</div>
-              <div>L: {Math.round(userSubmission.averageColor.l)}%</div>
-            </div>
+            <ColorBox color={userSubmission.averageColor} width="200px" height="60px" />
           </div>
         )}
       </div>

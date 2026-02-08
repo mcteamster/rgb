@@ -13,7 +13,6 @@ interface DailyChallengeManagerProps {
 }
 
 export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({ 
-  onShowAbout, 
   onShowTips, 
   onShowLeaderboard
 }) => {
@@ -31,11 +30,11 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
   // Show results with leaderboard button
   if (userSubmission) {
     return (
-      <div className="game-controls">
-        <Button onClick={onShowLeaderboard} variant="primary" style={{ width: '100%' }}>
-          View Full Leaderboard
+      <div className="game-controls results-actions">
+        <Button onClick={onShowLeaderboard} variant="primary">
+          View Statistics
         </Button>
-        <Button onClick={() => navigate('/')} variant="back" style={{ width: '100%', marginTop: '10px' }}>
+        <Button onClick={() => navigate('/')} variant="back">
           Back to Home
         </Button>
       </div>

@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
-import { ColorBox } from '../ColorBox';
 
 interface DailyChallengeResultsProps {
   skipLoad?: boolean;
@@ -19,10 +18,33 @@ export const DailyChallengeResults: React.FC<DailyChallengeResultsProps> = ({ sk
 
   if (!currentChallenge) return null;
 
+  const calculateStats = () => {
+    if (leaderboard.length === 0) return null;
+
+    const hues = leaderboard.map(e => e.submittedColor.h);
+    const sats = leaderboard.map(e => e.submittedColor.s);
+    const lights = leaderboard.map(e => e.submittedColor.l);
+
+    const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const stdDev = (arr: number[]) => {
+      const mean = avg(arr);
+      const variance = arr.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / arr.length;
+      return Math.sqrt(variance);
+    };
+
+    return {
+      hue: { avg: avg(hues), stdDev: stdDev(hues), min: Math.min(...hues), max: Math.max(...hues) },
+      sat: { avg: avg(sats), stdDev: stdDev(sats), min: Math.min(...sats), max: Math.max(...sats) },
+      light: { avg: avg(lights), stdDev: stdDev(lights), min: Math.min(...lights), max: Math.max(...lights) }
+    };
+  };
+
+  const stats = calculateStats();
+
   return (
     <div className="game-summary-bar">
-      <div className="leaderboard-container">
-        <h2>Daily Challenge Leaderboard</h2>
+      <div className="stats-container">
+        <h2>Color Distribution</h2>
         <div className="prompt-card">
           <p className="prompt">"{currentChallenge.prompt}"</p>
           <p className="submissions-count">
@@ -31,30 +53,58 @@ export const DailyChallengeResults: React.FC<DailyChallengeResultsProps> = ({ sk
         </div>
 
         {isLoading ? (
-          <div className="loading-message">Loading leaderboard...</div>
+          <div className="loading-message">Loading statistics...</div>
+        ) : !stats ? (
+          <p className="no-submissions">No submissions yet. Be the first!</p>
         ) : (
-          <div className="leaderboard-table">
-            {leaderboard.length === 0 ? (
-              <p className="no-submissions">No submissions yet. Be the first!</p>
-            ) : (
-              <div className="leaderboard-entries">
-                {leaderboard.map((entry) => (
-                  <div key={`${entry.rank}-${entry.userName}`} className="leaderboard-row">
-                    <span className="rank">#{entry.rank}</span>
-                    <span className="name">{entry.userName || 'Anonymous'}</span>
-                    <span className="score">{entry.score} pts</span>
-                    <div className="color-preview">
-                      <ColorBox color={entry.submittedColor} size="small" />
-                      <div className="color-values-compact">
-                        <span>H: {entry.submittedColor.h}°</span>
-                        <span>S: {entry.submittedColor.s}%</span>
-                        <span>L: {entry.submittedColor.l}%</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          <div className="stats-grid">
+            <div className="stat-card">
+              <h3>Hue</h3>
+              <div className="stat-row">
+                <span className="stat-label">Average:</span>
+                <span className="stat-value">{Math.round(stats.hue.avg)}°</span>
               </div>
-            )}
+              <div className="stat-row">
+                <span className="stat-label">Std Dev:</span>
+                <span className="stat-value">{Math.round(stats.hue.stdDev)}°</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Range:</span>
+                <span className="stat-value">{Math.round(stats.hue.min)}° - {Math.round(stats.hue.max)}°</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <h3>Saturation</h3>
+              <div className="stat-row">
+                <span className="stat-label">Average:</span>
+                <span className="stat-value">{Math.round(stats.sat.avg)}%</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Std Dev:</span>
+                <span className="stat-value">{Math.round(stats.sat.stdDev)}%</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Range:</span>
+                <span className="stat-value">{Math.round(stats.sat.min)}% - {Math.round(stats.sat.max)}%</span>
+              </div>
+            </div>
+
+            <div className="stat-card">
+              <h3>Lightness</h3>
+              <div className="stat-row">
+                <span className="stat-label">Average:</span>
+                <span className="stat-value">{Math.round(stats.light.avg)}%</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Std Dev:</span>
+                <span className="stat-value">{Math.round(stats.light.stdDev)}%</span>
+              </div>
+              <div className="stat-row">
+                <span className="stat-label">Range:</span>
+                <span className="stat-value">{Math.round(stats.light.min)}% - {Math.round(stats.light.max)}%</span>
+              </div>
+            </div>
           </div>
         )}
       </div>

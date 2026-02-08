@@ -128,19 +128,20 @@ body {
 }
 
 .increment-btn {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   background: #f8f9fa;
   color: #333;
   border: 1px solid #dee2e6;
   border-radius: var(--border-radius-small);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .increment-btn:hover {
@@ -678,6 +679,26 @@ body {
   width: calc(100% - 40px);
   max-width: 600px;
   transition: all 0.3s ease;
+}
+
+.game-controls > button {
+  width: 100%;
+}
+
+.lobby-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobby-controls button {
+  width: 100%;
+}
+
+.endgame-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
 }
 
 .submissions-count {

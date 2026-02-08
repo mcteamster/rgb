@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useColor } from '../contexts/ColorContext';
 import { useGame } from '../contexts/GameContext';
-import { getUserName } from '../utils/userId';
 import { Button } from './Button';
 import { PlayerDescriber } from './PlayerDescriber';
 import { PlayerGuesser } from './PlayerGuesser';
@@ -14,13 +12,11 @@ interface GameManagerProps {
 }
 
 export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTips }) => {
-  const navigate = useNavigate();
   const { selectedColor, isColorLocked, setIsColorLocked, showSliders, setShowSliders, setSelectedColor, setSelectedHue } = useColor();
   const { gameState, startRound, playerId, submitDescription, updateDraftDescription, submitColor, getCurrentRound, finaliseGame, resetGame, closeRoom } = useGame();
   const [description, setDescription] = useState('');
   const [inputDisabled, setInputDisabled] = useState(false);
   const [nextRoundDisabled, setNextRoundDisabled] = useState(false);
-  const [userName] = useState(getUserName());
 
   const currentRound = getCurrentRound();
   const isDescriber = currentRound?.describerId === playerId;
@@ -151,7 +147,6 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
           {isReveal && (
             <Button 
               onClick={handleNextRound} 
-              style={{ width: '100%' }}
               variant={nextRoundDisabled ? 'disabled' : 'primary'}
               disabled={nextRoundDisabled}
             >
@@ -160,7 +155,7 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
           )}
 
           {isEndgame && isHost && (
-            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+            <div className="endgame-actions">
               <Button
                 onClick={handleReplay}
               >
@@ -177,8 +172,8 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
         </div>
       ) : (
         <div className="lobby-controls">
-          {canStartRound && <Button onClick={startRound} style={{ width: '100%' }}>Start Game</Button>}
-          <Button onClick={onShowAbout} variant="primary" style={{ width: '100%', marginTop: canStartRound ? '10px' : '0' }}>
+          {canStartRound && <Button onClick={startRound}>Start Game</Button>}
+          <Button onClick={onShowAbout} variant="primary">
             How to Play?
           </Button>
         </div>
