@@ -35,7 +35,7 @@ export const GameTitle: React.FC<GameTitleProps> = ({ prefix = 'On', showDailyCh
           }}
           onClick={() => navigate('/daily')}
         >
-          Daily Challenge →
+          ✨ Daily Challenge →
         </div>
       )}
     </div>
