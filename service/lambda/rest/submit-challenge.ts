@@ -138,8 +138,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             await dynamodb.send(new PutCommand({
                 TableName: SUBMISSIONS_TABLE,
                 Item: {
-                    challengeId: submission.challengeId,
                     userId: submission.userId,
+                    challengeId: submission.challengeId,
                     userName: submission.userName || 'Anonymous',
                     submittedColor: submission.color,
                     submittedAt,
@@ -149,7 +149,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     fingerprint: submission.fingerprint,
                     ttl
                 },
-                ConditionExpression: 'attribute_not_exists(challengeId) AND attribute_not_exists(userId)'
+                ConditionExpression: 'attribute_not_exists(userId) AND attribute_not_exists(challengeId)'
             }));
         } catch (error: any) {
             if (error.name === 'ConditionalCheckFailedException') {

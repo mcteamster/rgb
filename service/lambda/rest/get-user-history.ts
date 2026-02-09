@@ -24,10 +24,9 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const limit = Math.min(parseInt(event.queryStringParameters?.limit || '30'), 100);
 
-        // Query user's submissions using GSI
+        // Query user's submissions (no longer needs GSI)
         const submissionsResult = await dynamodb.send(new QueryCommand({
             TableName: SUBMISSIONS_TABLE,
-            IndexName: 'UserIdIndex',
             KeyConditionExpression: 'userId = :userId',
             ExpressionAttributeValues: {
                 ':userId': userId

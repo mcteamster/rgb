@@ -41,7 +41,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         if (userId) {
             const submissionResult = await dynamodb.send(new GetCommand({
                 TableName: SUBMISSIONS_TABLE,
-                Key: { challengeId, userId }
+                Key: { userId, challengeId }
             }));
 
             if (submissionResult.Item) {

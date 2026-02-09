@@ -7,6 +7,8 @@ import * as events from 'aws-cdk-lib/aws-events';
 import * as targets from 'aws-cdk-lib/aws-events-targets';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as lambdaEventSources from 'aws-cdk-lib/aws-lambda-event-sources';
 import { Construct } from 'constructs';
 
 export class DailyChallengeStack extends cdk.Stack {
@@ -22,31 +24,37 @@ export class DailyChallengeStack extends cdk.Stack {
     });
 
     const dailySubmissionsTable = new dynamodb.Table(this, 'DailySubmissionsTable', {
-      tableName: 'rgb-daily-submissions',
-      partitionKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      tableName: 'rgb-daily-user-submissions',
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING },
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
-      timeToLiveAttribute: 'ttl'
-    });
-
-    dailySubmissionsTable.addGlobalSecondaryIndex({
-      indexName: 'UserIdIndex',
-      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      sortKey: { name: 'challengeId', type: dynamodb.AttributeType.STRING }
+      timeToLiveAttribute: 'ttl',
+      stream: dynamodb.StreamViewType.NEW_IMAGE
     });
 
     // Lambda Execution Role
     const lambdaExecutionRole = new iam.Role(this, 'DailyChallengeLambdaRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
-      ]
+      inlinePolicies: {
+        LambdaExecutionPolicy: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              actions: [
+                'logs:CreateLogGroup',
+                'logs:CreateLogStream',
+                'logs:PutLogEvents'
+              ],
+              resources: ['arn:aws:logs:*:*:*']
+            })
+          ]
+        })
+      }
     });
 
     // Certificate for custom domain
     const certificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
-      domainName: 'api.rgb.mcteamster.com',
+      domainName: 'rest.rgb.mcteamster.com',
       validation: certificatemanager.CertificateValidation.fromDns()
     });
 
@@ -65,7 +73,7 @@ export class DailyChallengeStack extends cdk.Stack {
 
     // Custom domain
     const customDomain = new apigateway.DomainName(this, 'ApiDomainName', {
-      domainName: 'api.rgb.mcteamster.com',
+      domainName: 'rest.rgb.mcteamster.com',
       certificate: certificate,
       endpointType: apigateway.EndpointType.REGIONAL
     });
@@ -81,7 +89,7 @@ export class DailyChallengeStack extends cdk.Stack {
 
     new route53.ARecord(this, 'ApiAliasRecord', {
       zone: hostedZone,
-      recordName: 'api.rgb',
+      recordName: 'rest.rgb',
       target: route53.RecordTarget.fromAlias({
         bind: () => ({
           dnsName: customDomain.domainNameAliasDomainName,
@@ -94,7 +102,7 @@ export class DailyChallengeStack extends cdk.Stack {
     const getCurrentChallengeFunction = new lambda.Function(this, 'GetCurrentChallengeFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'get-current-challenge.handler',
-      code: lambda.Code.fromAsset('dist/lambda/daily-challenge'),
+      code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
       environment: {
         CHALLENGES_TABLE: dailyChallengesTable.tableName,
@@ -105,7 +113,7 @@ export class DailyChallengeStack extends cdk.Stack {
     const submitChallengeFunction = new lambda.Function(this, 'SubmitChallengeFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'submit-challenge.handler',
-      code: lambda.Code.fromAsset('dist/lambda/daily-challenge'),
+      code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
       timeout: cdk.Duration.seconds(10),
       environment: {
@@ -117,7 +125,7 @@ export class DailyChallengeStack extends cdk.Stack {
     const getStatsFunction = new lambda.Function(this, 'GetStatsFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'get-stats.handler',
-      code: lambda.Code.fromAsset('dist/lambda/daily-challenge'),
+      code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
       timeout: cdk.Duration.seconds(10),
       environment: {
@@ -129,7 +137,7 @@ export class DailyChallengeStack extends cdk.Stack {
     const getUserHistoryFunction = new lambda.Function(this, 'GetUserHistoryFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'get-user-history.handler',
-      code: lambda.Code.fromAsset('dist/lambda/daily-challenge'),
+      code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
       timeout: cdk.Duration.seconds(10),
       environment: {
@@ -141,7 +149,7 @@ export class DailyChallengeStack extends cdk.Stack {
     const createDailyChallengeFunction = new lambda.Function(this, 'CreateDailyChallengeFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'create-daily-challenge.handler',
-      code: lambda.Code.fromAsset('dist/lambda/daily-challenge'),
+      code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
       environment: {
         CHALLENGES_TABLE: dailyChallengesTable.tableName
@@ -192,9 +200,48 @@ export class DailyChallengeStack extends cdk.Stack {
     });
     createChallengeRule.addTarget(new targets.LambdaFunction(createDailyChallengeFunction));
 
+    // S3 Bucket for Analytics
+    const analyticsBucket = new s3.Bucket(this, 'AnalyticsBucket', {
+      bucketName: `rgb-analytics-${this.account}`,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      lifecycleRules: [
+        {
+          transitions: [
+            {
+              storageClass: s3.StorageClass.INTELLIGENT_TIERING,
+              transitionAfter: cdk.Duration.days(30)
+            }
+          ]
+        }
+      ]
+    });
+
+    // Stream Processor Lambda
+    const streamProcessorFunction = new lambda.Function(this, 'StreamProcessorFunction', {
+      runtime: lambda.Runtime.NODEJS_24_X,
+      handler: 'stream-processor.handler',
+      code: lambda.Code.fromAsset('dist/lambda/analytics'),
+      role: lambdaExecutionRole,
+      timeout: cdk.Duration.seconds(60),
+      environment: {
+        ANALYTICS_BUCKET: analyticsBucket.bucketName
+      }
+    });
+
+    // Grant S3 write permissions
+    analyticsBucket.grantWrite(streamProcessorFunction);
+
+    // Add DynamoDB Stream as event source
+    streamProcessorFunction.addEventSource(new lambdaEventSources.DynamoEventSource(dailySubmissionsTable, {
+      startingPosition: lambda.StartingPosition.LATEST,
+      batchSize: 100,
+      maxBatchingWindow: cdk.Duration.seconds(10),
+      retryAttempts: 3
+    }));
+
     // Outputs
     new cdk.CfnOutput(this, 'DailyChallengeApiUrl', {
-      value: `https://api.rgb.mcteamster.com`,
+      value: `https://rest.rgb.mcteamster.com`,
       description: 'Daily Challenge API URL'
     });
 
@@ -211,6 +258,11 @@ export class DailyChallengeStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'SubmissionsTableName', {
       value: dailySubmissionsTable.tableName,
       description: 'Daily Submissions Table Name'
+    });
+
+    new cdk.CfnOutput(this, 'AnalyticsBucketName', {
+      value: analyticsBucket.bucketName,
+      description: 'Analytics S3 Bucket Name'
     });
   }
 }

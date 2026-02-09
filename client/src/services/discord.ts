@@ -17,7 +17,7 @@ export function initaliseDiscord() {
       },
       {
         prefix: '/rest',
-        target: 'api.rgb.mcteamster.com'
+        target: 'rest.rgb.mcteamster.com'
       },
       ...Object.keys(ENDPOINTS).map((endpoint) => {
         return {
