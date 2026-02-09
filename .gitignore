@@ -9,3 +9,4 @@ cdk.out
 # Other
 .DS_Store
 dist
+prompts.json
