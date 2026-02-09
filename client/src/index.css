@@ -1,3 +1,5 @@
+@import "./styles/daily-challenge.css";
+
 :root {
   --bg-white-95: rgba(255, 255, 255, 0.95);
   --bg-white-90: rgba(255, 255, 255, 0.9);
@@ -5,6 +7,8 @@
   --border-radius-large: 20px;
   --border-radius-medium: 16px;
   --border-radius-small: 8px;
+  --border-radius-xsmall: 6px;
+  --border-radius-xxsmall: 4px;
   --header-offset: 0px;
 }
 
@@ -126,19 +130,20 @@ body {
 }
 
 .increment-btn {
-  width: 32px;
-  height: 32px;
+  width: 24px;
+  height: 24px;
   background: #f8f9fa;
   color: #333;
   border: 1px solid #dee2e6;
   border-radius: var(--border-radius-small);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: bold;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .increment-btn:hover {
@@ -367,7 +372,7 @@ body {
 .game-id.clickable {
   cursor: pointer;
   padding: 0.25rem 0.5rem;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
   transition: background-color 0.2s ease;
   font-weight: bold;
   position: relative;
@@ -408,7 +413,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-white-90);
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem;
   border-radius: var(--border-radius-large);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 30;
@@ -424,7 +429,7 @@ body {
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-white-90);
-  padding: 0.75rem 1.5rem;
+  padding: 1rem;
   border-radius: var(--border-radius-large);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   z-index: 30;
@@ -434,6 +439,8 @@ body {
   text-align: center;
   line-height: 1.5;
   overflow-y: auto;
+  display: flex;
+  justify-content: center;
 }
 
 /* Game Lobby */
@@ -467,7 +474,7 @@ body {
   background: #ff6b6b;
   color: white;
   padding: 1rem;
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   margin-bottom: 1rem;
   cursor: pointer;
   text-align: center;
@@ -566,7 +573,7 @@ body {
   flex: none;
   font-size: 1.1rem;
   padding: 1.2rem;
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   min-height: 52px;
 }
 
@@ -576,7 +583,7 @@ body {
   color: #34495e;
   border: 1px solid #d5dbdb;
   padding: 1rem 1.5rem;
-  border-radius: 12px;
+  border-radius: var(--border-radius-medium);
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -597,7 +604,7 @@ body {
   color: white;
   border: none;
   padding: 1rem 1.5rem;
-  border-radius: 12px;
+  border-radius: var(--border-radius-medium);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
@@ -676,6 +683,26 @@ body {
   width: calc(100% - 40px);
   max-width: 600px;
   transition: all 0.3s ease;
+}
+
+.game-controls > button {
+  width: 100%;
+}
+
+.lobby-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lobby-controls button {
+  width: 100%;
+}
+
+.endgame-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
 }
 
 .submissions-count {
@@ -811,7 +838,7 @@ textarea:-ms-input-placeholder {
   padding: 0;
   font-size: 0.65rem;
   background-color: transparent;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
   margin-bottom: 0.25rem;
 }
 
@@ -820,7 +847,7 @@ textarea:-ms-input-placeholder {
   height: 50px;
   background-color: #f8f9fa;
   padding: 8px;
-  border-radius: 6px;
+  border-radius: var(--border-radius-xsmall);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -881,7 +908,7 @@ textarea:-ms-input-placeholder {
   padding: 0.5rem;
   background: #f8f9fa;
   border: 1px solid #dee2e6;
-  border-radius: 6px;
+  border-radius: var(--border-radius-xsmall);
   cursor: pointer;
   transition: all 0.2s ease;
   font-size: 0.9rem;
@@ -907,7 +934,7 @@ textarea:-ms-input-placeholder {
   padding: 12px;
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
 }
 
 .config-group {
@@ -951,7 +978,7 @@ textarea:-ms-input-placeholder {
   border: 2px solid rgba(0, 0, 0, 0.3);
   background: rgba(255, 255, 255, 0.2);
   color: rgba(0, 0, 0, 0.8);
-  border-radius: 6px;
+  border-radius: var(--border-radius-xsmall);
   cursor: pointer;
   font-size: 16px;
   font-weight: 600;
@@ -992,7 +1019,7 @@ textarea:-ms-input-placeholder {
   border: 2px solid rgba(0, 0, 0, 0.3);
   background: rgba(255, 255, 255, 0.2);
   color: rgba(0, 0, 0, 0.8);
-  border-radius: 6px;
+  border-radius: var(--border-radius-xsmall);
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
@@ -1070,7 +1097,7 @@ textarea:-ms-input-placeholder {
   align-items: center;
   padding: 10px 15px;
   border: 1px solid #dee2e6;
-  border-radius: 6px;
+  border-radius: var(--border-radius-xsmall);
 }
 
 .standings-info {
@@ -1124,14 +1151,14 @@ textarea:-ms-input-placeholder {
   width: 32px;
   height: 32px;
   border: 6px solid;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
 }
 
 .describer-square {
   width: 32px;
   height: 32px;
   border: 6px solid #333;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
   background-color: #f0f0f0;
   display: flex;
   align-items: center;
@@ -1159,7 +1186,7 @@ textarea:-ms-input-placeholder {
   width: 100%;
   padding: 0.5rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
   font-size: 0.9rem;
   background: white;
   text-align: center;
@@ -1210,7 +1237,7 @@ textarea:-ms-input-placeholder {
   padding: 0.5rem 0.75rem;
   margin-top: 0.75rem;
   min-height: 45px;
-  border-radius: 6px;
+  border-radius: var(--border-radius-xsmall);
   border: 1px solid #dee2e6;
 }
 
@@ -1262,7 +1289,7 @@ textarea:-ms-input-placeholder {
   font-size: 0.55rem;
   font-weight: bold;
   border: none;
-  border-radius: 10px;
+  border-radius: var(--border-radius-small);
   height: 40px;
   cursor: pointer;
 }
@@ -1297,8 +1324,8 @@ textarea:-ms-input-placeholder {
 
 .color-wheel-tips-content {
   background: white;
-  border-radius: 16px;
-  padding: 32px;
+  border-radius: var(--border-radius-medium);
+  padding: 1.5rem;
   max-width: 400px;
   margin: 20px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
@@ -1306,13 +1333,13 @@ textarea:-ms-input-placeholder {
 }
 
 .color-wheel-tips-content h3 {
-  margin: 0 0 24px 0;
+  margin: 0 0 1rem 0;
   color: #333;
   font-size: 20px;
 }
 
 .tip-visual {
-  margin-bottom: 24px;
+  margin-bottom: 1rem;
 }
 
 .exploded-wheel {
@@ -1416,7 +1443,7 @@ textarea:-ms-input-placeholder {
   color: white;
   background: rgba(0, 0, 0, 0.6);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
 }
 
 .saturation-arrow {
@@ -1501,7 +1528,7 @@ textarea:-ms-input-placeholder {
   color: white;
   background: rgba(0, 0, 0, 0.6);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
 }
 
 .saturation-label {
@@ -1514,7 +1541,7 @@ textarea:-ms-input-placeholder {
   color: white;
   background: rgba(0, 0, 0, 0.6);
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--border-radius-xxsmall);
 }
 
 .ring-label, .circle-label {
@@ -1524,7 +1551,7 @@ textarea:-ms-input-placeholder {
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
   background: rgba(0,0,0,0.6);
   padding: 4px 8px;
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   transform: rotate(-90deg);
 }
 
@@ -1560,7 +1587,7 @@ textarea:-ms-input-placeholder {
   color: white;
   border: none;
   padding: 12px 24px;
-  border-radius: 8px;
+  border-radius: var(--border-radius-small);
   font-size: 16px;
   font-weight: 600;
   cursor: pointer;
@@ -1568,6 +1595,7 @@ textarea:-ms-input-placeholder {
   margin-top: 8px;
   box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
   touch-action: manipulation;
+  width: 100%;
 }
 
 .tips-dismiss-btn:hover {

@@ -300,6 +300,6 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
           </div>
         )
       }
-    </div >
+    </div>
   );
 };

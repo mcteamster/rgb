@@ -3,11 +3,14 @@ import { Player } from '../types/game';
 import { getOrdinalSuffix } from '../utils/formatUtils';
 
 interface GameResultsProps {
-  players: Player[];
-  rounds: any[];
+  players?: Player[];
+  rounds?: any[];
 }
 
 export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => {
+  // Multiplayer game results
+  if (!players || !rounds) return null;
+
   // Sort players by score (highest first)
   const sortedPlayers = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
 

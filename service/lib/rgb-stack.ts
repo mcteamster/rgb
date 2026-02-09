@@ -55,6 +55,12 @@ export class RgbStack extends cdk.Stack {
       validation: certificatemanager.CertificateValidation.fromDns(),
     });
 
+    // Export certificate ARN for use in other stacks
+    new cdk.CfnOutput(this, 'CertificateArn', {
+      value: certificate.certificateArn,
+      exportName: 'RgbCertificateArn'
+    });
+
     const domainName = props.endpoints[this.region];
     const apiDomainName = new apigatewayv2.DomainName(this, 'ApiDomainName', {
       domainName: domainName,

@@ -35,16 +35,9 @@ const AnimatedScore: React.FC<{ finalScore: number; roundScore: number }> = ({ f
   return <span>{displayScore}</span>;
 };
 
-interface RoundRevealProps {
-  currentRound: GameRound;
-  players: Player[];
-}
-
-export const RoundReveal: React.FC<RoundRevealProps> = ({
-  currentRound,
-  players
-}) => {
+export const RoundReveal: React.FC<RoundRevealProps> = ({ currentRound, players }) => {
   const playerRankings = usePlayerRankings(players);
+
   return (
     <div className="reveal-phase" style={{ textAlign: 'center', paddingBottom: '20px' }}>
       <div className="target-vs-guesses" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>

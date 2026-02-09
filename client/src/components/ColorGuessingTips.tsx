@@ -29,13 +29,14 @@ export const ColorWheelTips: React.FC<ColorWheelTipsProps> = ({ onDismiss }) => 
           </div>
           
           <div className="tip-instructions">
+            <b>Pick a color to match the prompt</b>
             <p>Outer Ring for Color Family</p>
             <p>Inner Circle for Intensity & Brightness</p>
           </div>
         </div>
         
         <button className="tips-dismiss-btn" onClick={onDismiss}>
-          Close
+          Let's Play
         </button>
       </div>
     </div>

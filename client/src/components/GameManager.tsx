@@ -147,16 +147,16 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
           {isReveal && (
             <Button 
               onClick={handleNextRound} 
-              style={{ width: '100%' }}
               variant={nextRoundDisabled ? 'disabled' : 'primary'}
               disabled={nextRoundDisabled}
+              fullWidth
             >
               {isReadyForEndgame() ? 'Game Summary' : 'Next Round'}
             </Button>
           )}
 
           {isEndgame && isHost && (
-            <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+            <div className="endgame-actions">
               <Button
                 onClick={handleReplay}
               >
@@ -173,8 +173,8 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
         </div>
       ) : (
         <div className="lobby-controls">
-          {canStartRound && <Button onClick={startRound} style={{ width: '100%' }}>Start Game</Button>}
-          <Button onClick={onShowAbout} variant="primary" style={{ width: '100%', marginTop: canStartRound ? '10px' : '0' }}>
+          {canStartRound && <Button onClick={startRound}>Start Game</Button>}
+          <Button onClick={onShowAbout} variant="primary">
             How to Play?
           </Button>
         </div>

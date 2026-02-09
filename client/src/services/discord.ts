@@ -15,6 +15,10 @@ export function initaliseDiscord() {
         prefix: '/api',
         target: 'api.mcteamster.com'
       },
+      {
+        prefix: '/rest',
+        target: 'rest.rgb.mcteamster.com'
+      },
       ...Object.keys(ENDPOINTS).map((endpoint) => {
         return {
           prefix: `/${endpoint.toLowerCase()}`,

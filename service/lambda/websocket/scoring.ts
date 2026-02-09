@@ -1,4 +1,4 @@
-interface HSLColor {
+export interface HSLColor {
     h: number; // 0-360 degrees
     s: number; // 0-100 percent
     l: number; // 0-100 percent
@@ -59,47 +59,6 @@ export function geometricNormalScoring(targetColor: HSLColor, guessedColor: HSLC
         Math.pow(lightComponent, NORMAL_CONFIG.weights.lightness),
         1 / (NORMAL_CONFIG.weights.hue + NORMAL_CONFIG.weights.saturation + NORMAL_CONFIG.weights.lightness)
     ));
-    
-    return Math.max(0, score);
-}
-
-// Convert HSL color to Cartesian coordinates in bicone space
-function hslToBiconeCartesian(color: HSLColor) {
-    const { h, s, l } = color;
-    
-    // Bicone radius varies with lightness
-    const radius = (s / 100) * Math.min(l, 100 - l) / 50;
-    
-    // Convert hue to radians
-    const hueRad = (h * Math.PI) / 180;
-    
-    // Cartesian coordinates
-    const x = radius * Math.cos(hueRad);
-    const y = radius * Math.sin(hueRad);
-    const z = (l - 50) / 50; // Normalize lightness to [-1, 1]
-    
-    return { x, y, z };
-}
-
-// True Euclidean distance in HSL bicone space
-export function biconeEuclideanScoring(targetColor: HSLColor, guessedColor: HSLColor): number {
-    // Convert both colors to bicone coordinates
-    const targetCart = hslToBiconeCartesian(targetColor);
-    const guessCart = hslToBiconeCartesian(guessedColor);
-    
-    // Calculate Euclidean distance
-    const distance = Math.sqrt(
-        (targetCart.x - guessCart.x) ** 2 +
-        (targetCart.y - guessCart.y) ** 2 +
-        (targetCart.z - guessCart.z) ** 2
-    );
-    
-    // Convert distance to score (0-100)
-    const maxDistance = 0.5;
-    const normalizedDistance = Math.min(distance / (maxDistance), 1.0);
-    
-    // Linear falloff from 100 to 0
-    const score = Math.round(100 * (1 - normalizedDistance));
     
     return Math.max(0, score);
 }
