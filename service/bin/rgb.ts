@@ -8,14 +8,6 @@ const account = process.env.CDK_ACCOUNT || process.env.CDK_DEFAULT_ACCOUNT;
 const stage = process.env.CDK_STAGE || 'prod';
 const app = new cdk.App();
 
-// Deploy Daily Challenge Stack (single region - central Europe for best global latency)
-new DailyChallengeStack(app, `rgb-daily-challenge-${stage}`, {
-  env: {
-    account,
-    region: 'eu-central-1' // Frankfurt - optimal for global latency
-  }
-});
-
 // Multi-Region Deployment for Game Service
 const regions = [
   'ap-southeast-2', // Australia
@@ -36,4 +28,15 @@ regions.forEach((region) => {
     },
     endpoints: ENDPOINTS
   });
-})
+});
+
+// Deploy Daily Challenge Stack after game service (single region - central Europe for best global latency)
+const dailyChallengeStack = new DailyChallengeStack(app, `rgb-daily-challenge-${stage}`, {
+  env: {
+    account,
+    region: 'eu-central-1' // Frankfurt - optimal for global latency
+  }
+});
+
+// Ensure daily challenge stack deploys after eu-central-1 game service stack
+dailyChallengeStack.addDependency(app.node.findChild(`rgb-service-${stage}-eu-central-1`) as cdk.Stack);

@@ -52,15 +52,17 @@ export class DailyChallengeStack extends cdk.Stack {
       }
     });
 
-    // Certificate for custom domain
-    const certificate = new certificatemanager.Certificate(this, 'ApiCertificate', {
-      domainName: 'rest.rgb.mcteamster.com',
-      validation: certificatemanager.CertificateValidation.fromDns()
-    });
+    // Look up existing wildcard certificate from regional stack
+    const certificate = certificatemanager.Certificate.fromCertificateArn(
+      this,
+      'ApiCertificate',
+      cdk.Fn.importValue('RgbCertificateArn')
+    );
 
     // REST API
     const api = new apigateway.RestApi(this, 'DailyChallengeApi', {
       restApiName: 'RGB Daily Challenge API',
+      endpointTypes: [apigateway.EndpointType.REGIONAL],
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
         allowMethods: ['GET', 'POST', 'OPTIONS']
