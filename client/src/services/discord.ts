@@ -24,10 +24,18 @@ export function initaliseDiscord() {
           prefix: `/${endpoint.toLowerCase()}`,
           target: ENDPOINTS[endpoint as keyof typeof ENDPOINTS].replace('wss://', '')
         }
-      })
+      }),
+      {
+        prefix: '/bing',
+        target: 'c.bing.com'
+      },
+      {
+        prefix: '/clarity/{subdomain}',
+        target: '{subdomain}.clarity.ms'
+      },
     ]
     console.log('Discord init: Applying URL patches:', urlPatches);
-    patchUrlMappings(urlPatches);
+    patchUrlMappings(urlPatches, { patchSrcAttributes: true });
 
     discordSdk = new DiscordSDK("1458048532639514800");
     (async () => {

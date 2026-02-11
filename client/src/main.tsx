@@ -6,13 +6,14 @@ import { initClarity } from './services/clarity'
 import { initaliseDiscord } from './services/discord';
 
 // Initialise Discord
-if (initaliseDiscord() && (window.innerWidth / window.innerHeight < 1)) {
+const isDiscord = initaliseDiscord();
+if (isDiscord && (window.innerWidth / window.innerHeight < 1)) {
   document.documentElement.style.setProperty('--header-offset', '50px');
 }
 
 // Initialize Clarity
 if (import.meta.env.VITE_CLARITY_PROJECT_ID) {
-  initClarity(import.meta.env.VITE_CLARITY_PROJECT_ID);
+  initClarity(import.meta.env.VITE_CLARITY_PROJECT_ID, isDiscord);
 }
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
