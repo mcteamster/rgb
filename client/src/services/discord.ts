@@ -21,7 +21,7 @@ export function initaliseDiscord() {
       },
       ...Object.keys(ENDPOINTS).map((endpoint) => {
         return {
-          prefix: `/${endpoint.toLowerCase()}`,
+          prefix: `/region/${endpoint.toLowerCase()}`,
           target: ENDPOINTS[endpoint as keyof typeof ENDPOINTS].replace('wss://', '')
         }
       }),
