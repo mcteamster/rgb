@@ -31,6 +31,8 @@ export const GameContainer: React.FC = () => {
   const [showTips, setShowTips] = useState(false);
   const [shouldShowTips, setShouldShowTips] = useState<'auto' | 'manual' | 'dismissed'>('auto');
 
+  const isScreenTooSmall = size.width < 320 || size.height < 568;
+
   useEffect(() => {
     const handleResize = () => {
       setSize({ width: window.innerWidth, height: window.innerHeight });
@@ -136,7 +138,7 @@ export const GameContainer: React.FC = () => {
   // Show lobby modal over color wheel if not in a game
   if (!gameState || !playerId) {
     return (
-      <div className="app-container">
+      <div className="app-container" style={{ display: isScreenTooSmall ? 'none' : 'block' }}>
         <RainbowIcon onShowAbout={() => setShowAbout(true)} />
         <ConnectionStatus />
         <GameNavbar />
@@ -153,7 +155,7 @@ export const GameContainer: React.FC = () => {
   const isEndgame = currentRound?.phase === 'endgame';
 
   return (
-    <div className="app-container game-active">
+    <div className="app-container game-active" style={{ display: isScreenTooSmall ? 'none' : 'flex' }}>
       <RainbowIcon onShowAbout={() => setShowAbout(true)} />
       <ConnectionStatus />
       <GameNavbar />
