@@ -10,7 +10,7 @@ export const AWS_REGIONS = {
   'us-west-2': 'USW',
 };
 
-export const API_BASE_URL = 'https://api.mcteamster.com';
+export const API_BASE_URL = 'https://api.ohnomer.com';
 
 export const ENDPOINTS = {
   'AU': 'wss://au.rgb.mcteamster.com',

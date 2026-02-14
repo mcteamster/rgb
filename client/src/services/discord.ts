@@ -13,7 +13,7 @@ export function initaliseDiscord() {
     const urlPatches = [
       {
         prefix: '/api',
-        target: 'api.mcteamster.com'
+        target: 'api.ohnomer.com'
       },
       {
         prefix: '/rest',
