@@ -437,9 +437,12 @@
 .history-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
   width: 100%;
   max-width: 800px;
+  max-height: 67vh;
+  overflow-y: auto;
+  gap: 24px;
+  padding-right: 8px;
 }
 
 .history-title {
@@ -542,8 +545,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  max-height: 400px;
-  overflow-y: auto;
 }
 
 .history-item {

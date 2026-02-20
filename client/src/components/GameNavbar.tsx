@@ -41,7 +41,7 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   if (dailyChallengeMode) {
     const today = new Date();
     const dateString = today.toISOString().split('T')[0];
-    const userName = getUserName() || '';
+    const userName = getUserName() || '👤';
 
     return (
       <div className="game-header">

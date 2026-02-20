@@ -9,6 +9,7 @@ interface DailyChallengeHistoryProps {
 export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ userId }) => {
   const [history, setHistory] = useState<HistoryResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setIsLoading(true);
@@ -17,6 +18,16 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
       .catch(console.error)
       .finally(() => setIsLoading(false));
   }, [userId]);
+
+  const scrollToDate = (challengeId: string) => {
+    const element = document.getElementById(`history-item-${challengeId}`);
+    const container = containerRef.current;
+    if (element && container) {
+      const elementTop = element.offsetTop;
+      const containerTop = container.offsetTop;
+      container.scrollTo({ top: elementTop - containerTop - 20, behavior: 'smooth' });
+    }
+  };
 
   if (isLoading) {
     return <div className="loading-message">Loading history...</div>;
@@ -27,7 +38,7 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
   }
 
   return (
-    <div className="history-container">
+    <div className="history-container" ref={containerRef}>
       <h3 className="history-title">Last 30 Days</h3>
       <div className="history-stats">
         <div className="stat-item">
@@ -61,6 +72,8 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
               key={dateStr} 
               className="calendar-day"
               title={submission ? `${dateStr}: ${submission.score} pts` : dateStr}
+              onClick={() => submission && scrollToDate(dateStr)}
+              style={{ cursor: submission ? 'pointer' : 'default' }}
             >
               {submission ? (
                 <div 
@@ -84,7 +97,7 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
 
       <div className="history-list">
         {history.submissions.map((submission) => (
-          <div key={submission.challengeId} className="history-item">
+          <div key={submission.challengeId} id={`history-item-${submission.challengeId}`} className="history-item">
             <div className="history-text">
               <div className="history-date">{submission.challengeId}</div>
               <div className="history-prompt">"{submission.prompt}"</div>
