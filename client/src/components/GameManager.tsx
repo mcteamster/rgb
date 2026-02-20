@@ -147,7 +147,7 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
           {isReveal && (
             <Button 
               onClick={handleNextRound} 
-              variant={nextRoundDisabled ? 'disabled' : 'primary'}
+              variant="primary"
               disabled={nextRoundDisabled}
               fullWidth
             >

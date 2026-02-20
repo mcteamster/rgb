@@ -581,8 +581,7 @@ body {
   min-height: 52px;
 }
 
-.back-btn,
-.close-btn {
+.back-btn {
   background: #ecf0f1;
   color: #34495e;
   border: 1px solid #d5dbdb;
@@ -597,8 +596,7 @@ body {
   flex: 1;
 }
 
-.back-btn:hover,
-.close-btn:hover {
+.back-btn:hover {
   background: #d5dbdb;
   border-color: #bdc3c7;
 }
@@ -621,52 +619,6 @@ body {
 
 .exit-game-btn:hover {
   background: #c0392b;
-}
-
-.disabled-btn {
-  background: #ccc;
-  color: #666;
-  border: none;
-  padding: 1rem 1.5rem;
-  border-radius: var(--border-radius-medium);
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: not-allowed;
-  transition: all 0.2s;
-  margin: 0;
-  min-height: 56px;
-  touch-action: manipulation;
-  flex: 1;
-  box-shadow: 0 4px 12px rgba(204, 204, 204, 0.3);
-}
-
-.ready-button {
-  width: 80px;
-  height: 60px;
-  padding: 4px 8px;
-  border: 2px solid #000;
-  border-radius: var(--border-radius-small);
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.ready-button.not-ready {
-  background: #6b7280;
-  color: white;
-}
-
-.ready-button.not-ready:hover {
-  background: #4b5563;
-}
-
-.ready-button.ready {
-  background: #22c55e;
-  color: white;
 }
 
 .ready-button.ready:hover {

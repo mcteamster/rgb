@@ -31,7 +31,7 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
   if (userSubmission) {
     return (
       <div className="game-controls results-actions">
-        <Button onClick={() => navigate('/')} variant="back">
+        <Button onClick={() => navigate('/')} variant="exit">
           Home
         </Button>
         <Button onClick={onShowLeaderboard} variant="primary">

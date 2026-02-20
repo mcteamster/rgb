@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameTitle } from '../GameTitle';
 import { DailyChallengeManager } from './DailyChallengeManager';
 import { DailyChallengeDisplay } from './DailyChallengeDisplay';
@@ -17,6 +18,7 @@ import { getUserId } from '../../utils/userId';
 const DAILY_CHALLENGE_TIPS_KEY = 'dailyChallengeTipsSeen';
 
 export const DailyChallenge: React.FC = () => {
+    const navigate = useNavigate();
     const { selectedColor } = useColor();
     const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
@@ -95,8 +97,11 @@ export const DailyChallenge: React.FC = () => {
                 <>
                     <DailyChallengeResults />
                     <div className="game-controls results-actions">
-                        <Button onClick={() => setShowLeaderboard(false)} variant="back">
-                            Back to Results
+                        <Button onClick={() => navigate('/')} variant="exit">
+                            Home
+                        </Button>
+                        <Button onClick={() => setShowLeaderboard(false)} variant="primary">
+                            Results
                         </Button>
                     </div>
                 </>
