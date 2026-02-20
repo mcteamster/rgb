@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
@@ -11,6 +12,7 @@ interface PlayerLobbyProps {
 }
 
 export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
+  const navigate = useNavigate();
   const { createGame, joinGame, error, clearError, savedPlayerName, currentRegion, setRegion } = useGame();
   const [step, setStep] = useState<LobbyStep>(() => {
     // If there's a valid room code or stored session, go to join form
@@ -87,14 +89,19 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
       <Notification region={currentRegion} errors={error} onClearError={clearError} />
 
       {step === 'choose' && (
-        <div className="lobby-actions">
-          <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
-            Create
+        <>
+          <Button onClick={() => navigate('/daily')} variant="primary" disabled={isLoading} fullWidth>
+            ✨ Daily Challenge [BETA]
           </Button>
-          <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
-            Join
-          </Button>
-        </div>
+          <div className="lobby-actions">
+            <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
+              Create
+            </Button>
+            <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
+              Join
+            </Button>
+          </div>
+        </>
       )}
 
       {step === 'create' && (
