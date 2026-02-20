@@ -19,7 +19,7 @@ const DAILY_CHALLENGE_TIPS_KEY = 'dailyChallengeTipsSeen';
 
 export const DailyChallenge: React.FC = () => {
     const navigate = useNavigate();
-    const { selectedColor } = useColor();
+    const { selectedColor, setIsColorLocked } = useColor();
     const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
@@ -34,6 +34,10 @@ export const DailyChallenge: React.FC = () => {
     useEffect(() => {
         setBodyBackground(selectedColor);
     }, [selectedColor]);
+
+    useEffect(() => {
+        return () => setIsColorLocked(false);
+    }, [setIsColorLocked]);
 
     useEffect(() => {
         // Show tips on first visit if not submitted yet
