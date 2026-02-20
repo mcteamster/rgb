@@ -6,9 +6,10 @@ import { getUserName } from '../utils/userId';
 
 interface GameNavbarProps {
   dailyChallengeMode?: boolean;
+  onToggleHistory?: () => void;
 }
 
-export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode }) => {
+export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory }) => {
   const { gameState, playerName, getCurrentRound } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
 
@@ -45,7 +46,13 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode }) =>
     return (
       <div className="game-header">
         <div className="header-main">
-          <div className="player-name">{userName}</div>
+          <div 
+            className="player-name" 
+            onClick={onToggleHistory}
+            style={{ cursor: onToggleHistory ? 'pointer' : 'default' }}
+          >
+            {userName}
+          </div>
           <div className="game-status">Daily Challenge</div>
           <div className="room-code">{dateString}</div>
         </div>

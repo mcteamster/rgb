@@ -431,3 +431,182 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* History Styles */
+.history-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 800px;
+}
+
+.history-title {
+  color: #333;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.history-calendar {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: var(--border-radius-small);
+}
+
+.calendar-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-day-color {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-day-color:hover {
+  transform: scale(1.1);
+}
+
+.calendar-day-empty {
+  width: 100%;
+  height: 100%;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px dashed rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-day-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.calendar-day-empty .calendar-day-label {
+  color: #999;
+  text-shadow: none;
+}
+
+@media (max-width: 768px) {
+  .history-calendar {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: var(--border-radius-small);
+}
+
+.stat-item .stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.stat-item .stat-label {
+  font-size: 11px;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.history-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: var(--border-radius-small);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.history-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.history-date {
+  font-size: 12px;
+  color: #666;
+  font-weight: 600;
+}
+
+.history-prompt {
+  font-size: 14px;
+  color: #333;
+  font-style: italic;
+}
+
+.history-colors {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.history-color-box {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--border-radius-small);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.history-color-score {
+  font-size: 24px;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 768px) {
+  .history-item {
+    flex-direction: row;
+    align-items: center;
+  }
+  
+  .history-colors {
+    justify-content: flex-start;
+  }
+}

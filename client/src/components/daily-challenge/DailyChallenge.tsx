@@ -19,6 +19,7 @@ export const DailyChallenge: React.FC = () => {
     const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
     const [showTips, setShowTips] = useState(false);
     const size = useWindowSize();
 
@@ -66,12 +67,26 @@ export const DailyChallenge: React.FC = () => {
     }
 
     return (
-        <DailyChallengeLayout size={size} showAbout={showAbout} onShowAbout={() => setShowAbout(true)} onCloseAbout={() => setShowAbout(false)} dailyChallengeMode>
+        <DailyChallengeLayout 
+            size={size} 
+            showAbout={showAbout} 
+            onShowAbout={() => setShowAbout(true)} 
+            onCloseAbout={() => setShowAbout(false)} 
+            dailyChallengeMode
+            onToggleHistory={() => setShowHistory(!showHistory)}
+        >
             <GameTitle prefix="Off" />
             
             {showTips && <ColorWheelTips onDismiss={handleCloseTips} />}
             
-            {showLeaderboard ? (
+            {showHistory ? (
+                <>
+                    <DailyChallengeDisplay showHistory={true} />
+                    <DailyChallengeManager 
+                        onShowAbout={() => setShowAbout(true)}
+                    />
+                </>
+            ) : showLeaderboard ? (
                 <>
                     <DailyChallengeResults />
                     <div className="game-controls results-actions">
