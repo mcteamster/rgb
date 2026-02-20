@@ -81,6 +81,7 @@ export const DailyChallenge: React.FC = () => {
             onCloseAbout={() => setShowAbout(false)} 
             dailyChallengeMode
             onToggleHistory={() => setShowHistory(!showHistory)}
+            onShowTips={() => setShowTips(true)}
         >
             <GameTitle prefix="Off" />
             

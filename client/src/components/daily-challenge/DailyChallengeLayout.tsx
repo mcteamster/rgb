@@ -14,6 +14,7 @@ interface DailyChallengeLayoutProps {
   dailyChallengeMode?: boolean;
   onToggleHistory?: () => void;
   isLoading?: boolean;
+  onShowTips?: () => void;
 }
 
 export const DailyChallengeLayout: React.FC<DailyChallengeLayoutProps> = ({
@@ -24,7 +25,8 @@ export const DailyChallengeLayout: React.FC<DailyChallengeLayoutProps> = ({
   onCloseAbout,
   dailyChallengeMode = false,
   onToggleHistory,
-  isLoading
+  isLoading,
+  onShowTips
 }) => (
   <div className="app-container">
     <RainbowIcon onShowAbout={onShowAbout} />
@@ -32,6 +34,6 @@ export const DailyChallengeLayout: React.FC<DailyChallengeLayoutProps> = ({
     <GameNavbar dailyChallengeMode={dailyChallengeMode} onToggleHistory={onToggleHistory} isLoading={isLoading} />
     {children}
     <ColorWheel size={size} />
-    {showAbout && <AboutPage onClose={onCloseAbout} />}
+    {showAbout && <AboutPage onClose={onCloseAbout} onShowTips={onShowTips} />}
   </div>
 );

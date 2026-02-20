@@ -3,9 +3,10 @@ import { discordSdk } from '../services/discord';
 
 interface AboutPageProps {
   onClose: () => void;
+  onShowTips?: () => void;
 }
 
-export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
+export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => {
   const [activeTab, setActiveTab] = useState<'description' | 'privacy' | 'terms'>('description');
   const isInDiscord = !!discordSdk;
 
@@ -19,6 +20,14 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
 
   const handleDiscordClick = () => {
     window.open('https://discord.com/discovery/applications/1458048532639514800', '_blank');
+  };
+
+  const handleHuesAndCuesClick = () => {
+    if (discordSdk) {
+      discordSdk.commands.openExternalLink({ url: 'https://boardgamegeek.com/boardgame/302520/hues-and-cues' });
+    } else {
+      window.open('https://boardgamegeek.com/boardgame/302520/hues-and-cues', '_blank');
+    }
   };
 
   return (
@@ -43,7 +52,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
             className={`tab ${activeTab === 'description' ? 'active' : ''}`}
             onClick={() => setActiveTab('description')}
           >
-            Tutorial
+            About
           </button>
           <button
             className={`tab ${activeTab === 'terms' ? 'active' : ''}`}
@@ -62,15 +71,28 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
         <div className="tab-content">
           {activeTab === 'description' && (
             <div className="overview-content">
-              <h4>📝 Clue Giver: describe your mystery color in under 50 characters</h4>
-              <p>Use color names, objects, emotions, or emojis - be creative!</p>
+              <h4>How to Play</h4>
+              <p>Try to guess the color that matches the prompt. The closer your guess the better your score!</p>
 
-              <h4>🎨 Guessers: select a matching Hue, Saturation, and Lightness</h4>
-              <p>Pick using the outer ring and inner circle. Fine-tune your color then lock in your guess</p>
+              <h4>Multiplayer</h4>
+              <p>Create a game, share the code, and take turns giving clues. Highest score wins.</p>
 
-              <h4>🏆 Score (out of 100) for close guesses</h4>
-              <p>Clue Giver gets the average of all scores. Highest total after all rounds wins!</p>
-              <p><em>Inspired by "Hues and Cues" by Scott Brady.</em></p>
+              <h4>Daily Challenge</h4>
+              <p>Everybody gets the same prompt each day. Test how close you are to the community average!</p>
+
+              {onShowTips && (
+                <button 
+                  onClick={() => {
+                    onClose();
+                    onShowTips();
+                  }}
+                  className="tips-dismiss-btn"
+                >
+                  Show Tutorial
+                </button>
+              )}
+
+              <p style={{ marginTop: onShowTips ? '16px' : '0' }}><em>Inspired by <span onClick={handleHuesAndCuesClick} className="link">Hues and Cues</span> by Scott Brady.</em></p>
             </div>
           )}
 
@@ -82,6 +104,8 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
                 <li>Your color descriptions and guesses</li>
                 <li>Game scores and basic connection info</li>
                 <li>Daily challenge submissions (colors and scores)</li>
+                <li>Anonymous user ID (stored locally) for daily challenge history</li>
+                <li>Browser fingerprint for duplicate submission prevention</li>
                 <li>Usage analytics via Microsoft Clarity</li>
               </ul>
 
@@ -89,7 +113,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
               <ul>
                 <li>No personal info (email, phone, address)</li>
                 <li>No accounts or registration required</li>
-                <li>No tracking between sessions</li>
+                <li>No real names or identifiable information</li>
               </ul>
 
               <h4>How We Use It</h4>
@@ -97,22 +121,25 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose }) => {
                 <li>Enable multiplayer gameplay</li>
                 <li>Calculate scores and prevent cheating</li>
                 <li>Generate daily challenge statistics and averages</li>
+                <li>Track your personal daily challenge history (30 days)</li>
                 <li>Keep the game running smoothly</li>
               </ul>
 
               <h4>Data Storage</h4>
               <ul>
                 <li>Multiplayer game data deleted when sessions end</li>
-                <li>Daily challenge submissions stored to calculate community statistics</li>
+                <li>Daily challenge submissions stored for 30 days</li>
+                <li>Aggregate statistics (averages, standard deviations) stored permanently</li>
+                <li>Anonymous user ID stored in your browser's local storage</li>
               </ul>
 
               <h4>Sharing</h4>
-              <p>Other players see your display name, descriptions, and scores during games. Daily challenge statistics (averages, standard deviations) are publicly visible but not linked to individual players. We don't sell or share your data with anyone else.</p>
+              <p>Other players see your display name, descriptions, and scores during games. Daily challenge statistics (averages, standard deviations) are publicly visible but not linked to individual players. Your personal submission history is only visible to you. We don't sell or share your data with anyone else.</p>
 
               <h4>Your Control</h4>
-              <p>Playing is voluntary. Leave anytime. Choose any display name.</p>
+              <p>Playing is voluntary. Leave anytime. Choose any display name. Clear your browser data to reset your daily challenge history.</p>
 
-              <p><em>Updated February 9, 2026.</em></p>
+              <p><em>Updated February 20, 2026.</em></p>
             </div>
           )}
 
