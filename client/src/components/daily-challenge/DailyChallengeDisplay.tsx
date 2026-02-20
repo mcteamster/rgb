@@ -1,24 +1,10 @@
 import React from 'react';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
-import { DailyChallengeHistory } from './DailyChallengeHistory';
-import { getUserId } from '../../utils/userId';
 
-interface DailyChallengeDisplayProps {
-  showHistory?: boolean;
-}
-
-export const DailyChallengeDisplay: React.FC<DailyChallengeDisplayProps> = ({ showHistory = false }) => {
+export const DailyChallengeDisplay: React.FC = () => {
   const { currentChallenge } = useDailyChallenge();
 
   if (!currentChallenge) return null;
-
-  if (showHistory) {
-    return (
-      <div className="status-bar">
-        <DailyChallengeHistory userId={getUserId()} />
-      </div>
-    );
-  }
 
   const formatTimeRemaining = (validUntil: string) => {
     const now = new Date();

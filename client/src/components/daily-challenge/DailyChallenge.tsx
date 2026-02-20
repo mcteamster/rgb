@@ -4,6 +4,7 @@ import { DailyChallengeManager } from './DailyChallengeManager';
 import { DailyChallengeDisplay } from './DailyChallengeDisplay';
 import { DailyChallengeReveal } from './DailyChallengeReveal';
 import { DailyChallengeResults } from './DailyChallengeResults';
+import { DailyChallengeHistory } from './DailyChallengeHistory';
 import { Button } from '../Button';
 import { DailyChallengeLayout } from './DailyChallengeLayout';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
@@ -11,6 +12,7 @@ import { useColor } from '../../contexts/ColorContext';
 import { useWindowSize } from '../../hooks/useWindowSize';
 import { setBodyBackground } from '../../utils/colorUtils';
 import { ColorWheelTips } from '../ColorGuessingTips';
+import { getUserId } from '../../utils/userId';
 
 const DAILY_CHALLENGE_TIPS_KEY = 'dailyChallengeTipsSeen';
 
@@ -48,10 +50,15 @@ export const DailyChallenge: React.FC = () => {
 
     if (isLoading) {
         return (
-            <DailyChallengeLayout size={size} showAbout={showAbout} onShowAbout={() => setShowAbout(true)} onCloseAbout={() => setShowAbout(false)}>
-                <div className="status-bar">
-                  Loading...
-                </div>
+            <DailyChallengeLayout 
+                size={size} 
+                showAbout={showAbout} 
+                onShowAbout={() => setShowAbout(true)} 
+                onCloseAbout={() => setShowAbout(false)}
+                dailyChallengeMode
+                isLoading
+            >
+                <GameTitle prefix="Off" />
             </DailyChallengeLayout>
         );
     }
@@ -80,12 +87,9 @@ export const DailyChallenge: React.FC = () => {
             {showTips && <ColorWheelTips onDismiss={handleCloseTips} />}
             
             {showHistory ? (
-                <>
-                    <DailyChallengeDisplay showHistory={true} />
-                    <DailyChallengeManager 
-                        onShowAbout={() => setShowAbout(true)}
-                    />
-                </>
+                <div className="status-bar">
+                    <DailyChallengeHistory userId={getUserId()} />
+                </div>
             ) : showLeaderboard ? (
                 <>
                     <DailyChallengeResults />
