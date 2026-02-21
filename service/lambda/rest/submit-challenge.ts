@@ -106,20 +106,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        // Check if challenge is still active
-        const now = new Date();
-        const validUntil = new Date(challenge.validUntil);
-        if (now > validUntil) {
-            return {
-                statusCode: 400,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*'
-                },
-                body: JSON.stringify({ error: 'Challenge has expired' })
-            };
-        }
-
         const existingCount = challenge.totalSubmissions || 0;
         const previousAverage = challenge.averageColor;
         const previousStats = challenge.componentStats;

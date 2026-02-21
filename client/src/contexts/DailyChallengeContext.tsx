@@ -106,7 +106,9 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
                 prompt: response.challenge.prompt,
                 validFrom: response.challenge.validFrom,
                 validUntil: response.challenge.validUntil,
-                totalSubmissions: 0
+                totalSubmissions: response.challenge.totalSubmissions || 0,
+                averageColor: response.challenge.averageColor,
+                componentStats: response.challenge.componentStats
             };
 
             dispatch({

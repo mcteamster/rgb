@@ -46,10 +46,6 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
           <span className="stat-label">Days</span>
         </div>
         <div className="stat-item">
-          <span className="stat-value">{history.stats.currentStreak}</span>
-          <span className="stat-label">Streak</span>
-        </div>
-        <div className="stat-item">
           <span className="stat-value">{Math.round(history.stats.averageScore)}</span>
           <span className="stat-label">Avg</span>
         </div>

@@ -443,6 +443,12 @@
   overflow-y: auto;
   gap: 24px;
   padding-right: 8px;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.history-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .history-title {
@@ -455,7 +461,7 @@
 
 .history-stats {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
 }
 

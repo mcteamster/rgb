@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GameTitle } from '../GameTitle';
 import { DailyChallengeManager } from './DailyChallengeManager';
@@ -31,16 +31,25 @@ export const DailyChallenge: React.FC = () => {
     const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
     const size = useWindowSize();
 
-    useEffect(() => {
-        loadCurrentChallenge();
-        
-        // Load user history to get completed dates
+    const loadCompletedDates = useCallback(() => {
         const userId = getUserId();
         dailyChallengeApi.getUserHistory(userId, 30).then(response => {
             const dates = new Set(response.submissions.map(s => s.challengeId));
             setCompletedDates(dates);
         }).catch(console.error);
     }, []);
+
+    useEffect(() => {
+        loadCurrentChallenge();
+        loadCompletedDates();
+    }, [loadCompletedDates]);
+
+    // Refresh completed dates when user submits
+    useEffect(() => {
+        if (userSubmission) {
+            loadCompletedDates();
+        }
+    }, [userSubmission, loadCompletedDates]);
 
     useEffect(() => {
         setBodyBackground(selectedColor);
@@ -68,6 +77,7 @@ export const DailyChallenge: React.FC = () => {
     const handleSelectDate = (date: string) => {
         loadChallengeByDate(date);
         setShowHistory(false);
+        setIsColorLocked(false);
     };
 
     if (isLoading) {
