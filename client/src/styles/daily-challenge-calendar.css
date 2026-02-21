@@ -8,13 +8,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 100;
 }
 
 .calendar-modal {
   background: white;
-  border-radius: 12px;
-  padding: 24px;
+  border-radius: var(--border-radius-large);
+  padding: 16px;
   max-width: 500px;
   width: 90%;
   max-height: 80vh;
@@ -35,12 +35,13 @@
 }
 
 .calendar-close {
-  background: none;
+  background: #dc3545;
   border: none;
-  font-size: 2rem;
-  color: #666;
+  font-size: 14px;
+  color: white;
   cursor: pointer;
-  padding: 0;
+  padding: 6px;
+  border-radius: var(--border-radius-medium);
   width: 32px;
   height: 32px;
   display: flex;
@@ -50,7 +51,7 @@
 }
 
 .calendar-close:hover {
-  color: #333;
+  background: #c82333;
 }
 
 .calendar-months {
@@ -110,8 +111,8 @@
 }
 
 .day-button.today {
-  border-color: #4CAF50;
-  background: #f0f8f0;
+  border-color: #666;
+  font-weight: 700;
 }
 
 .day-button.completed {

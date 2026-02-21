@@ -1177,10 +1177,9 @@ textarea:-ms-input-placeholder {
 
 .history-sidebar-expanded {
   left: 20px;
-  right: 20px;
+  right: auto;
   z-index: 50;
   max-width: 840px;
-  margin: 0 auto;
 }
 
 .player-list {
