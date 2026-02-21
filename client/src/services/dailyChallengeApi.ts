@@ -22,6 +22,14 @@ export class DailyChallengeAPI {
         return response.json();
     }
 
+    async getChallengeByDate(date: string, userId: string): Promise<{ challenge: any; userSubmission: any }> {
+        const response = await fetch(`${this.baseUrl}/daily-challenge/by-date/${date}?userId=${userId}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch challenge: ${response.statusText}`);
+        }
+        return response.json();
+    }
+
     async submitChallenge(submission: SubmissionRequest): Promise<SubmissionResponse> {
         const response = await fetch(`${this.baseUrl}/daily-challenge/submit`, {
             method: 'POST',

@@ -65,6 +65,35 @@ export const handler = async (event: EventBridgeEvent<string, any>): Promise<voi
         }));
 
         console.log(`Successfully created challenge for ${challengeId}: "${prompt}"`);
+
+        // Mark challenges older than 30 days as inactive
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const oldChallengeId = thirtyDaysAgo.toISOString().split('T')[0];
+
+        try {
+            await dynamodb.send(new UpdateCommand({
+                TableName: CHALLENGES_TABLE,
+                Key: { challengeId: oldChallengeId },
+                UpdateExpression: 'SET #status = :inactive, updatedAt = :now',
+                ConditionExpression: 'attribute_exists(challengeId) AND #status = :active',
+                ExpressionAttributeNames: {
+                    '#status': 'status'
+                },
+                ExpressionAttributeValues: {
+                    ':inactive': 'inactive',
+                    ':active': 'active',
+                    ':now': new Date().toISOString()
+                }
+            }));
+            console.log(`Marked challenge ${oldChallengeId} as inactive`);
+        } catch (error: any) {
+            if (error.name === 'ConditionalCheckFailedException') {
+                console.log(`Challenge ${oldChallengeId} already inactive or doesn't exist`);
+            } else {
+                console.error(`Error marking old challenge inactive:`, error);
+            }
+        }
     } catch (error) {
         console.error('Error creating daily challenge:', error);
         throw error;

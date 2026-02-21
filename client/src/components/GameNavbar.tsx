@@ -7,10 +7,12 @@ import { getUserName } from '../utils/userId';
 interface GameNavbarProps {
   dailyChallengeMode?: boolean;
   onToggleHistory?: () => void;
+  onShowCalendar?: () => void;
   isLoading?: boolean;
+  challengeDate?: string;
 }
 
-export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading }) => {
+export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, onShowCalendar, isLoading, challengeDate }) => {
   const { gameState, playerName, getCurrentRound } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
 
@@ -40,8 +42,7 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
 
   // Daily challenge mode
   if (dailyChallengeMode) {
-    const today = new Date();
-    const dateString = today.toISOString().split('T')[0];
+    const dateString = challengeDate || new Date().toISOString().split('T')[0];
     const userName = getUserName() || '👤';
 
     return (
@@ -55,7 +56,13 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
             {userName}
           </div>
           <div className="game-status">{isLoading ? 'Loading...' : 'Daily Challenge'}</div>
-          <div className="room-code">{dateString}</div>
+          <div 
+            className="room-code"
+            onClick={onShowCalendar}
+            style={{ cursor: onShowCalendar ? 'pointer' : 'default' }}
+          >
+            {dateString}
+          </div>
         </div>
       </div>
     );

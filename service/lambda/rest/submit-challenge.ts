@@ -90,6 +90,22 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const challenge = challengeResult.Item;
 
+        // Check if challenge is older than 30 days
+        const challengeDate = new Date(submission.challengeId);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        if (challengeDate < thirtyDaysAgo) {
+            return {
+                statusCode: 410,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ error: 'Challenge is older than 30 days and no longer available' })
+            };
+        }
+
         // Check if challenge is still active
         const now = new Date();
         const validUntil = new Date(challenge.validUntil);

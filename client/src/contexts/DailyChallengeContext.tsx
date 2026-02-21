@@ -16,6 +16,7 @@ interface DailyChallengeState {
 
 interface DailyChallengeActions {
     loadCurrentChallenge: () => Promise<void>;
+    loadChallengeByDate: (date: string) => Promise<void>;
     submitColor: (color: HSLColor, userName: string) => Promise<void>;
     clearError: () => void;
 }
@@ -94,6 +95,33 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
         }
     }, []);
 
+    const loadChallengeByDate = useCallback(async (date: string) => {
+        try {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            const userId = getUserId();
+            const response = await dailyChallengeApi.getChallengeByDate(date, userId);
+
+            const challenge: DailyChallenge = {
+                challengeId: response.challenge.challengeId,
+                prompt: response.challenge.prompt,
+                validFrom: response.challenge.validFrom,
+                validUntil: response.challenge.validUntil,
+                totalSubmissions: 0
+            };
+
+            dispatch({
+                type: 'SET_CURRENT_CHALLENGE',
+                payload: { challenge, submission: response.userSubmission }
+            });
+        } catch (error) {
+            console.error('Failed to load challenge:', error);
+            dispatch({
+                type: 'SET_ERROR',
+                payload: error instanceof Error ? error.message : 'Failed to load challenge'
+            });
+        }
+    }, []);
+
     const submitColor = useCallback(async (color: HSLColor, userName: string) => {
         try {
             dispatch({ type: 'SET_LOADING', payload: true });
@@ -139,6 +167,7 @@ export const DailyChallengeProvider: React.FC<{ children: ReactNode }> = ({ chil
     const value = {
         ...state,
         loadCurrentChallenge,
+        loadChallengeByDate,
         submitColor,
         clearError
     };

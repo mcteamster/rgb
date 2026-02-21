@@ -148,6 +148,17 @@ export class DailyChallengeStack extends cdk.Stack {
       }
     });
 
+    const getChallengeByDateFunction = new lambda.Function(this, 'GetChallengeByDateFunction', {
+      runtime: lambda.Runtime.NODEJS_24_X,
+      handler: 'get-challenge-by-date.handler',
+      code: lambda.Code.fromAsset('dist/lambda/rest'),
+      role: lambdaExecutionRole,
+      environment: {
+        CHALLENGES_TABLE: dailyChallengesTable.tableName,
+        SUBMISSIONS_TABLE: dailySubmissionsTable.tableName
+      }
+    });
+
     const createDailyChallengeFunction = new lambda.Function(this, 'CreateDailyChallengeFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
       handler: 'create-daily-challenge.handler',
@@ -171,6 +182,9 @@ export class DailyChallengeStack extends cdk.Stack {
     dailyChallengesTable.grantReadData(getUserHistoryFunction);
     dailySubmissionsTable.grantReadData(getUserHistoryFunction);
 
+    dailyChallengesTable.grantReadData(getChallengeByDateFunction);
+    dailySubmissionsTable.grantReadData(getChallengeByDateFunction);
+
     dailyChallengesTable.grantReadWriteData(createDailyChallengeFunction);
 
     // API Routes
@@ -178,6 +192,10 @@ export class DailyChallengeStack extends cdk.Stack {
 
     const currentResource = dailyChallengeResource.addResource('current');
     currentResource.addMethod('GET', new apigateway.LambdaIntegration(getCurrentChallengeFunction));
+
+    const byDateResource = dailyChallengeResource.addResource('by-date');
+    const dateResource = byDateResource.addResource('{date}');
+    dateResource.addMethod('GET', new apigateway.LambdaIntegration(getChallengeByDateFunction));
 
     const submitResource = dailyChallengeResource.addResource('submit');
     submitResource.addMethod('POST', new apigateway.LambdaIntegration(submitChallengeFunction));

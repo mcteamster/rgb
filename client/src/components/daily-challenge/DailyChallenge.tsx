@@ -6,6 +6,7 @@ import { DailyChallengeDisplay } from './DailyChallengeDisplay';
 import { DailyChallengeReveal } from './DailyChallengeReveal';
 import { DailyChallengeResults } from './DailyChallengeResults';
 import { DailyChallengeHistory } from './DailyChallengeHistory';
+import { DailyChallengeCalendar } from './DailyChallengeCalendar';
 import { Button } from '../Button';
 import { DailyChallengeLayout } from './DailyChallengeLayout';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
@@ -14,21 +15,31 @@ import { useWindowSize } from '../../hooks/useWindowSize';
 import { setBodyBackground } from '../../utils/colorUtils';
 import { ColorWheelTips } from '../ColorGuessingTips';
 import { getUserId } from '../../utils/userId';
+import { dailyChallengeApi } from '../../services/dailyChallengeApi';
 
 const DAILY_CHALLENGE_TIPS_KEY = 'dailyChallengeTipsSeen';
 
 export const DailyChallenge: React.FC = () => {
     const navigate = useNavigate();
     const { selectedColor, setIsColorLocked } = useColor();
-    const { currentChallenge, userSubmission, loadCurrentChallenge, isLoading } = useDailyChallenge();
+    const { currentChallenge, userSubmission, loadCurrentChallenge, loadChallengeByDate, isLoading } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
+    const [showCalendar, setShowCalendar] = useState(false);
     const [showTips, setShowTips] = useState(false);
+    const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
     const size = useWindowSize();
 
     useEffect(() => {
         loadCurrentChallenge();
+        
+        // Load user history to get completed dates
+        const userId = getUserId();
+        dailyChallengeApi.getUserHistory(userId, 30).then(response => {
+            const dates = new Set(response.submissions.map(s => s.challengeId));
+            setCompletedDates(dates);
+        }).catch(console.error);
     }, []);
 
     useEffect(() => {
@@ -54,6 +65,11 @@ export const DailyChallenge: React.FC = () => {
         setShowTips(false);
     };
 
+    const handleSelectDate = (date: string) => {
+        loadChallengeByDate(date);
+        setShowHistory(false);
+    };
+
     if (isLoading) {
         return (
             <DailyChallengeLayout 
@@ -62,7 +78,9 @@ export const DailyChallenge: React.FC = () => {
                 onShowAbout={() => setShowAbout(true)} 
                 onCloseAbout={() => setShowAbout(false)}
                 dailyChallengeMode
+                onShowCalendar={() => setShowCalendar(true)}
                 isLoading
+                challengeDate={currentChallenge?.challengeId}
             >
                 <GameTitle prefix="Off" />
             </DailyChallengeLayout>
@@ -87,11 +105,20 @@ export const DailyChallenge: React.FC = () => {
             onCloseAbout={() => setShowAbout(false)} 
             dailyChallengeMode
             onToggleHistory={() => setShowHistory(!showHistory)}
+            onShowCalendar={() => setShowCalendar(true)}
             onShowTips={() => setShowTips(true)}
+            challengeDate={currentChallenge.challengeId}
         >
             <GameTitle prefix="Off" />
             
             {showTips && <ColorWheelTips onDismiss={handleCloseTips} />}
+            {showCalendar && (
+                <DailyChallengeCalendar 
+                    onClose={() => setShowCalendar(false)}
+                    onSelectDate={handleSelectDate}
+                    completedDates={completedDates}
+                />
+            )}
             
             {showHistory ? (
                 <div className="status-bar">
