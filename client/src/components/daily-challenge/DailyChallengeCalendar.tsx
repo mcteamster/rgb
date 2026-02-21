@@ -16,27 +16,28 @@ export const DailyChallengeCalendar: React.FC<DailyChallengeCalendarProps> = ({
 
   useEffect(() => {
     const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    const thirtyDaysAgo = new Date(todayUTC);
+    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29);
     
     const days = [];
     const currentDate = new Date(thirtyDaysAgo);
     
     // Collect all available days
-    while (currentDate <= today) {
+    while (currentDate <= new Date(todayUTC)) {
       const dateString = currentDate.toISOString().split('T')[0];
-      const isToday = dateString === today.toISOString().split('T')[0];
+      const isToday = dateString === new Date(todayUTC).toISOString().split('T')[0];
       
       days.push({
         date: dateString,
-        dayOfMonth: currentDate.getDate(),
-        dayOfWeek: currentDate.getDay(),
-        month: currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-        monthYear: `${currentDate.getFullYear()}-${currentDate.getMonth()}`,
+        dayOfMonth: currentDate.getUTCDate(),
+        dayOfWeek: currentDate.getUTCDay(),
+        month: currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
+        monthYear: `${currentDate.getUTCFullYear()}-${currentDate.getUTCMonth()}`,
         isToday
       });
       
-      currentDate.setDate(currentDate.getDate() + 1);
+      currentDate.setUTCDate(currentDate.getUTCDate() + 1);
     }
     
     // Group by month

@@ -44,9 +44,10 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         const challenge = challengeResult.Item;
 
         // Check if challenge is older than 30 days
-        const challengeDate = new Date(challengeId);
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const challengeDate = new Date(challengeId + 'T00:00:00Z');
+        const now = new Date();
+        const thirtyDaysAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+        thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
 
         if (challengeDate < thirtyDaysAgo) {
             return {
