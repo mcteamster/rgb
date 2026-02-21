@@ -40,27 +40,14 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
   return (
     <div className="history-container" ref={containerRef}>
       <h3 className="history-title">Last 30 Days</h3>
-      <div className="history-stats">
-        <div className="stat-item">
-          <span className="stat-value">{history.stats.totalPlayed}</span>
-          <span className="stat-label">Days</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">{Math.round(history.stats.averageScore)}</span>
-          <span className="stat-label">Avg</span>
-        </div>
-        <div className="stat-item">
-          <span className="stat-value">{history.stats.bestScore}</span>
-          <span className="stat-label">Best</span>
-        </div>
-      </div>
-
+      
       <div className="history-calendar">
         {Array.from({ length: 30 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
+          const now = new Date();
+          const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+          date.setUTCDate(date.getUTCDate() - i);
           const dateStr = date.toISOString().split('T')[0];
-          const dayOfMonth = date.getDate();
+          const dayOfMonth = date.getUTCDate();
           const submission = history.submissions.find(s => s.challengeId === dateStr);
           
           return (
@@ -89,6 +76,21 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
             </div>
           );
         })}
+      </div>
+
+      <div className="history-stats">
+        <div className="stat-item">
+          <span className="stat-value">{history.stats.totalPlayed}</span>
+          <span className="stat-label">Days</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-value">{Math.round(history.stats.averageScore)}</span>
+          <span className="stat-label">Avg</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-value">{history.stats.bestScore}</span>
+          <span className="stat-label">Best</span>
+        </div>
       </div>
 
       <div className="history-list">

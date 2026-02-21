@@ -131,8 +131,16 @@ export const DailyChallenge: React.FC = () => {
             )}
             
             {showHistory ? (
-                <div className="status-bar">
-                    <DailyChallengeHistory userId={getUserId()} />
+                <div className="room-menu history-sidebar-expanded">
+                    <div className="room-menu-content">
+                        <button
+                            onClick={() => setShowHistory(false)}
+                            className="close-button"
+                        >
+                            ×
+                        </button>
+                        <DailyChallengeHistory userId={getUserId()} />
+                    </div>
                 </div>
             ) : showLeaderboard ? (
                 <>

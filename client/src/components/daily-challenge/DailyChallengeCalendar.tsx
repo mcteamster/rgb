@@ -15,18 +15,18 @@ export const DailyChallengeCalendar: React.FC<DailyChallengeCalendarProps> = ({
   const [monthGroups, setMonthGroups] = useState<Array<{ month: string; days: Array<any> }>>([]);
 
   useEffect(() => {
-    const today = new Date();
-    const todayUTC = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
-    const thirtyDaysAgo = new Date(todayUTC);
-    thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29);
+    const now = new Date();
+    const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const thirtyDaysAgoUTC = new Date(todayUTC);
+    thirtyDaysAgoUTC.setUTCDate(thirtyDaysAgoUTC.getUTCDate() - 29);
     
     const days = [];
-    const currentDate = new Date(thirtyDaysAgo);
+    const currentDate = new Date(thirtyDaysAgoUTC);
     
     // Collect all available days
-    while (currentDate <= new Date(todayUTC)) {
+    while (currentDate <= todayUTC) {
       const dateString = currentDate.toISOString().split('T')[0];
-      const isToday = dateString === new Date(todayUTC).toISOString().split('T')[0];
+      const isToday = dateString === todayUTC.toISOString().split('T')[0];
       
       days.push({
         date: dateString,
@@ -78,7 +78,7 @@ export const DailyChallengeCalendar: React.FC<DailyChallengeCalendarProps> = ({
       
       // Add disabled days after last available day (same month)
       const [year, monthNum] = lastAvailableDay.monthYear.split('-').map(Number);
-      const lastDayOfMonth = new Date(year, monthNum + 1, 0).getDate();
+      const lastDayOfMonth = new Date(Date.UTC(year, monthNum + 1, 0)).getUTCDate();
       
       for (let i = lastDayOfWeek + 1; i < 7; i++) {
         const dayNum = lastAvailableDay.dayOfMonth + (i - lastDayOfWeek);

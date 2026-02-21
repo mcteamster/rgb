@@ -441,8 +441,9 @@
   max-width: 800px;
   max-height: 67vh;
   overflow-y: auto;
-  gap: 24px;
-  padding-right: 8px;
+  gap: 12px;
+  background: white;
+  border-radius: var(--border-radius-large);
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
 }
@@ -459,12 +460,6 @@
   text-align: center;
 }
 
-.history-stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-
 .history-calendar {
   display: grid;
   grid-template-columns: repeat(10, 1fr);
@@ -472,6 +467,12 @@
   padding: 16px;
   background: rgba(0, 0, 0, 0.03);
   border-radius: var(--border-radius-small);
+}
+
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
 }
 
 .calendar-day {
@@ -521,7 +522,7 @@
 
 @media (max-width: 768px) {
   .history-calendar {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(6, 1fr);
   }
 }
 

@@ -1166,12 +1166,21 @@ textarea:-ms-input-placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 51;
 }
 /* Player Sidebar Styles */
 .player-sidebar-expanded {
   left: 20px;
   right: auto;
   z-index: 50;
+}
+
+.history-sidebar-expanded {
+  left: 20px;
+  right: 20px;
+  z-index: 50;
+  max-width: 840px;
+  margin: 0 auto;
 }
 
 .player-list {
