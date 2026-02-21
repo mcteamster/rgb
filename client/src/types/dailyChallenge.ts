@@ -10,6 +10,8 @@ export interface DailyChallenge {
     validFrom: string;
     validUntil: string;
     totalSubmissions: number;
+    averageColor?: HSLColor;
+    componentStats?: any;
 }
 
 export interface Submission {
