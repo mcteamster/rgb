@@ -92,13 +92,13 @@ The bicone structure reflects fundamental color properties:
 
 ## Scoring Systems
 
-On the Spectrum uses **two separate scoring systems** for different game modes:
+On the Spectrum uses **two different scoring algorithms** depending on the game mode:
 
-### 1. Multiplayer Scoring (Geometric Normal Distribution)
+### 1. Multiplayer Scoring - Geometric Normal Distribution
 
 **Location**: `service/lambda/websocket/scoring.ts`
 
-Used for real-time multiplayer games where players guess a target color based on a description.
+Used for real-time multiplayer games where players guess a fixed target color.
 
 #### Configuration
 ```typescript
@@ -109,89 +109,108 @@ const NORMAL_CONFIG = {
         lightness: 15   // percent (3-sigma = 45 percent)
     },
     weights: {
-        hue: 6.0,
-        saturation: 1.0,
-        lightness: 2.0
+        hue: 6.0,       // Most important - color identity
+        saturation: 1.0, // Baseline weight
+        lightness: 2.0   // Moderate importance
     }
 };
 ```
 
-#### Algorithm: `geometricNormalScoring()`
+#### How It Works
 
-Normal distribution curves for each HSL component, combined with weighted geometric mean:
-
+**Step 1: Calculate Component Differences**
 ```typescript
-function geometricNormalScoring(targetColor: HSLColor, guessedColor: HSLColor): number {
-    // Normalize hue difference (0-360 wraps around)
-    const hueDiff = Math.min(
-        Math.abs(targetColor.h - guessedColor.h),
-        360 - Math.abs(targetColor.h - guessedColor.h)
-    );
-    
-    const satDiff = Math.abs(targetColor.s - guessedColor.s);
-    const lightDiff = Math.abs(targetColor.l - guessedColor.l);
-    
-    // Adjust hue sigma based on target lightness extremity
-    let multiplier = 1;
-    if (targetColor.l < 20) multiplier = 1 + 2 * (20 - targetColor.l) / 5;
-    else if (targetColor.l > 80) multiplier = 1 + 2 * (targetColor.l - 80) / 5;
-    const adjustedHueSigma = NORMAL_CONFIG.sigma.hue * multiplier;
-    
-    // Adjust lightness sigma proportionally to target lightness
-    const adjustedLightnessSigma = NORMAL_CONFIG.sigma.lightness * (targetColor.l / 50);
-    
-    // Check 3-sigma thresholds (anything beyond is 0)
-    if (hueDiff > 3 * adjustedHueSigma || 
-        satDiff > 3 * NORMAL_CONFIG.sigma.saturation || 
-        lightDiff > 3 * adjustedLightnessSigma) {
-        return 0;
-    }
-    
-    // Calculate normal distribution components
-    const hueComponent = Math.exp(-0.5 * Math.pow(hueDiff / adjustedHueSigma, 2));
-    const satComponent = Math.exp(-0.5 * Math.pow(satDiff / NORMAL_CONFIG.sigma.saturation, 2));
-    const lightComponent = Math.exp(-0.5 * Math.pow(lightDiff / adjustedLightnessSigma, 2));
-    
-    // Weighted geometric mean
-    const score = Math.round(100 * Math.pow(
-        Math.pow(hueComponent, NORMAL_CONFIG.weights.hue) *
-        Math.pow(satComponent, NORMAL_CONFIG.weights.saturation) *
-        Math.pow(lightComponent, NORMAL_CONFIG.weights.lightness),
-        1 / (NORMAL_CONFIG.weights.hue + NORMAL_CONFIG.weights.saturation + NORMAL_CONFIG.weights.lightness)
-    ));
-    
-    return Math.max(0, score);
+// Hue wraps around (0° = 360°)
+const hueDiff = Math.min(
+    Math.abs(targetColor.h - guessedColor.h),
+    360 - Math.abs(targetColor.h - guessedColor.h)
+);
+
+const satDiff = Math.abs(targetColor.s - guessedColor.s);
+const lightDiff = Math.abs(targetColor.l - guessedColor.l);
+```
+
+**Step 2: Dynamic Sigma Adjustments**
+
+The algorithm adjusts tolerance based on the target color's properties:
+
+- **Hue Tolerance**: Increases for extreme lightness values
+  - At L=10% or L=90%: Hue matters less (colors look similar)
+  - At L=50%: Standard hue tolerance (25°)
+  
+- **Lightness Tolerance**: Scales proportionally to target lightness
+  - Darker colors (L=25%) have tighter tolerance
+  - Mid-range colors (L=50%) have standard tolerance
+
+**Step 3: 3-Sigma Cutoff**
+
+Any guess beyond 3 standard deviations from the target in ANY component scores 0 points:
+```typescript
+if (hueDiff > 3 * adjustedHueSigma || 
+    satDiff > 3 * NORMAL_CONFIG.sigma.saturation || 
+    lightDiff > 3 * adjustedLightnessSigma) {
+    return 0;
 }
 ```
 
-#### Characteristics
+**Step 4: Normal Distribution Components**
 
-**Normal Distribution Curves**:
-- Each HSL component uses Gaussian curve centered on target value
-- Standard deviations (sigma) define tolerance levels
-- 3-sigma cutoff: completely wrong colors get 0 points
+Each component gets a score from 0-1 using the Gaussian formula:
+```typescript
+const hueComponent = Math.exp(-0.5 * Math.pow(hueDiff / adjustedHueSigma, 2));
+const satComponent = Math.exp(-0.5 * Math.pow(satDiff / NORMAL_CONFIG.sigma.saturation, 2));
+const lightComponent = Math.exp(-0.5 * Math.pow(lightDiff / adjustedLightnessSigma, 2));
+```
 
-**Dynamic Hue Tolerance**:
-- **L=20-80%**: Standard hue sigma (25°)
-- **L<20% or L>80%**: Increased tolerance (up to 3x) for extreme lightness
-- Reflects reduced hue perception at very dark/light colors
+**Step 5: Weighted Geometric Mean**
 
-**Dynamic Lightness Tolerance**:
-- Sigma scales proportionally with target lightness
-- Darker colors (L=25%) have tighter tolerance than mid-range (L=50%)
+Combines the three components using their weights:
+```typescript
+const totalWeight = 6.0 + 1.0 + 2.0; // = 9.0
+const score = Math.round(100 * Math.pow(
+    Math.pow(hueComponent, 6.0) *
+    Math.pow(satComponent, 1.0) *
+    Math.pow(lightComponent, 2.0),
+    1 / totalWeight
+));
+```
 
-**Component Weights**:
-- **Hue**: 6.0 (most important - color identity)
-- **Saturation**: 1.0 (baseline)
-- **Lightness**: 2.0 (moderate importance)
+#### Why Geometric Mean?
 
-**Geometric Mean**: Prevents compensation between components (can't offset bad hue with perfect saturation)
+Unlike arithmetic mean, geometric mean **prevents compensation** between components:
+- You can't offset a terrible hue guess with perfect saturation
+- All components must be reasonably close to score well
+- More accurately reflects human color perception
 
-### 2. Daily Challenge Scoring (Bicone Distance)
+#### Scoring Examples
+
+**Perfect Match**:
+- Target: H=180°, S=80%, L=50%
+- Guess: H=180°, S=80%, L=50%
+- Score: **100 points**
+
+**Close Match**:
+- Target: H=180°, S=80%, L=50%
+- Guess: H=185°, S=75%, L=52%
+- Score: **~95 points**
+
+**Good Match**:
+- Target: H=180°, S=80%, L=50%
+- Guess: H=200°, S=70%, L=55%
+- Score: **~75 points**
+
+**Poor Match**:
+- Target: H=180°, S=80%, L=50%
+- Guess: H=0°, S=50%, L=30%
+- Score: **0 points** (hue beyond 3-sigma)
+
+---
+
+### 2. Daily Challenge Scoring - Bicone Distance
 
 **Location**: `service/lambda/rest/scoring.ts`
 
-Used for daily challenges where players submit colors without a target, and are scored based on distance from the community average.
+Used for daily challenges where players are scored based on distance from the community average.
 
 #### Bicone Cartesian Space
 
@@ -216,42 +235,107 @@ function hslToBiconeCartesian(color: HSLColor) {
 }
 ```
 
-#### Incremental Average Calculation
+#### Why Bicone Space?
 
-Uses **Welford's algorithm** for O(1) average updates:
+The bicone (double cone) geometry accurately represents HSL color space:
+- **Radius varies with lightness**: Maximum saturation only possible at L=50%
+- **Converges at extremes**: All colors become black (L=0%) or white (L=100%)
+- **Euclidean distance**: Meaningful in 3D Cartesian space
+
+#### Average Calculation
+
+Uses **Welford's algorithm** for efficient incremental updates:
 
 ```typescript
 function updateAverageColor(
-    currentAverage: HSLColor | null,
-    currentStats: ComponentStats | null,
-    newColor: HSLColor,
-    totalSubmissions: number
+    previousAverage: HSLColor,
+    previousCount: number,
+    newColor: HSLColor
 ): { averageColor: HSLColor, stats: ComponentStats }
 ```
 
-Stores running mean and M2 (sum of squared differences) for each component:
+**Process**:
+1. Convert previous average and new color to bicone Cartesian
+2. Calculate new average: `(old_avg × n + new_value) / (n + 1)`
+3. Update variance statistics using Welford's algorithm
+4. Convert result back to HSL
+
+#### Distance Scoring
+
 ```typescript
-interface ComponentStats {
-    h: { mean: number, m2: number },
-    s: { mean: number, m2: number },
-    l: { mean: number, m2: number }
+function distanceFromAverageScoring(
+    submittedColor: HSLColor,
+    averageColor: HSLColor
+): { score: number, distance: number } {
+    // Convert to bicone Cartesian
+    const submittedCart = hslToBiconeCartesian(submittedColor);
+    const averageCart = hslToBiconeCartesian(averageColor);
+    
+    // Euclidean distance in 3D space
+    const distance = Math.sqrt(
+        (submittedCart.x - averageCart.x) ** 2 +
+        (submittedCart.y - averageCart.y) ** 2 +
+        (submittedCart.z - averageCart.z) ** 2
+    );
+    
+    // Normalize and invert (closer = higher score)
+    const maxDistance = Math.sqrt(2); // Corner to corner
+    const normalizedDistance = Math.min(distance / maxDistance, 1.0);
+    const score = Math.round(100 * (1 - normalizedDistance));
+    
+    return { score, distance };
 }
 ```
 
-#### Scoring Rules
+#### Scoring Examples
 
-1. **First 2 submissions**: Automatic 100 points
-2. **3rd+ submissions**: Scored by Euclidean distance from average in bicone space
-3. **Distance formula**: `sqrt((x1-x2)² + (y1-y2)² + (z1-z2)²)`
-4. **Score**: `100 × (1 - distance/maxDistance)` where maxDistance ≈ √2
+**Perfect Match** (same as average):
+- Average: H=180°, S=80%, L=50%
+- Submission: H=180°, S=80%, L=50%
+- Distance: 0.0
+- Score: **100 points**
+
+**Close to Average**:
+- Average: H=180°, S=80%, L=50%
+- Submission: H=185°, S=75%, L=52%
+- Distance: ~0.05
+- Score: **~96 points**
+
+**Far from Average**:
+- Average: H=180°, S=80%, L=50%
+- Submission: H=0°, S=20%, L=80%
+- Distance: ~1.2
+- Score: **~15 points**
+
+---
 
 ### Comparison
 
 | Aspect | Multiplayer | Daily Challenge |
 |--------|-------------|-----------------|
-| **Target** | Fixed color | Community average |
-| **Space** | HSL components | Bicone Cartesian |
-| **Algorithm** | Normal distribution | Euclidean distance |
-| **Weights** | Component-weighted | Equal 3D distance |
-| **Updates** | Static target | Incremental average |
-| **Use Case** | Guess accuracy | Consensus finding |
+| **Target** | Fixed generated color | Community average color |
+| **Algorithm** | Geometric normal distribution | Bicone Euclidean distance |
+| **Space** | HSL components | Bicone Cartesian (3D) |
+| **Weights** | Component-weighted (H:6, S:1, L:2) | Equal 3D distance |
+| **Cutoff** | 3-sigma threshold (0 points) | Linear scaling (0-100) |
+| **Updates** | Static target per round | Average recalculates with each submission |
+| **Use Case** | Guess accuracy vs fixed target | Consensus finding |
+| **Describer Bonus** | Gets average of all guesser scores | N/A (single player) |
+
+### Why Different Algorithms?
+
+**Multiplayer** needs to reward accuracy against a specific target:
+- Weighted components reflect human color perception
+- 3-sigma cutoff prevents random guessing
+- Geometric mean prevents compensation
+
+**Daily Challenge** needs to measure consensus:
+- Euclidean distance in bicone space is geometrically accurate
+- Linear scaling rewards getting closer to community
+- No cutoff - all submissions contribute to average
+
+### Special Scoring Cases
+
+**Multiplayer Only**:
+- **No Clue Provided**: If describer times out without providing a description, all guessers receive +100 points and the describer gets 0 points
+- **Timeout with Draft**: If a player doesn't submit but has a draft color, the draft is automatically submitted and scored normally
