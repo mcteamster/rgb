@@ -115,8 +115,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
         let score: number;
         let distance: number;
 
-        // First two submissions get full points
-        if (existingCount < 2) {
+        // First submission gets full points (no comparison possible)
+        if (existingCount === 0) {
             const result = updateAverageColor(submission.color, 0, submission.color);
             averageColor = result.averageColor;
             componentStats = result.stats;
