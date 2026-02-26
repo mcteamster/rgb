@@ -7,15 +7,26 @@ const dynamodb = DynamoDBDocumentClient.from(client);
 
 const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE || 'rgb-daily-challenges';
 
-async function createChallenge(challengeId: string, prompt: string, status: 'active' | 'queued' = 'active') {
+async function createChallenge(challengeId: string, prompt: string, status: 'active' | 'queued' = 'active', override: boolean = false) {
     const existingChallenge = await dynamodb.send(new GetCommand({
         TableName: CHALLENGES_TABLE,
         Key: { challengeId }
     }));
 
     if (existingChallenge.Item) {
-        console.error(`✗ Challenge for ${challengeId} already exists`);
-        return false;
+        if (!override) {
+            console.error(`✗ Challenge for ${challengeId} already exists`);
+            return false;
+        }
+        
+        const challengeDate = new Date(challengeId);
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        
+        if (challengeDate < today) {
+            console.error(`✗ Cannot override past challenge for ${challengeId}`);
+            return false;
+        }
     }
 
     const now = new Date().toISOString();
@@ -48,7 +59,7 @@ async function createChallenge(challengeId: string, prompt: string, status: 'act
         }
     }));
 
-    console.log(`✓ ${status === 'active' ? 'Created' : 'Queued'} challenge for ${challengeId}: "${prompt}"`);
+    console.log(`✓ ${existingChallenge.Item ? 'Overrode' : (status === 'active' ? 'Created' : 'Queued')} challenge for ${challengeId}: "${prompt}"`);
     return true;
 }
 
@@ -93,7 +104,7 @@ async function activateChallenge(challengeId: string) {
     return true;
 }
 
-async function addPrompts(prompts: Array<{ date: string; prompt: string }>) {
+async function addPrompts(prompts: Array<{ date: string; prompt: string }>, override: boolean = false) {
     console.log(`Adding ${prompts.length} prompts to ${CHALLENGES_TABLE}...\n`);
     
     let success = 0;
@@ -101,7 +112,7 @@ async function addPrompts(prompts: Array<{ date: string; prompt: string }>) {
 
     for (const { date, prompt } of prompts) {
         try {
-            const result = await createChallenge(date, prompt, 'queued');
+            const result = await createChallenge(date, prompt, 'queued', override);
             if (result) success++;
             else failed++;
         } catch (error) {
@@ -116,10 +127,10 @@ async function addPrompts(prompts: Array<{ date: string; prompt: string }>) {
 function showUsage() {
     console.log(`
 Usage:
-  npm run manage-challenges -- create --date YYYY-MM-DD --prompt "Your prompt"
-  npm run manage-challenges -- queue --date YYYY-MM-DD --prompt "Your prompt"
+  npm run manage-challenges -- create --date YYYY-MM-DD --prompt "Your prompt" [--override]
+  npm run manage-challenges -- queue --date YYYY-MM-DD --prompt "Your prompt" [--override]
   npm run manage-challenges -- activate --date YYYY-MM-DD
-  npm run manage-challenges -- bulk --file prompts.json
+  npm run manage-challenges -- bulk --file prompts.json [--override]
 
 Commands:
   create    Create and activate a challenge immediately
@@ -128,15 +139,16 @@ Commands:
   bulk      Add multiple queued prompts from JSON file
 
 Options:
-  --date     Challenge date (YYYY-MM-DD)
-  --prompt   Challenge prompt text
-  --file     JSON file with prompts (format: [{"date": "YYYY-MM-DD", "prompt": "text"}])
+  --date      Challenge date (YYYY-MM-DD)
+  --prompt    Challenge prompt text
+  --file      JSON file with prompts (format: [{"date": "YYYY-MM-DD", "prompt": "text"}])
+  --override  Replace existing challenge if it exists (cannot override past challenges)
 
 Examples:
   npm run manage-challenges -- create --date 2026-02-10 --prompt "Sunset colors"
-  npm run manage-challenges -- queue --date 2026-02-15 --prompt "Ocean waves"
+  npm run manage-challenges -- queue --date 2026-02-15 --prompt "Ocean waves" --override
   npm run manage-challenges -- activate --date 2026-01-22
-  npm run manage-challenges -- bulk --file prompts.json
+  npm run manage-challenges -- bulk --file prompts.json --override
 `);
 }
 
@@ -152,6 +164,7 @@ async function main() {
     if (command === 'create' || command === 'queue') {
         let date = '';
         let prompt = '';
+        let override = false;
 
         for (let i = 1; i < args.length; i++) {
             if (args[i] === '--date' && args[i + 1]) {
@@ -160,6 +173,8 @@ async function main() {
             } else if (args[i] === '--prompt' && args[i + 1]) {
                 prompt = args[i + 1];
                 i++;
+            } else if (args[i] === '--override') {
+                override = true;
             }
         }
 
@@ -169,7 +184,7 @@ async function main() {
             process.exit(1);
         }
 
-        await createChallenge(date, prompt, command === 'create' ? 'active' : 'queued');
+        await createChallenge(date, prompt, command === 'create' ? 'active' : 'queued', override);
     } else if (command === 'activate') {
         let date = '';
 
@@ -189,11 +204,14 @@ async function main() {
         await activateChallenge(date);
     } else if (command === 'bulk') {
         let file = '';
+        let override = false;
 
         for (let i = 1; i < args.length; i++) {
             if (args[i] === '--file' && args[i + 1]) {
                 file = args[i + 1];
                 i++;
+            } else if (args[i] === '--override') {
+                override = true;
             }
         }
 
@@ -213,7 +231,7 @@ async function main() {
                 process.exit(1);
             }
 
-            await addPrompts(prompts);
+            await addPrompts(prompts, override);
         } catch (error) {
             console.error('Error reading file:', error);
             process.exit(1);
