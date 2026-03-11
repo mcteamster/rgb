@@ -4,19 +4,19 @@
 
 The Daily Challenge feature uses a REST API (not WebSocket) for asynchronous, single-player gameplay. Players submit colors based on daily prompts and are scored against the community average.
 
-**Base URL**: `https://api.rgb.mcteamster.com/daily` (production)
+**Base URL**: `https://rest.rgb.mcteamster.com` (production)
 
 **Authentication**: None required (uses anonymous user IDs stored in browser localStorage)
 
 ## Endpoints
 
-### GET /current
+### GET /daily-challenge/current
 
 Fetch the current active daily challenge and user's submission if it exists.
 
 **Request**:
 ```http
-GET /current?userId={userId}
+GET /daily-challenge/current?userId={userId}
 ```
 
 **Query Parameters**:
@@ -58,13 +58,13 @@ GET /current?userId={userId}
 
 ---
 
-### POST /submit
+### POST /daily-challenge/submit
 
 Submit a color for the current daily challenge.
 
 **Request**:
 ```http
-POST /submit
+POST /daily-challenge/submit
 Content-Type: application/json
 
 {
@@ -105,23 +105,25 @@ Content-Type: application/json
 ```
 
 **Error Responses**:
-- `400 Bad Request`: Invalid color values or missing required fields
+- `400 Bad Request`: Invalid color values, missing required fields, or user already submitted for this challenge
 - `404 Not Found`: Challenge not found or expired
-- `409 Conflict`: User already submitted for this challenge
+- `410 Gone`: Challenge is older than 30 days
 
 ---
 
-### GET /history
+### GET /daily-challenge/history/{userId}
 
 Get user's submission history across all daily challenges.
 
 **Request**:
 ```http
-GET /history?userId={userId}&limit={limit}
+GET /daily-challenge/history/{userId}?limit={limit}
 ```
 
-**Query Parameters**:
+**Path Parameters**:
 - `userId` (required): Anonymous user identifier
+
+**Query Parameters**:
 - `limit` (optional): Maximum number of submissions to return (default: 30)
 
 **Response** (200 OK):
@@ -161,16 +163,16 @@ GET /history?userId={userId}&limit={limit}
 
 ---
 
-### GET /stats
+### GET /daily-challenge/stats/{challengeId}
 
 Get statistics for a specific daily challenge.
 
 **Request**:
 ```http
-GET /stats?challengeId={challengeId}
+GET /daily-challenge/stats/{challengeId}
 ```
 
-**Query Parameters**:
+**Path Parameters**:
 - `challengeId` (required): Challenge ID (YYYY-MM-DD format)
 
 **Response** (200 OK):
@@ -199,13 +201,13 @@ GET /stats?challengeId={challengeId}
 
 ---
 
-### GET /challenge/{date}
+### GET /daily-challenge/by-date/{date}
 
 Get a specific challenge by date (for calendar view).
 
 **Request**:
 ```http
-GET /challenge/2026-02-15?userId={userId}
+GET /daily-challenge/by-date/2026-02-15?userId={userId}
 ```
 
 **Path Parameters**:
@@ -237,34 +239,18 @@ GET /challenge/2026-02-15?userId={userId}
 
 ---
 
-### POST /create (Internal Only)
+### Challenge Creation (Internal — EventBridge Only)
 
-Create a new daily challenge. This endpoint is only accessible by EventBridge scheduler.
+Daily challenges are created automatically by an **AWS EventBridge scheduler** at UTC midnight. This is **not an HTTP endpoint** — it invokes the `create-daily-challenge` Lambda function directly via an EventBridge rule.
 
-**Request**:
-```http
-POST /create
-Content-Type: application/json
+**Trigger**: EventBridge cron rule (`0 0 * * *` — daily at UTC midnight)
 
-{
-  "prompt": "A color that makes you happy"
-}
-```
+**Behavior**:
+- Idempotent: skips creation if a challenge already exists for today
+- Fetches prompt from a pre-queued prompt pool in DynamoDB, falling back to `"A color that makes you happy"`
+- Activates the new challenge and marks challenges older than 30 days as `inactive`
 
-**Authorization**: EventBridge service role only
-
-**Response** (200 OK):
-```json
-{
-  "success": true,
-  "challengeId": "2026-02-22",
-  "prompt": "A color that makes you happy"
-}
-```
-
-**Error Responses**:
-- `403 Forbidden`: Not authorized (not from EventBridge)
-- `409 Conflict`: Challenge already exists for today
+This function is not accessible via the public REST API.
 
 ---
 
@@ -429,9 +415,9 @@ See [hsl-color-scoring.md](./hsl-color-scoring.md) for detailed multiplayer scor
 - **Effect**: No longer returned by `/current` endpoint
 
 ### Submission Flow
-1. User fetches current challenge via `/current`
+1. User fetches current challenge via `/daily-challenge/current`
 2. User selects color based on prompt
-3. User submits via `/submit`
+3. User submits via `/daily-challenge/submit`
 4. Server calculates score against current average
 5. Server updates average with new submission
 6. Server returns score and updated average
@@ -486,7 +472,7 @@ All error responses follow this format:
 ### Fetch Current Challenge
 ```javascript
 const userId = localStorage.getItem('rgb-user-id');
-const response = await fetch(`https://api.rgb.mcteamster.com/daily/current?userId=${userId}`);
+const response = await fetch(`https://rest.rgb.mcteamster.com/daily-challenge/current?userId=${userId}`);
 const challenge = await response.json();
 console.log(challenge.prompt); // "A color that makes you happy"
 ```
@@ -501,7 +487,7 @@ const submission = {
   fingerprint: await generateFingerprint()
 };
 
-const response = await fetch('https://api.rgb.mcteamster.com/daily/submit', {
+const response = await fetch('https://rest.rgb.mcteamster.com/daily-challenge/submit', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(submission)
@@ -514,7 +500,7 @@ console.log(`Score: ${result.submission.score}`);
 ### View History
 ```javascript
 const userId = localStorage.getItem('rgb-user-id');
-const response = await fetch(`https://api.rgb.mcteamster.com/daily/history?userId=${userId}&limit=10`);
+const response = await fetch(`https://rest.rgb.mcteamster.com/daily-challenge/history/${userId}?limit=10`);
 const history = await response.json();
 console.log(`Played ${history.stats.totalPlayed} challenges`);
 console.log(`Average score: ${history.stats.averageScore}`);
