@@ -24,7 +24,7 @@ Complete WebSocket API documentation for multiplayer gameplay.
 REST API documentation for Daily Challenge mode.
 
 **Contents**:
-- All REST endpoints (GET /current, POST /submit, etc.)
+- All REST endpoints (GET /daily-challenge/current, POST /daily-challenge/submit, etc.)
 - Request/response formats
 - Data models and types
 - Challenge lifecycle
@@ -64,11 +64,11 @@ Deep dive into HSL color space and scoring algorithms.
 See [websocket.md](./websocket.md) for detailed message formats.
 
 ### Daily Challenge Flow
-1. **Fetch**: GET `/current?userId={userId}` to get today's challenge
+1. **Fetch**: GET `/daily-challenge/current?userId={userId}` to get today's challenge
 2. **Select**: User picks color based on prompt
-3. **Submit**: POST `/submit` with color and userId
+3. **Submit**: POST `/daily-challenge/submit` with color and userId
 4. **Score**: Receive score based on distance from community average
-5. **History**: GET `/history?userId={userId}` to view past submissions
+5. **History**: GET `/daily-challenge/history/{userId}` to view past submissions
 
 See [rest-api.md](./rest-api.md) for detailed endpoint documentation.
 
@@ -225,11 +225,11 @@ ws.addEventListener('message', (event) => {
 
 ### Local Development
 - WebSocket: `ws://localhost:3001`
-- REST API: `http://localhost:3000/daily`
+- REST API: `http://localhost:3000`
 
 ### Production
 - WebSocket: `wss://ws.rgb.mcteamster.com`
-- REST API: `https://api.rgb.mcteamster.com/daily`
+- REST API: `https://rest.rgb.mcteamster.com`
 
 ---
 
