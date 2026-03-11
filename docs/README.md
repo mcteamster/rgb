@@ -35,6 +35,22 @@ REST API documentation for Daily Challenge mode.
 
 ---
 
+### [daily-game-patterns.md](./daily-game-patterns.md)
+Research-backed design patterns for daily puzzle games, applied to On the Spectrum.
+
+**Contents**:
+- Core engagement mechanics (one-per-day, FOMO, habit formation)
+- Scoring and feedback patterns
+- Social and sharing mechanics (spoiler-free share cards)
+- Accessibility and archive design
+- Retention mechanics (streaks, streak protection)
+- Community dynamics and the shared puzzle experience
+- Psychological principles and design recommendations
+
+**Use this for**: Product decisions, feature prioritisation, understanding the design context of the daily challenge mode
+
+---
+
 ### [hsl-color-scoring.md](./hsl-color-scoring.md)
 Deep dive into HSL color space and scoring algorithms.
 
