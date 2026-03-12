@@ -42,12 +42,16 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
     return { s: Math.max(0, Math.min(100, s)), l: Math.max(0, Math.min(100, l)) };
   }, [radius]);
 
-  const renderWheelToCache = useCallback((hue: number) => {
+  const renderWheelToCache = useCallback((hue: number): HTMLCanvasElement | null => {
+    // Guard: Chromium can report 0 viewport dimensions on the first render when
+    // navigating to a URL path (e.g. via QR code), making radius negative.
+    if (radius <= 0 || canvasSize <= 0) return null;
+
     const offscreen = document.createElement('canvas');
     offscreen.width = canvasSize;
     offscreen.height = canvasSize;
     const ctx = offscreen.getContext('2d', { willReadFrequently: false })!;
-    
+
     const imageData = ctx.createImageData(canvasSize, canvasSize);
     const data = imageData.data;
 
@@ -90,6 +94,8 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   const drawOverlay = useCallback(() => {
     const overlay = overlayRef.current;
     if (!overlay) return;
+    // Guard against negative radius (Chromium zero-dimension initial render)
+    if (radius <= 0) return;
 
     const ctx = overlay.getContext('2d')!;
     ctx.clearRect(0, 0, canvasSize, canvasSize);
@@ -152,19 +158,22 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || radius <= 0) return;
 
     const ctx = canvas.getContext('2d', { willReadFrequently: false })!;
-    
+
     // Use cached wheel or render new one
     const cached = wheelCacheRef.current;
-    const wheelCanvas = (cached?.hue === selectedHue) 
-      ? cached.canvas 
+    const wheelCanvas = (cached?.hue === selectedHue)
+      ? cached.canvas
       : renderWheelToCache(selectedHue);
-    
+
+    // renderWheelToCache returns null when dimensions aren't ready yet
+    if (!wheelCanvas) return;
+
     ctx.clearRect(0, 0, canvasSize, canvasSize);
     ctx.drawImage(wheelCanvas, 0, 0);
-  }, [canvasSize, selectedHue, renderWheelToCache]);
+  }, [canvasSize, radius, selectedHue, renderWheelToCache]);
 
   useEffect(() => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);

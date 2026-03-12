@@ -25,7 +25,17 @@ export const GameContainer: React.FC = () => {
   const discordRoomChecked = useRef(false);
   const [showAbout, setShowAbout] = useState(false);
   const [size, setSize] = useState(() => {
-    return { width: window.innerWidth, height: window.innerHeight };
+    // Chromium (incl. Brave) can report 0 for innerWidth/Height on the first
+    // render when the page is opened from a URL path (e.g. via QR code link),
+    // before the browser has completed layout. Fall back to clientWidth/Height,
+    // then to sensible portrait-phone defaults so the canvas radius stays > 0.
+    const width = window.innerWidth
+      || document.documentElement?.clientWidth
+      || 375;
+    const height = window.innerHeight
+      || document.documentElement?.clientHeight
+      || 667;
+    return { width, height };
   });
   const [lastRoundId, setLastRoundId] = useState<string | null>(null);
   const [showTips, setShowTips] = useState(false);
