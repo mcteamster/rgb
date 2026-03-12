@@ -4,7 +4,7 @@ Technical documentation for the On the Spectrum color guessing game.
 
 ## Documentation Files
 
-### [demo-guide.md](./demo-guide.md)
+### [presentation.md](./presentation.md)
 Presentation guide covering gameplay, technology, and Kiro spec-driven development.
 
 **Contents**:
