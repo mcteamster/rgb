@@ -92,20 +92,22 @@ The community average is updated in real-time using **Welford's online algorithm
 
 ### 9 Regions, One Game Code
 
-The last two characters of every game code encode the AWS region. The client probes latency at startup and routes to the nearest server automatically.
+The last two characters of every game code encode the AWS region. Region selection is handled by **[Virgo](https://virgo.tonz.io)** ([mcteamster/virgo](https://github.com/mcteamster/virgo)) — a lightweight browser library that picks the nearest server from the player's device timezone, with no GPS, no IP lookup, and no external requests.
 
 ```mermaid
 flowchart LR
-  Code["Game code e.g. XYZS"] --> Last["Last 2 chars = region"]
-  Last --> AU["BC → Australia"]
-  Last --> JP["DF → Japan"]
-  Last --> SG["GH → Singapore"]
-  Last --> IN["JK → India"]
-  Last --> EU["LM → Europe"]
-  Last --> UK["NP → UK"]
-  Last --> BR["QR → Brazil"]
-  Last --> USE["ST → US East"]
-  Last --> USW["VW → US West"]
+  TZ["🕐 Device Timezone"] --> Virgo["Virgo\nvirgo.tonz.io"]
+  Virgo -->|"nearest region"| Code["Game code e.g. XYZS"]
+  Code --> Last["Last 2 chars = region"]
+  Last --> AU["🇦🇺 BC — Australia"]
+  Last --> JP["🇯🇵 DF — Japan"]
+  Last --> SG["🇸🇬 GH — Singapore"]
+  Last --> IN["🇮🇳 JK — India"]
+  Last --> EU["🇪🇺 LM — Europe"]
+  Last --> UK["🇬🇧 NP — UK"]
+  Last --> BR["🇧🇷 QR — Brazil"]
+  Last --> USE["🇺🇸 ST — US East"]
+  Last --> USW["🇺🇸 VW — US West"]
 ```
 
 ---
