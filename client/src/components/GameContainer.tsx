@@ -25,17 +25,7 @@ export const GameContainer: React.FC = () => {
   const discordRoomChecked = useRef(false);
   const [showAbout, setShowAbout] = useState(false);
   const [size, setSize] = useState(() => {
-    // Chromium (incl. Brave) can report 0 for innerWidth/Height on the first
-    // render when the page is opened from a URL path (e.g. via QR code link),
-    // before the browser has completed layout. Fall back to clientWidth/Height,
-    // then to sensible portrait-phone defaults so the canvas radius stays > 0.
-    const width = window.innerWidth
-      || document.documentElement?.clientWidth
-      || 375;
-    const height = window.innerHeight
-      || document.documentElement?.clientHeight
-      || 667;
-    return { width, height };
+    return { width: window.innerWidth, height: window.innerHeight };
   });
   const [lastRoundId, setLastRoundId] = useState<string | null>(null);
   const [showTips, setShowTips] = useState(false);
@@ -133,9 +123,7 @@ export const GameContainer: React.FC = () => {
     if (roomCode) {
       if (/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/.test(roomCode.toUpperCase())) {
         const savedSession = loadSession();
-        // Compare case-insensitively — QR code scanners and link openers on
-        // some mobile browsers (e.g. Brave Android) may alter URL path casing.
-        if (savedSession && savedSession.gameId.toUpperCase() === roomCode.toUpperCase()) {
+        if (savedSession && savedSession.gameId === roomCode) {
           rejoinGame(savedSession.gameId, savedSession.playerId, savedSession.playerName);
         } else if (savedSession) {
           clearSession();
