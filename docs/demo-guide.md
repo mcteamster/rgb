@@ -1,6 +1,6 @@
 # On the Spectrum — Demo Guide
 
-> 🎮 **rgb.mcteamster.com** · 5-minute talk · Built in 1 week with Amazon Kiro
+> 🎮 **[rgb.mcteamster.com](https://rgb.mcteamster.com)** · 5-minute talk · Built in 1 week with Amazon Kiro
 
 ---
 
@@ -12,28 +12,29 @@
 
 ### Two Modes
 
-```
-MULTIPLAYER                          DAILY CHALLENGE
-───────────────────────────────      ───────────────────────────────
-2–10 players, real-time              Solo, once per day (like Wordle)
+```mermaid
+flowchart LR
+  subgraph MP["🎮 Multiplayer — 2–10 players, real-time"]
+    A["🎨 Target color generated"] --> B["✍️ Describer writes a clue"]
+    B --> C["🖱️ Others drag the color wheel"]
+    C --> D["📊 Score = how close you got"]
+  end
 
-  🎨 Target color generated            📝 Everyone gets same prompt
-         ↓                                      ↓
-  ✍️  Describer writes a clue          🎨 Pick a color that fits
-         ↓                                      ↓
-  🖱️  Others drag the color wheel      📊 Scored vs community average
-         ↓                                      ↓
-  📊 Score = how close you got        🏆 Closer to consensus = more points
+  subgraph DC["📅 Daily Challenge — Solo, once per day"]
+    E["📝 Everyone gets the same prompt"] --> F["🎨 Pick a color that fits"]
+    F --> G["📊 Scored vs. the community average"]
+    G --> H["🏆 Closer to consensus = more points"]
+  end
 ```
 
 ### Live Demo Flow *(3 min)*
 
 1. Open [rgb.mcteamster.com](https://rgb.mcteamster.com) → **Create Game**
-2. Share the 4-letter code → players join
-3. Round starts — describer sees a color, types a clue
-4. Everyone drags the wheel in real-time (watch each other's selections move live!)
+2. Share the 4-letter code — players join from anywhere
+3. Round starts — the describer sees a target color and types a clue
+4. Everyone drags the wheel; you can watch each other's selections move live
 5. Reveal — target appears, scores calculated
-6. Switch to **Daily Challenge** — show prompt, pick a color, see community average
+6. Switch to **Daily Challenge** — show the prompt, pick a color, see the community average
 
 ---
 
@@ -41,76 +42,76 @@ MULTIPLAYER                          DAILY CHALLENGE
 
 ### Architecture
 
-```
-  Browser / Discord App
-         │
-         ├──── WebSocket ────► API Gateway ──► Lambda
-         │                                       │
-         └──── REST API ─────► API Gateway ──► Lambda
-                                                 │
-                                            DynamoDB
-                                         (4 tables, 9 regions)
-                                                 │
-                                     EventBridge (daily scheduler)
+```mermaid
+flowchart TD
+  Client["🌐 Browser / Discord App"]
+
+  Client -->|WebSocket| WS["API Gateway\nWebSocket"]
+  Client -->|REST| REST["API Gateway\nREST"]
+
+  WS --> L1["⚡ Lambda\ngame logic"]
+  REST --> L2["⚡ Lambda\ndaily challenge"]
+
+  L1 --> DB[("DynamoDB\n4 tables · 9 regions")]
+  L2 --> DB
+
+  DB --> EB["🕛 EventBridge\ndaily scheduler"]
 ```
 
 ### The Color Wheel
 
 A custom-engineered HTML5 Canvas picker — not a library.
 
-```
-         White (compressed to thin ring)
-                  ●
-           ╭─────────────╮
-          ╱    Playable   ╲       98% of wheel surface =
-         │   color space   │  ◄── the colors that actually
-         │   (S:20-100%    │      appear in the game
-          ╲  L:15-85%)    ╱
-           ╰─────────────╯
-                  ●
-         Black (compressed to thin ring)
+```mermaid
+pie showData
+  title Wheel surface allocation
+  "Playable colors (S:20–100%, L:15–85%)" : 98
+  "Near-white ring" : 1
+  "Near-black ring" : 1
 ```
 
-Near-black and near-white are each squashed into a 1% border ring — giving players maximum precision where it matters.
+Near-black and near-white are each compressed into a 1% border ring — so 98% of the wheel is the colors that actually appear in the game, giving players maximum precision where it matters.
 
 ### Scoring
 
-**Multiplayer** — geometric normal distribution, weighted by component:
+**Multiplayer** — geometric normal distribution, weighted by HSL component:
 
-```
-  Hue ×6   Saturation ×1   Lightness ×2
-     ↘            ↓            ↙
-      Weighted geometric mean
-             = Score (0–100)
-
-  Beyond 3σ from target in any component → 0 points
+```mermaid
+flowchart LR
+  H["Hue ×6"] --> WGM["Weighted\nGeometric Mean"]
+  S["Saturation ×1"] --> WGM
+  L["Lightness ×2"] --> WGM
+  WGM --> Score["🎯 Score 0–100"]
+  WGM -->|"Beyond 3σ in any component"| Zero["💀 0 points"]
 ```
 
 **Daily Challenge** — Euclidean distance in 3D color space:
 
-```
-     HSL Color
-         │
-         ▼
-    Bicone space         ← HSL mapped to a 3D double cone
-    (x, y, z coords)       so color distances are perceptually uniform
-         │
-         ▼
-  Distance from           Score = 100 × (1 - distance/√2)
-  community average  ──►  Closer to consensus = higher score
+```mermaid
+flowchart TD
+  HSL["HSL Color"] --> Bicone["Bicone space\nx, y, z coords"]
+  Bicone -->|"HSL mapped to a 3D double cone\nso distances are perceptually uniform"| Dist["Distance from\ncommunity average"]
+  Dist --> Score["Score = 100 × (1 − distance / √2)"]
 ```
 
 ### 9 Regions, One Game Code
 
-```
-  Game code:  X Y Z S
-                    └── Region indicator
-                         BC=Australia  DF=Japan   GH=Singapore
-                         LM=Europe     NP=UK      ST=US East
-                         VW=US West    QR=Brazil  JK=India
-```
+The last two characters of every game code encode the AWS region. The client auto-detects the closest region and routes players there automatically.
 
-Client auto-detects the closest region — players are always routed to the fastest server.
+```mermaid
+flowchart LR
+  Code["Game code\ne.g. XYZS"] --> Last["Last 2 chars\n= region"]
+
+  Last --> AU["BC → Australia"]
+  Last --> JP["DF → Japan"]
+  Last --> SG["GH → Singapore"]
+  Last --> IN["JK → India"]
+  Last --> EU["LM → Europe"]
+  Last --> UK["NP → UK"]
+  Last --> BR["QR → Brazil"]
+  Last --> USE["ST → US East"]
+  Last --> USW["VW → US West"]
+```
 
 ---
 
@@ -118,33 +119,31 @@ Client auto-detects the closest region — players are always routed to the fast
 
 ### What Is Kiro?
 
-An AI-powered IDE that uses **specs** and **steering docs** to guide code generation — structured intent, not just prompts.
+[Amazon Kiro](https://kiro.dev) is an AI-powered IDE that introduces **spec-driven development** — you write structured requirements first, and Kiro uses them as persistent context for every code generation request.
 
 ### How It Worked
 
-```
-  ┌─────────────────────────────────────────────────┐
-  │              .kiro/ folder                      │
-  │                                                 │
-  │  steering/          specs/                      │
-  │  ─────────          ──────                      │
-  │  GAMEPLAY.md        service/requirements.md     │
-  │  STRUCTURE.md       client/requirements.md      │
-  │  TECHNICAL_         daily-challenge/            │
-  │  CONSTRAINTS.md       requirements.md           │
-  │                                                 │
-  │  Always-on context  Task-by-task feature plans  │
-  └─────────────────────────────────────────────────┘
-                         │
-                         ▼
-               Kiro generates code
-               with full design context
-               on every request
+```mermaid
+flowchart TD
+  subgraph kiro[".kiro/ folder"]
+    subgraph steering["steering/ — always-on context"]
+      G["GAMEPLAY.md\ngame rules & scoring"]
+      ST["STRUCTURE.md\narchitecture & patterns"]
+      TC["TECHNICAL_CONSTRAINTS.md\ncolor precision, AWS limits"]
+    end
+    subgraph specs["specs/ — task-by-task feature plans"]
+      SR["service/requirements.md\nmultiplayer backend"]
+      CR["client/requirements.md\nHSL color wheel"]
+      DR["daily-challenge/requirements.md\nWordle-style mode"]
+    end
+  end
+
+  kiro --> Gen["⚡ Kiro generates code\nwith full design context\non every request"]
 ```
 
-**Steering docs** = persistent context (game rules, architecture, constraints) — Kiro reads these before every task so nothing is "forgotten" between sessions.
+**Steering docs** — Kiro reads these before every task. Game rules, scoring weights, architectural decisions are never "forgotten" between sessions.
 
-**Spec docs** = feature blueprints — problem statement, requirements, numbered tasks, and explicit *"how you know it's done"* criteria for each.
+**Spec docs** — each feature is planned as numbered tasks with explicit acceptance criteria before a line of code is written.
 
 ### What Kiro Built
 
@@ -156,17 +155,15 @@ An AI-powered IDE that uses **specs** and **steering docs** to guide code genera
 | Daily challenge (5 Lambdas + REST API + UI) | ~2 days |
 | **Total** | **~1 week** |
 
-### Human vs AI
+### Human vs Kiro
 
-```
-  HUMAN                          KIRO
-  ─────────────────────          ─────────────────────────────
-  Game design & rules            Implemented the rules in code
-  Scoring algorithm math         Implemented the algorithm
-  UX decisions                   Built the components
-  Spec writing                   Followed the spec
-  Playtesting & balance          Generated consistent output
-```
+| Human | Kiro |
+|-------|------|
+| Game design & rules | Implemented the rules in code |
+| Scoring algorithm math | Implemented the algorithm |
+| UX decisions | Built the components |
+| Spec writing | Followed the spec |
+| Playtesting & balance | Generated consistent output |
 
 > **The spec is the contract.** When output was wrong, the fix was almost always in the spec — not the code.
 
