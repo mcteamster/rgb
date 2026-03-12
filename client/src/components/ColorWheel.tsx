@@ -16,7 +16,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   const rafRef = useRef<number>();
   
   const wheelSize = Math.min(size.height * 0.6, size.width * 0.8);
-  const radius = wheelSize / 2 - 10;
+  const radius = Math.max(0, wheelSize / 2 - 10);
   const canvasSize = Math.ceil(wheelSize);
   const center = canvasSize / 2;
   const markerRadius = Math.max(Math.min(wheelSize * 0.01, 6), 2);
