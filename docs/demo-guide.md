@@ -22,7 +22,7 @@ flowchart LR
 
   subgraph DC["📅 Daily Challenge — Solo, once per day"]
     E["📝 Everyone gets the same prompt"] --> F["🎨 Pick a color that fits"]
-    F --> G["📊 Scored vs. the community average"]
+    F --> G["📊 Scored vs. community average"]
     G --> H["🏆 Closer to consensus = more points"]
   end
 ```
@@ -45,32 +45,38 @@ flowchart LR
 ```mermaid
 flowchart TD
   Client["🌐 Browser / Discord App"]
-
-  Client -->|WebSocket| WS["API Gateway\nWebSocket"]
-  Client -->|REST| REST["API Gateway\nREST"]
-
-  WS --> L1["⚡ Lambda\ngame logic"]
-  REST --> L2["⚡ Lambda\ndaily challenge"]
-
-  L1 --> DB[("DynamoDB\n4 tables · 9 regions")]
+  Client -->|WebSocket| WS["API Gateway WebSocket"]
+  Client -->|REST| REST["API Gateway REST"]
+  WS --> L1["⚡ Lambda — game logic"]
+  REST --> L2["⚡ Lambda — daily challenge"]
+  L1 --> DB[("DynamoDB — 4 tables · 9 regions")]
   L2 --> DB
-
-  DB --> EB["🕛 EventBridge\ndaily scheduler"]
+  DB --> EB["🕛 EventBridge — daily scheduler"]
 ```
 
 ### The Color Wheel
 
-A custom-engineered HTML5 Canvas picker — not a library.
+A custom-engineered HTML5 Canvas picker — not a library. Rendered pixel-by-pixel using `createImageData` for performance.
 
 ```mermaid
-pie showData
-  title Wheel surface allocation
-  "Playable colors (S:20–100%, L:15–85%)" : 98
-  "Near-white ring" : 1
-  "Near-black ring" : 1
+flowchart LR
+  subgraph Wheel["Color Wheel — two zones"]
+    Center["⚪ Center\nL: 100% white"] -->|distance increases| Edge["⚫ Inner edge\nL: 0% black"]
+    Angle["Angle around wheel"] -->|sinusoidal curve| Saturation["Saturation 0–100%"]
+    subgraph Ring["Outer ring — 30% of radius"]
+      Hue["Pure hues\nS: 100%, L: 50%"]
+    end
+  end
 ```
 
-Near-black and near-white are each compressed into a 1% border ring — so 98% of the wheel is the colors that actually appear in the game, giving players maximum precision where it matters.
+The inner circle (70% of radius) maps **angle → hue + saturation** and **distance from center → lightness**:
+
+- **Center**: white (L: 100%)
+- **Moving outward**: lightness drops along a `(1 - d)^¾` curve — emphasising the playable mid-range
+- **Inner edge**: black (L: 0%)
+- **Outer ring**: pure saturated hues at S: 100%, L: 50%
+
+Lightness transitions through three zones: a thin white band at the very center (L: 100→85%), the main playable gradient (L: 85→15%), and a thin black band at the inner edge (L: 15→0%) — keeping the extremes accessible without eating into playing space.
 
 ### Scoring
 
@@ -78,30 +84,35 @@ Near-black and near-white are each compressed into a 1% border ring — so 98% o
 
 ```mermaid
 flowchart LR
-  H["Hue ×6"] --> WGM["Weighted\nGeometric Mean"]
+  H["Hue ×6"] --> WGM["Weighted Geometric Mean"]
   S["Saturation ×1"] --> WGM
   L["Lightness ×2"] --> WGM
   WGM --> Score["🎯 Score 0–100"]
   WGM -->|"Beyond 3σ in any component"| Zero["💀 0 points"]
 ```
 
-**Daily Challenge** — Euclidean distance in 3D color space:
+**Daily Challenge** — Euclidean distance through the HSL double cone:
+
+HSL is mapped to a 3D double cone (bicone) so that distances between colors are perceptually uniform:
+
+![HSL double cone](https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/HSL_color_solid_dblcone_chroma_gray.png/320px-HSL_color_solid_dblcone_chroma_gray.png)
 
 ```mermaid
 flowchart TD
-  HSL["HSL Color"] --> Bicone["Bicone space\nx, y, z coords"]
-  Bicone -->|"HSL mapped to a 3D double cone\nso distances are perceptually uniform"| Dist["Distance from\ncommunity average"]
+  HSL["HSL Color"] --> Bicone["Bicone coordinates — x, y, z"]
+  Bicone --> Dist["Euclidean distance from community average"]
   Dist --> Score["Score = 100 × (1 − distance / √2)"]
 ```
 
+The community average is updated in real-time using **Welford's online algorithm** — no need to store every submission.
+
 ### 9 Regions, One Game Code
 
-The last two characters of every game code encode the AWS region. The client auto-detects the closest region and routes players there automatically.
+The last two characters of every game code encode the AWS region. The client probes latency at startup and routes to the nearest server automatically.
 
 ```mermaid
 flowchart LR
-  Code["Game code\ne.g. XYZS"] --> Last["Last 2 chars\n= region"]
-
+  Code["Game code e.g. XYZS"] --> Last["Last 2 chars = region"]
   Last --> AU["BC → Australia"]
   Last --> JP["DF → Japan"]
   Last --> SG["GH → Singapore"]
@@ -127,21 +138,20 @@ flowchart LR
 flowchart TD
   subgraph kiro[".kiro/ folder"]
     subgraph steering["steering/ — always-on context"]
-      G["GAMEPLAY.md\ngame rules & scoring"]
-      ST["STRUCTURE.md\narchitecture & patterns"]
-      TC["TECHNICAL_CONSTRAINTS.md\ncolor precision, AWS limits"]
+      G["GAMEPLAY.md — game rules and scoring"]
+      ST["STRUCTURE.md — architecture and patterns"]
+      TC["TECHNICAL_CONSTRAINTS.md — color precision, AWS limits"]
     end
     subgraph specs["specs/ — task-by-task feature plans"]
-      SR["service/requirements.md\nmultiplayer backend"]
-      CR["client/requirements.md\nHSL color wheel"]
-      DR["daily-challenge/requirements.md\nWordle-style mode"]
+      SR["service/requirements.md — multiplayer backend"]
+      CR["client/requirements.md — HSL color wheel"]
+      DR["daily-challenge/requirements.md — Wordle-style mode"]
     end
   end
-
-  kiro --> Gen["⚡ Kiro generates code\nwith full design context\non every request"]
+  kiro --> Gen["⚡ Kiro generates code with full design context on every request"]
 ```
 
-**Steering docs** — Kiro reads these before every task. Game rules, scoring weights, architectural decisions are never "forgotten" between sessions.
+**Steering docs** — Kiro reads these before every task. Game rules, scoring weights, and architectural decisions are never forgotten between sessions.
 
 **Spec docs** — each feature is planned as numbered tasks with explicit acceptance criteria before a line of code is written.
 
@@ -159,11 +169,11 @@ flowchart TD
 
 | Human | Kiro |
 |-------|------|
-| Game design & rules | Implemented the rules in code |
+| Game design and rules | Implemented the rules in code |
 | Scoring algorithm math | Implemented the algorithm |
 | UX decisions | Built the components |
 | Spec writing | Followed the spec |
-| Playtesting & balance | Generated consistent output |
+| Playtesting and balance | Generated consistent output |
 
 > **The spec is the contract.** When output was wrong, the fix was almost always in the spec — not the code.
 
