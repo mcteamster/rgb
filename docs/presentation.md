@@ -1,19 +1,19 @@
-# On the Spectrum — Demo Guide
+# On the Spectrum — Presentation
 
-> 🎮 **[rgb.mcteamster.com](https://rgb.mcteamster.com)** · 5-minute talk · Built in 1 week with Amazon Kiro
+> 🎮 **[rgb.mcteamster.com](https://rgb.mcteamster.com)** · Built in a week with Amazon Kiro
 
 ---
 
 ## 1. The Game
 
-[![On the Spectrum](./img/rgb.jpeg)](https://rgb.mcteamster.com)
+Describe a color in 50 characters — can your friends guess where you are *On the Spectrum*?
 
-**One sentence:** Describe a color in 50 characters — can your friends guess it?
+[![On the Spectrum](./img/rgb.jpeg)](https://rgb.mcteamster.com)
 
 ### Two Modes
 
 ```mermaid
-flowchart LR
+flowchart
   subgraph MP["🎮 Multiplayer — 2–10 players, real-time"]
     A["🎨 Target color generated"] --> B["✍️ Describer writes a clue"]
     B --> C["🖱️ Others drag the color wheel"]
@@ -79,7 +79,8 @@ flowchart LR
 
 HSL is mapped to a 3D double cone (bicone) so that distances between colors are perceptually uniform:
 
-![HSL double cone](https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/HSL_color_solid_dblcone_chroma_gray.png/320px-HSL_color_solid_dblcone_chroma_gray.png)
+![HSL Double Cone](https://upload.wikimedia.org/wikipedia/commons/2/2d/HSL_color_solid_dblcone.png)
+*HSL color space represented as a double cone. Image: [SharkD](https://commons.wikimedia.org/wiki/User:SharkD), [CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)*
 
 ```mermaid
 flowchart TD
@@ -95,7 +96,7 @@ The community average is updated in real-time using **Welford's online algorithm
 The last two characters of every game code encode the AWS region. Region selection is handled by **[Virgo](https://virgo.tonz.io)** ([mcteamster/virgo](https://github.com/mcteamster/virgo)) — a lightweight browser library that picks the nearest server from the player's device timezone, with no GPS, no IP lookup, and no external requests.
 
 ```mermaid
-flowchart LR
+flowchart
   TZ["🕐 Device Timezone"] --> Virgo["Virgo\nvirgo.tonz.io"]
   Virgo -->|"nearest region"| Code["Game code e.g. XYZS"]
   Code --> Last["Last 2 chars = region"]
@@ -147,9 +148,10 @@ flowchart TD
 |---------|------|
 | CDK stack + DynamoDB tables | Hours |
 | WebSocket game logic (13 actions) | Hours |
-| Custom color wheel (Canvas) | Hours |
-| Daily challenge (5 Lambdas + REST API + UI) | ~2 days |
-| **Total** | **~1 week** |
+| React Web App | Days |
+| Custom color wheel (Canvas) | Hours + Days of refinement later |
+| Scoring algorithms | Hours + Weeks to fine tune later |
+| Daily challenge (5 Lambdas + REST API + UI) | ~2 days + Weeks of ongoing iteration |
 
 ### Human vs Kiro
 
@@ -158,10 +160,8 @@ flowchart TD
 | Game design and rules | Implemented the rules in code |
 | Scoring algorithm math | Implemented the algorithm |
 | UX decisions | Built the components |
-| Spec writing | Followed the spec |
-| Playtesting and balance | Generated consistent output |
-
-> **The spec is the contract.** When output was wrong, the fix was almost always in the spec — not the code.
+| Spec writing | Workshopped and executed the specs |
+| Playtesting and balance | Automated testing (Playwright MCP) |
 
 ---
 
