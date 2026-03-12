@@ -56,27 +56,11 @@ flowchart TD
 
 ### The Color Wheel
 
-A custom-engineered HTML5 Canvas picker — not a library. Rendered pixel-by-pixel using `createImageData` for performance.
+A custom-engineered HTML5 Canvas picker — not a library.
 
-```mermaid
-flowchart LR
-  subgraph Wheel["Color Wheel — two zones"]
-    Center["⚪ Center\nL: 100% white"] -->|distance increases| Edge["⚫ Inner edge\nL: 0% black"]
-    Angle["Angle around wheel"] -->|sinusoidal curve| Saturation["Saturation 0–100%"]
-    subgraph Ring["Outer ring — 30% of radius"]
-      Hue["Pure hues\nS: 100%, L: 50%"]
-    end
-  end
-```
+![Color wheel tips modal](./img/color-picker-tips.png)
 
-The inner circle (70% of radius) maps **angle → hue + saturation** and **distance from center → lightness**:
-
-- **Center**: white (L: 100%)
-- **Moving outward**: lightness drops along a `(1 - d)^¾` curve — emphasising the playable mid-range
-- **Inner edge**: black (L: 0%)
-- **Outer ring**: pure saturated hues at S: 100%, L: 50%
-
-Lightness transitions through three zones: a thin white band at the very center (L: 100→85%), the main playable gradient (L: 85→15%), and a thin black band at the inner edge (L: 15→0%) — keeping the extremes accessible without eating into playing space.
+> **Live demo** — show the color wheel in action.
 
 ### Scoring
 
