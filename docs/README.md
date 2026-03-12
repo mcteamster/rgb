@@ -4,6 +4,22 @@ Technical documentation for the On the Spectrum color guessing game.
 
 ## Documentation Files
 
+### [demo-guide.md](./demo-guide.md)
+Presentation guide covering gameplay, technology, and Kiro spec-driven development.
+
+**Contents**:
+- Game overview and demo flow (multiplayer + daily challenge)
+- Architecture and tech stack deep-dive
+- Custom HSL color wheel engineering
+- Scoring algorithms explained
+- Amazon Kiro spec-driven development workflow
+- Steering docs and spec structure
+- Key takeaways and quick reference
+
+**Use this for**: Live demos, presentations, onboarding new contributors
+
+---
+
 ### [websocket.md](./websocket.md)
 Complete WebSocket API documentation for multiplayer gameplay.
 
