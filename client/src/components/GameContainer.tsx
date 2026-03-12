@@ -123,7 +123,9 @@ export const GameContainer: React.FC = () => {
     if (roomCode) {
       if (/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/.test(roomCode.toUpperCase())) {
         const savedSession = loadSession();
-        if (savedSession && savedSession.gameId === roomCode) {
+        // Compare case-insensitively — QR code scanners and link openers on
+        // some mobile browsers (e.g. Brave Android) may alter URL path casing.
+        if (savedSession && savedSession.gameId.toUpperCase() === roomCode.toUpperCase()) {
           rejoinGame(savedSession.gameId, savedSession.playerId, savedSession.playerName);
         } else if (savedSession) {
           clearSession();
