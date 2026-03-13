@@ -107,23 +107,8 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
       {step === 'create' && (
         <div className="create-game-form">
           <form onSubmit={handleCreateGame}>
-            <div className="config-group">
-              <label>Player Name</label>
-              <div className="input-with-icon">
-                <span className="input-icon">👤</span>
-                <input
-                  type="text"
-                  placeholder="Enter your name"
-                  value={playerName}
-                  onChange={(e) => setPlayerName(e.target.value)}
-                  maxLength={16}
-                  disabled={isLoading}
-                  required
-                />
-              </div>
-            </div>
-
             <div className="config-section">
+
 
               <div className="config-group">
                 <label>Clue Time</label>
@@ -221,28 +206,44 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
                   </div>
                 </div>
               </div>
+
+              <div className="config-summary" style={{
+                backgroundColor: '#f8f9fa',
+                padding: '1rem',
+                borderRadius: '6px',
+                fontSize: '0.9rem',
+                color: '#495057',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div style={{ textAlign: 'center' }}>
+                  Up to <strong>{maxPlayers * turnsPerPlayer} rounds </strong>
+                  <br></br>
+                  Est. {Math.ceil((maxPlayers * turnsPerPlayer * ((descriptionTimeLimit === 86400 ? 60 : descriptionTimeLimit) + (guessingTimeLimit === 86400 ? 30 : guessingTimeLimit))) / 60)} minutes
+                </div>
+
+                <RegionSelector
+                  currentRegion={currentRegion}
+                  onRegionChange={setRegion}
+                />
+              </div>
             </div>
 
-            <div className="config-summary" style={{
-              backgroundColor: '#f8f9fa',
-              padding: '1rem',
-              borderRadius: '6px',
-              fontSize: '0.9rem',
-              color: '#495057',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                Up to <strong>{maxPlayers * turnsPerPlayer} rounds </strong>
-                <br></br>
-                Est. {Math.ceil((maxPlayers * turnsPerPlayer * ((descriptionTimeLimit === 86400 ? 60 : descriptionTimeLimit) + (guessingTimeLimit === 86400 ? 30 : guessingTimeLimit))) / 60)} minutes
+            <div className="config-group">
+              <label>Player Name</label>
+              <div className="input-with-icon">
+                <span className="input-icon">👤</span>
+                <input
+                  type="text"
+                  placeholder="Enter your name"
+                  value={playerName}
+                  onChange={(e) => setPlayerName(e.target.value)}
+                  maxLength={16}
+                  disabled={isLoading}
+                  required
+                />
               </div>
-
-              <RegionSelector
-                currentRegion={currentRegion}
-                onRegionChange={setRegion}
-              />
             </div>
 
             <div className="form-buttons">
