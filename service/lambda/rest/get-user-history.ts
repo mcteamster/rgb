@@ -79,7 +79,8 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                 submittedColor: item.submittedColor,
                 averageAtSubmission: item.averageAtSubmission,
                 score: item.score,
-                totalSubmissions: challenge?.totalSubmissions || 0
+                totalSubmissions: challenge?.totalSubmissions || 0,
+                submittedAt: item.submittedAt
             };
         });
 
@@ -92,7 +93,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             bestScore: submissions.length > 0
                 ? Math.max(...submissions.map(s => s.score))
                 : 0,
-            currentStreak: calculateStreak(submissions.map(s => s.challengeId))
+            currentStreak: calculateStreak(submissions.map(s => ({ challengeId: s.challengeId, submittedAt: s.submittedAt })))
         };
 
         return {
@@ -120,25 +121,27 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     }
 };
 
-function calculateStreak(challengeIds: string[]): number {
-    if (challengeIds.length === 0) return 0;
+function calculateStreak(submissions: { challengeId: string; submittedAt: string }[]): number {
+    if (submissions.length === 0) return 0;
 
-    // Sort challengeIds in descending order (most recent first)
-    const sortedIds = [...challengeIds].sort().reverse();
+    const sortedSubmissions = [...submissions].sort((a, b) => b.challengeId.localeCompare(a.challengeId));
 
     let streak = 0;
-    const today = new Date();
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    for (let i = 0; i < sortedIds.length; i++) {
-        const expectedDate = new Date(today);
-        expectedDate.setDate(today.getDate() - i);
+    for (let i = 0; i < sortedSubmissions.length; i++) {
+        const expectedDate = new Date(todayStr);
+        expectedDate.setUTCDate(expectedDate.getUTCDate() - i);
         const expectedId = expectedDate.toISOString().split('T')[0];
 
-        if (sortedIds[i] === expectedId) {
-            streak++;
-        } else {
-            break;
-        }
+        const submission = sortedSubmissions[i];
+        if (submission.challengeId !== expectedId) break;
+
+        // Verify the submission was actually made on that day (UTC)
+        const submittedDay = submission.submittedAt?.split('T')[0];
+        if (submittedDay !== expectedId) break;
+
+        streak++;
     }
 
     return streak;
