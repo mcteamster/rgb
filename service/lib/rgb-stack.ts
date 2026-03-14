@@ -110,6 +110,7 @@ export class RgbStack extends cdk.Stack {
     // WebSocket Lambda Functions
     const connectFunction = new lambda.Function(this, 'ConnectFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'connect.handler',
       code: lambda.Code.fromAsset('dist/lambda/websocket'),
       role: lambdaExecutionRole,
@@ -120,6 +121,7 @@ export class RgbStack extends cdk.Stack {
 
     const disconnectFunction = new lambda.Function(this, 'DisconnectFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'disconnect.handler',
       code: lambda.Code.fromAsset('dist/lambda/websocket'),
       role: lambdaExecutionRole,
@@ -130,6 +132,7 @@ export class RgbStack extends cdk.Stack {
 
     const messageFunction = new lambda.Function(this, 'MessageFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'message.handler',
       code: lambda.Code.fromAsset('dist/lambda/websocket'),
       role: lambdaExecutionRole,

@@ -103,6 +103,7 @@ export class DailyChallengeStack extends cdk.Stack {
     // Lambda Functions
     const getCurrentChallengeFunction = new lambda.Function(this, 'GetCurrentChallengeFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'get-current-challenge.handler',
       code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
@@ -114,6 +115,7 @@ export class DailyChallengeStack extends cdk.Stack {
 
     const submitChallengeFunction = new lambda.Function(this, 'SubmitChallengeFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'submit-challenge.handler',
       code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
@@ -126,6 +128,7 @@ export class DailyChallengeStack extends cdk.Stack {
 
     const getStatsFunction = new lambda.Function(this, 'GetStatsFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'get-stats.handler',
       code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
@@ -138,6 +141,7 @@ export class DailyChallengeStack extends cdk.Stack {
 
     const getUserHistoryFunction = new lambda.Function(this, 'GetUserHistoryFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'get-user-history.handler',
       code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
@@ -150,6 +154,7 @@ export class DailyChallengeStack extends cdk.Stack {
 
     const getChallengeByDateFunction = new lambda.Function(this, 'GetChallengeByDateFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'get-challenge-by-date.handler',
       code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
@@ -161,6 +166,7 @@ export class DailyChallengeStack extends cdk.Stack {
 
     const createDailyChallengeFunction = new lambda.Function(this, 'CreateDailyChallengeFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'create-daily-challenge.handler',
       code: lambda.Code.fromAsset('dist/lambda/rest'),
       role: lambdaExecutionRole,
@@ -239,6 +245,7 @@ export class DailyChallengeStack extends cdk.Stack {
     // Stream Processor Lambda
     const streamProcessorFunction = new lambda.Function(this, 'StreamProcessorFunction', {
       runtime: lambda.Runtime.NODEJS_24_X,
+      memorySize: 512,
       handler: 'stream-processor.handler',
       code: lambda.Code.fromAsset('dist/lambda/analytics'),
       role: lambdaExecutionRole,
