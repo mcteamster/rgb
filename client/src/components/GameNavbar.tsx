@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
+import { CyclingText } from './CyclingText';
+import { useCyclingText } from '../hooks/useCyclingText';
 import { getUserName } from '../utils/userId';
 
 interface GameNavbarProps {
@@ -13,8 +16,36 @@ interface GameNavbarProps {
 }
 
 export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, onShowCalendar, isLoading, challengeDate }) => {
+  const navigate = useNavigate();
   const { gameState, playerName, getCurrentRound } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
+  const [dailyChallenge, setDailyChallenge] = useState<{ prompt: string; validUntil: string } | null>(null);
+
+  // Fetch daily challenge prompt when no game is active
+  useEffect(() => {
+    if (!gameState) {
+      const baseUrl = import.meta.env.VITE_DAILY_CHALLENGE_API_URL || '';
+      fetch(`${baseUrl}/daily-challenge/current?userId=preview`)
+        .then(res => res.json())
+        .then(data => setDailyChallenge({ prompt: data.prompt, validUntil: data.validUntil }))
+        .catch(() => setDailyChallenge(null));
+    }
+  }, [gameState]);
+
+  const shortDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const timeLeft = dailyChallenge ? (() => {
+    const diff = Math.max(0, new Date(dailyChallenge.validUntil).getTime() - Date.now());
+    const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+    const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+    return `${h}h ${m}m`;
+  })() : null;
+  const texts = [
+    `🗓️ Daily Challenge - ${shortDate}`,
+    `"${dailyChallenge?.prompt || 'Loading...'}"`,
+    timeLeft ? `${timeLeft} ⏳ Tap to Play` : 'Tap to Play Now!'
+  ];
+
+  const { displayIndex, exiting } = useCyclingText(texts, 3000, !gameState && !!dailyChallenge);
 
   // Close room menu when joining a new game
   useEffect(() => {
@@ -48,15 +79,15 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
     return (
       <div className="game-header">
         <div className="header-main">
-          <div 
-            className="player-name" 
+          <div
+            className="player-name"
             onClick={onToggleHistory}
             style={{ cursor: onToggleHistory ? 'pointer' : 'default' }}
           >
             {userName}
           </div>
           <div className="game-status">{isLoading ? 'Loading...' : 'Daily Challenge'}</div>
-          <div 
+          <div
             className="room-code"
             onClick={onShowCalendar}
             style={{ cursor: onShowCalendar ? 'pointer' : 'default' }}
@@ -69,7 +100,20 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   }
 
   if (!gameState) {
-    return null;
+    return (
+      <div className="game-header"
+        onClick={() => navigate('/daily')}
+        style={{ cursor: 'pointer' }}
+      >
+        <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px' }}>
+          <CyclingText
+            text={texts[displayIndex]}
+            exiting={exiting}
+            style={{ color: displayIndex === 1 ? '#667eea' : '#333', fontStyle: displayIndex === 1 ? 'italic' : 'normal', fontSize: '1rem', fontWeight: '600' }}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -78,17 +122,17 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
         <div className="game-status">
           {gameState.meta.status === 'playing' && getCurrentRound()
             ? `Round ${gameState.gameplay.rounds.length} - ${(() => {
-                const phase = getCurrentRound()?.phase;
-                return phase ? phase.charAt(0).toUpperCase() + phase.slice(1) : 'Loading';
-              })()}`
+              const phase = getCurrentRound()?.phase;
+              return phase ? phase.charAt(0).toUpperCase() + phase.slice(1) : 'Loading';
+            })()}`
             : gameState.meta.status === 'waiting'
-            ? 'Lobby Open'
-            : gameState.meta.status
+              ? 'Lobby Open'
+              : gameState.meta.status
           }
         </div>
-        <div 
+        <div
           className="player-name"
-          style={{ 
+          style={{
             cursor: 'pointer',
             maxWidth: '20vw',
             overflow: 'hidden',
@@ -101,8 +145,8 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
         >
           {playerName}
         </div>
-        <div 
-          className="game-id clickable" 
+        <div
+          className="game-id clickable"
           onClick={() => {
             setActiveOverlay(activeOverlay === 'room' ? null : 'room');
           }}
@@ -110,11 +154,11 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
           {gameState.gameId}
         </div>
       </div>
-      <RoomMenu 
-        isVisible={activeOverlay === 'room'} 
-        onClose={() => setActiveOverlay(null)} 
+      <RoomMenu
+        isVisible={activeOverlay === 'room'}
+        onClose={() => setActiveOverlay(null)}
       />
-      <PlayerSidebar 
+      <PlayerSidebar
         isOpen={activeOverlay === 'players'}
         onToggle={() => setActiveOverlay(activeOverlay === 'players' ? null : 'players')}
         onOpenAbout={() => {

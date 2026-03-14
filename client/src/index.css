@@ -537,7 +537,6 @@ body {
   gap: 0.75rem;
   width: 100%;
   justify-content: stretch;
-  margin-top: 0.75rem;
 }
 
 .create-game-form button:disabled,
