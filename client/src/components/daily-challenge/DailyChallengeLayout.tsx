@@ -13,7 +13,6 @@ interface DailyChallengeLayoutProps {
   onCloseAbout: () => void;
   dailyChallengeMode?: boolean;
   onToggleHistory?: () => void;
-  onShowCalendar?: () => void;
   isLoading?: boolean;
   onShowTips?: () => void;
   challengeDate?: string;
@@ -27,7 +26,6 @@ export const DailyChallengeLayout: React.FC<DailyChallengeLayoutProps> = ({
   onCloseAbout,
   dailyChallengeMode = false,
   onToggleHistory,
-  onShowCalendar,
   isLoading,
   onShowTips,
   challengeDate
@@ -38,7 +36,6 @@ export const DailyChallengeLayout: React.FC<DailyChallengeLayoutProps> = ({
     <GameNavbar 
       dailyChallengeMode={dailyChallengeMode} 
       onToggleHistory={onToggleHistory} 
-      onShowCalendar={onShowCalendar}
       isLoading={isLoading}
       challengeDate={challengeDate}
     />

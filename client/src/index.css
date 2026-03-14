@@ -1182,10 +1182,9 @@ textarea:-ms-input-placeholder {
 }
 
 .history-sidebar-expanded {
-  left: 20px;
-  right: auto;
+  left: auto;
+  right: 20px;
   z-index: 50;
-  max-width: 840px;
 }
 
 .player-list {

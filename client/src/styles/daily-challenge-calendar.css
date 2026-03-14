@@ -116,8 +116,7 @@
 }
 
 .day-button.completed {
-  background: #e8f5e9;
-  border-color: #4CAF50;
+  border-width: 4px;
 }
 
 .day-disabled {

@@ -1,12 +1,10 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { GameTitle } from '../GameTitle';
 import { DailyChallengeManager } from './DailyChallengeManager';
 import { DailyChallengeDisplay } from './DailyChallengeDisplay';
 import { DailyChallengeReveal } from './DailyChallengeReveal';
 import { DailyChallengeResults } from './DailyChallengeResults';
 import { DailyChallengeHistory } from './DailyChallengeHistory';
-import { DailyChallengeCalendar } from './DailyChallengeCalendar';
 import { Button } from '../Button';
 import { DailyChallengeLayout } from './DailyChallengeLayout';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
@@ -15,41 +13,21 @@ import { useWindowSize } from '../../hooks/useWindowSize';
 import { setBodyBackground } from '../../utils/colorUtils';
 import { ColorWheelTips } from '../ColorGuessingTips';
 import { getUserId } from '../../utils/userId';
-import { dailyChallengeApi } from '../../services/dailyChallengeApi';
 
 const DAILY_CHALLENGE_TIPS_KEY = 'dailyChallengeTipsSeen';
 
 export const DailyChallenge: React.FC = () => {
-    const navigate = useNavigate();
     const { selectedColor, setIsColorLocked } = useColor();
     const { currentChallenge, userSubmission, loadCurrentChallenge, loadChallengeByDate, isLoading } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
     const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
-    const [showCalendar, setShowCalendar] = useState(false);
     const [showTips, setShowTips] = useState(false);
-    const [completedDates, setCompletedDates] = useState<Set<string>>(new Set());
     const size = useWindowSize();
-
-    const loadCompletedDates = useCallback(() => {
-        const userId = getUserId();
-        dailyChallengeApi.getUserHistory(userId, 30).then(response => {
-            const dates = new Set(response.submissions.map(s => s.challengeId));
-            setCompletedDates(dates);
-        }).catch(console.error);
-    }, []);
 
     useEffect(() => {
         loadCurrentChallenge();
-        loadCompletedDates();
-    }, [loadCompletedDates]);
-
-    // Refresh completed dates when user submits
-    useEffect(() => {
-        if (userSubmission) {
-            loadCompletedDates();
-        }
-    }, [userSubmission, loadCompletedDates]);
+    }, []);
 
     useEffect(() => {
         setBodyBackground(selectedColor);
@@ -60,7 +38,6 @@ export const DailyChallenge: React.FC = () => {
     }, [setIsColorLocked]);
 
     useEffect(() => {
-        // Show tips on first visit if not submitted yet
         if (currentChallenge && !userSubmission && !isLoading) {
             const tipsSeen = localStorage.getItem(DAILY_CHALLENGE_TIPS_KEY);
             if (!tipsSeen) {
@@ -82,13 +59,12 @@ export const DailyChallenge: React.FC = () => {
 
     if (isLoading) {
         return (
-            <DailyChallengeLayout 
-                size={size} 
-                showAbout={showAbout} 
-                onShowAbout={() => setShowAbout(true)} 
+            <DailyChallengeLayout
+                size={size}
+                showAbout={showAbout}
+                onShowAbout={() => setShowAbout(true)}
                 onCloseAbout={() => setShowAbout(false)}
                 dailyChallengeMode
-                onShowCalendar={() => setShowCalendar(true)}
                 isLoading
                 challengeDate={currentChallenge?.challengeId}
             >
@@ -108,50 +84,32 @@ export const DailyChallenge: React.FC = () => {
     }
 
     return (
-        <DailyChallengeLayout 
-            size={size} 
-            showAbout={showAbout} 
-            onShowAbout={() => setShowAbout(true)} 
-            onCloseAbout={() => setShowAbout(false)} 
+        <DailyChallengeLayout
+            size={size}
+            showAbout={showAbout}
+            onShowAbout={() => setShowAbout(true)}
+            onCloseAbout={() => setShowAbout(false)}
             dailyChallengeMode
             onToggleHistory={() => setShowHistory(!showHistory)}
-            onShowCalendar={() => setShowCalendar(true)}
             onShowTips={() => setShowTips(true)}
             challengeDate={currentChallenge.challengeId}
         >
             <GameTitle prefix="Off" />
-            
+
             {showTips && <ColorWheelTips onDismiss={handleCloseTips} />}
-            {showCalendar && (
-                <DailyChallengeCalendar 
-                    onClose={() => setShowCalendar(false)}
-                    onSelectDate={handleSelectDate}
-                    completedDates={completedDates}
-                />
-            )}
-            
+
             {showHistory ? (
                 <div className="room-menu history-sidebar-expanded">
                     <div className="room-menu-content">
-                        <button
-                            onClick={() => setShowHistory(false)}
-                            className="close-button"
-                        >
-                            ×
-                        </button>
-                        <DailyChallengeHistory userId={getUserId()} />
+                        <button onClick={() => setShowHistory(false)} className="close-button">×</button>
+                        <DailyChallengeHistory userId={getUserId()} onSelectDate={handleSelectDate} />
                     </div>
                 </div>
             ) : showLeaderboard ? (
                 <>
                     <DailyChallengeResults />
                     <div className="game-controls results-actions">
-                        <Button onClick={() => navigate('/')} variant="exit">
-                            Home
-                        </Button>
-                        <Button onClick={() => setShowLeaderboard(false)} variant="primary">
-                            Results
-                        </Button>
+                        <Button onClick={() => setShowLeaderboard(false)} variant="primary">Your Results</Button>
                     </div>
                 </>
             ) : userSubmission ? (
@@ -159,7 +117,7 @@ export const DailyChallenge: React.FC = () => {
                     <div className="status-bar">
                         <DailyChallengeReveal />
                     </div>
-                    <DailyChallengeManager 
+                    <DailyChallengeManager
                         onShowAbout={() => setShowAbout(true)}
                         onShowLeaderboard={() => setShowLeaderboard(true)}
                     />
@@ -167,7 +125,7 @@ export const DailyChallenge: React.FC = () => {
             ) : (
                 <>
                     <DailyChallengeDisplay />
-                    <DailyChallengeManager 
+                    <DailyChallengeManager
                         onShowAbout={() => setShowAbout(true)}
                         onShowTips={() => setShowTips(true)}
                     />

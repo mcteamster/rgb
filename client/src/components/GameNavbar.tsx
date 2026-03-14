@@ -5,17 +5,15 @@ import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
 import { CyclingText } from './CyclingText';
 import { useCyclingText } from '../hooks/useCyclingText';
-import { getUserName } from '../utils/userId';
 
 interface GameNavbarProps {
   dailyChallengeMode?: boolean;
   onToggleHistory?: () => void;
-  onShowCalendar?: () => void;
   isLoading?: boolean;
   challengeDate?: string;
 }
 
-export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, onShowCalendar, isLoading, challengeDate }) => {
+export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading, challengeDate }) => {
   const navigate = useNavigate();
   const { gameState, playerName, getCurrentRound } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
@@ -74,25 +72,22 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   // Daily challenge mode
   if (dailyChallengeMode) {
     const dateString = challengeDate || new Date().toISOString().split('T')[0];
-    const userName = getUserName() || '👤';
 
     return (
       <div className="game-header">
         <div className="header-main">
           <div
-            className="player-name"
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer' }}
+          >
+            🏠
+          </div>
+          <div className="game-status">{isLoading ? 'Loading...' : `Daily Challenge - ${dateString}`}</div>
+          <div
             onClick={onToggleHistory}
             style={{ cursor: onToggleHistory ? 'pointer' : 'default' }}
           >
-            {userName}
-          </div>
-          <div className="game-status">{isLoading ? 'Loading...' : 'Daily Challenge'}</div>
-          <div
-            className="room-code"
-            onClick={onShowCalendar}
-            style={{ cursor: onShowCalendar ? 'pointer' : 'default' }}
-          >
-            {dateString}
+            🗓️
           </div>
         </div>
       </div>
