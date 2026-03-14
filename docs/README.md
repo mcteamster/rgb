@@ -4,6 +4,13 @@ Technical documentation for the On the Spectrum color guessing game.
 
 ## Documentation Files
 
+### [CHANGELOG.md](./CHANGELOG.md)
+Running log of notable changes to On the Spectrum.
+
+**Use this for**: Tracking what's new, release notes, contributor context
+
+---
+
 ### [presentation.md](./presentation.md)
 Presentation guide covering gameplay, technology, and Kiro spec-driven development.
 

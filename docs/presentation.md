@@ -29,12 +29,12 @@ flowchart
 
 ### Live Demo Flow *(3 min)*
 
-1. Open [rgb.mcteamster.com](https://rgb.mcteamster.com) → **Create Game**
-2. Share the 4-letter code — players join from anywhere
+1. Open [rgb.mcteamster.com](https://rgb.mcteamster.com) — the navbar **already shows today's Daily Challenge** prompt cycling with a countdown
+2. Click **Create Game** — share the 4-letter code — players join from anywhere
 3. Round starts — the describer sees a target color and types a clue
 4. Everyone drags the wheel; you can watch each other's selections move live
 5. Reveal — target appears, scores calculated
-6. Switch to **Daily Challenge** — show the prompt, pick a color, see the community average
+6. Switch to **Daily Challenge** (or tap the navbar teaser) — pick a color, see the community average and history
 
 ---
 
@@ -97,7 +97,7 @@ The last two characters of every game code encode the AWS region. Region selecti
 
 ```mermaid
 flowchart
-  TZ["🕐 Device Timezone"] --> Virgo["Virgo\nvirgo.tonz.io"]
+  TZ["🕐 Device Timezone"] --> Virgo["Virgo — virgo.tonz.io"]
   Virgo -->|"nearest region"| Code["Game code e.g. XYZS"]
   Code --> Last["Last 2 chars = region"]
   Last --> AU["🇦🇺 BC — Australia"]
