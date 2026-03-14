@@ -167,6 +167,45 @@ body {
 }
 
 /* Game Header */
+.minimised-view {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.minimised-action .minimised-info,
+.minimised-action .small-screen-timer {
+  animation: minimised-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes minimised-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.minimised-info {
+  padding: 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  text-align: center;
+}
+
+.small-screen-timer {
+  font-size: 4rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
 .game-header {
   position: fixed;
   top: calc(20px + var(--header-offset));

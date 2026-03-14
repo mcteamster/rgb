@@ -12,6 +12,7 @@ import { RainbowIcon } from './RainbowIcon';
 import { AboutPage } from './AboutPage';
 import { ColorWheelTips } from './ColorGuessingTips';
 import { useColor } from '../contexts/ColorContext';
+import { MinimisedView } from './MinimisedView';
 import { useGame, loadSession, clearSession } from '../contexts/GameContext';
 import { setBodyBackground } from '../utils/colorUtils';
 import { discordSdk } from '../services/discord';
@@ -155,21 +156,24 @@ export const GameContainer: React.FC = () => {
   const isEndgame = currentRound?.phase === 'endgame';
 
   return (
-    <div className="app-container game-active" style={{ visibility: isScreenTooSmall ? 'hidden' : 'visible' }}>
-      <RainbowIcon onShowAbout={() => setShowAbout(true)} />
-      <ConnectionStatus />
-      <GameNavbar />
+    <>
+      <div className="app-container game-active" style={{ visibility: isScreenTooSmall ? 'hidden' : 'visible' }}>
+        <RainbowIcon onShowAbout={() => setShowAbout(true)} />
+        <ConnectionStatus />
+        <GameNavbar />
 
-      { isEndgame && <GameResults players={gameState.players} rounds={gameState.gameplay.rounds} />}
-      <GameDisplay />
-      <ColorWheel size={size} />
+        { isEndgame && <GameResults players={gameState.players} rounds={gameState.gameplay.rounds} />}
+        <GameDisplay />
+        <ColorWheel size={size} />
 
-      <GameManager 
-        onShowAbout={() => setShowAbout(true)} 
-        onShowTips={handleShowTips} 
-      />
-      {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
-      {showTips && <ColorWheelTips onDismiss={handleDismissTips} />}
-    </div>
+        <GameManager 
+          onShowAbout={() => setShowAbout(true)} 
+          onShowTips={handleShowTips} 
+        />
+        {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
+        {showTips && <ColorWheelTips onDismiss={handleDismissTips} />}
+      </div>
+      {isScreenTooSmall && <MinimisedView />}
+    </>
   );
 };
