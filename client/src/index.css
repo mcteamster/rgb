@@ -190,7 +190,7 @@ body {
 
 .minimised-info {
   padding: 0.25rem;
-  font-size: 1.5rem;
+  font-size: 12vw;
   font-weight: 600;
   color: white;
   text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
@@ -199,7 +199,7 @@ body {
 }
 
 .small-screen-timer {
-  font-size: 4rem;
+  font-size: 32vw;
   font-weight: 900;
   color: white;
   text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8);

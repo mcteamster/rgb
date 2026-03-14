@@ -24,12 +24,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const limit = Math.min(parseInt(event.queryStringParameters?.limit || '30'), 100);
 
-        // Query user's submissions (no longer needs GSI)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 29);
+        const cutoff = thirtyDaysAgo.toISOString().split('T')[0];
+
+        // Query user's submissions within the last 30 days
         const submissionsResult = await dynamodb.send(new QueryCommand({
             TableName: SUBMISSIONS_TABLE,
-            KeyConditionExpression: 'userId = :userId',
+            KeyConditionExpression: 'userId = :userId AND challengeId >= :cutoff',
             ExpressionAttributeValues: {
-                ':userId': userId
+                ':userId': userId,
+                ':cutoff': cutoff
             },
             ScanIndexForward: false, // Descending order (most recent first)
             Limit: limit
