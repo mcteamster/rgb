@@ -7,14 +7,17 @@
   "scripts": {
     "build": "tsc",
     "deploy": "npm run build; npx cdk deploy --all --concurrency=10",
-    "manage-challenges": "npm run build && node dist/scripts/manage-challenges.js"
+    "manage-challenges": "npm run build && node dist/scripts/manage-challenges.js",
+    "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
     "@types/node": "^24.10.1",
+    "@vitest/coverage-v8": "^4.1.0",
     "aws-cdk": "^2.1108.0",
     "ts-node": "^10.9.2",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.0.0",
