@@ -1,0 +1,122 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: RGB Game — local development (SAM)
+
+# Before running:
+#   1. docker compose up -d            (start DynamoDB Local)
+#   2. npm run build --workspace=service (compile TypeScript)
+#   3. npm run seed                    (create tables + seed challenge)
+#
+# Then start the servers:
+#   npm run dev:service   (SAM REST :3000, SAM Lambda :3002, WS proxy :3001)
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 30
+    Environment:
+      Variables:
+        # DynamoDB Local — reached via Docker network rgb-local
+        AWS_ENDPOINT_URL: http://dynamodb-local:8000
+        CONNECTIONS_TABLE: rgb-connections
+        GAMES_TABLE: rgb-games
+        CHALLENGES_TABLE: rgb-daily-challenges
+        SUBMISSIONS_TABLE: rgb-daily-user-submissions
+        # WebSocket management — ws-proxy.ts handles POST /@connections/:id
+        # On Linux replace host.docker.internal with 172.17.0.1
+        WEBSOCKET_ENDPOINT: http://host.docker.internal:3001
+
+Resources:
+
+  # ── WebSocket Lambda functions ─────────────────────────────────────────────
+  # Invoked by ws-proxy.ts via `sam local start-lambda` (port 3002)
+  # No API Gateway events — WS simulation is handled by the proxy
+
+  ConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ConnectFunction
+      CodeUri: service/
+      Handler: dist/lambda/websocket/connect.handler
+
+  DisconnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: DisconnectFunction
+      CodeUri: service/
+      Handler: dist/lambda/websocket/disconnect.handler
+
+  MessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: MessageFunction
+      CodeUri: service/
+      Handler: dist/lambda/websocket/message.handler
+
+  # ── REST Lambda functions ──────────────────────────────────────────────────
+  # Served by `sam local start-api` (port 3000)
+
+  GetCurrentChallengeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetCurrentChallengeFunction
+      CodeUri: service/
+      Handler: dist/lambda/rest/get-current-challenge.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /daily-challenge/current
+            Method: get
+
+  SubmitChallengeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: SubmitChallengeFunction
+      CodeUri: service/
+      Handler: dist/lambda/rest/submit-challenge.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /daily-challenge/submit
+            Method: post
+
+  GetStatsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetStatsFunction
+      CodeUri: service/
+      Handler: dist/lambda/rest/get-stats.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /daily-challenge/stats/{challengeId}
+            Method: get
+
+  GetUserHistoryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetUserHistoryFunction
+      CodeUri: service/
+      Handler: dist/lambda/rest/get-user-history.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /daily-challenge/history/{userId}
+            Method: get
+
+  GetChallengeByDateFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: GetChallengeByDateFunction
+      CodeUri: service/
+      Handler: dist/lambda/rest/get-challenge-by-date.handler
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /daily-challenge/by-date/{date}
+            Method: get

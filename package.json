@@ -10,7 +10,12 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "dev:client": "npm run dev --workspace=client",
+    "dev:service": "concurrently -n rest,lambda,ws -c blue,green,yellow \"npm run local:rest --workspace=service\" \"npm run local:lambda --workspace=service\" \"npm run local:ws --workspace=service\"",
+    "seed": "npm run seed --workspace=service",
     "deploy:service": "npm run deploy --workspace=service",
     "test": "npm run test --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
   }
 }
