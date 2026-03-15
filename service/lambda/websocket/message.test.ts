@@ -25,8 +25,12 @@ vi.mock('./round-handlers', () => ({
 }))
 
 import { handler } from './message'
-import { handleCreateGame, handleJoinGame, handleRejoinGame } from './game-handlers'
-import { handleSubmitColor, handleStartRound } from './round-handlers'
+import { handleCreateGame, handleJoinGame, handleRejoinGame, handleGetGame, handleKickPlayer } from './game-handlers'
+import {
+    handleSubmitColor, handleStartRound, handleUpdateDraftColor,
+    handleUpdateDraftDescription, handleSubmitDescription,
+    handleFinaliseGame, handleResetGame, handleCloseRoom,
+} from './round-handlers'
 
 const makeEvent = (body: object) => ({
     requestContext: { connectionId: 'conn1' },
@@ -81,8 +85,59 @@ describe('message handler routing', () => {
         expect(handleSubmitColor).toHaveBeenCalled()
     })
 
+    it('routes getGame', async () => {
+        await handler(makeEvent({ action: 'getGame', gameId: 'game1', playerId: 'p1' }))
+        expect(handleGetGame).toHaveBeenCalled()
+    })
+
+    it('routes updateDraftColor', async () => {
+        await handler(makeEvent({ action: 'updateDraftColor', gameId: 'game1', playerId: 'p1', data: { color: { h: 180, s: 50, l: 50 } } }))
+        expect(handleUpdateDraftColor).toHaveBeenCalled()
+    })
+
+    it('routes updateDraftDescription', async () => {
+        await handler(makeEvent({ action: 'updateDraftDescription', gameId: 'game1', playerId: 'p1', data: { description: 'sky blue' } }))
+        expect(handleUpdateDraftDescription).toHaveBeenCalled()
+    })
+
+    it('routes kickPlayer with leave reason when kicking self', async () => {
+        await handler(makeEvent({ action: 'kickPlayer', gameId: 'game1', playerId: 'p1', data: { targetPlayerId: 'p1' } }))
+        expect(handleKickPlayer).toHaveBeenCalledWith('conn1', 'game1', 'p1', 'p1', 'leave')
+    })
+
+    it('routes kickPlayer with kick reason when kicking another player', async () => {
+        await handler(makeEvent({ action: 'kickPlayer', gameId: 'game1', playerId: 'p1', data: { targetPlayerId: 'p2' } }))
+        expect(handleKickPlayer).toHaveBeenCalledWith('conn1', 'game1', 'p1', 'p2', 'kick')
+    })
+
+    it('routes submitDescription through deadline enforcement', async () => {
+        await handler(makeEvent({ action: 'submitDescription', gameId: 'game1', playerId: 'p1', data: { description: 'ocean blue' } }))
+        expect(handleSubmitDescription).toHaveBeenCalled()
+    })
+
+    it('routes finaliseGame', async () => {
+        await handler(makeEvent({ action: 'finaliseGame', gameId: 'game1', playerId: 'p1' }))
+        expect(handleFinaliseGame).toHaveBeenCalled()
+    })
+
+    it('routes resetGame', async () => {
+        await handler(makeEvent({ action: 'resetGame', gameId: 'game1', playerId: 'p1' }))
+        expect(handleResetGame).toHaveBeenCalled()
+    })
+
+    it('routes closeRoom', async () => {
+        await handler(makeEvent({ action: 'closeRoom', gameId: 'game1', playerId: 'p1' }))
+        expect(handleCloseRoom).toHaveBeenCalled()
+    })
+
     it('returns 400 for unknown action', async () => {
         const result = await handler(makeEvent({ action: 'unknownAction', gameId: 'g1', playerId: 'p1' }))
         expect(result.statusCode).toBe(400)
+    })
+
+    it('returns 500 when a handler throws', async () => {
+        vi.mocked(handleStartRound).mockRejectedValueOnce(new Error('boom'))
+        const result = await handler(makeEvent({ action: 'startRound', gameId: 'game1', playerId: 'p1' }))
+        expect(result.statusCode).toBe(500)
     })
 })

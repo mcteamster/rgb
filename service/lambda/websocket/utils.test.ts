@@ -4,6 +4,7 @@ import {
     generatePlayerId,
     isValidHSLColor,
     generateRandomHSLColor,
+    calculateColorScore,
     getCurrentRound,
     findLastSubmittedColor,
     shouldEndGame,
@@ -27,10 +28,62 @@ describe('generateGameId', () => {
         expect(['B', 'C']).toContain(id[3])
     })
 
+    it('uses DF prefix for ap-northeast-1', () => {
+        process.env.AWS_REGION = 'ap-northeast-1'
+        expect(['D', 'F']).toContain(generateGameId()[3])
+    })
+
+    it('uses GH prefix for ap-southeast-1', () => {
+        process.env.AWS_REGION = 'ap-southeast-1'
+        expect(['G', 'H']).toContain(generateGameId()[3])
+    })
+
+    it('uses JK prefix for ap-south-1', () => {
+        process.env.AWS_REGION = 'ap-south-1'
+        expect(['J', 'K']).toContain(generateGameId()[3])
+    })
+
+    it('uses LM prefix for eu-central-1', () => {
+        process.env.AWS_REGION = 'eu-central-1'
+        expect(['L', 'M']).toContain(generateGameId()[3])
+    })
+
+    it('uses NP prefix for eu-west-2', () => {
+        process.env.AWS_REGION = 'eu-west-2'
+        expect(['N', 'P']).toContain(generateGameId()[3])
+    })
+
+    it('uses QR prefix for sa-east-1', () => {
+        process.env.AWS_REGION = 'sa-east-1'
+        expect(['Q', 'R']).toContain(generateGameId()[3])
+    })
+
+    it('uses ST prefix for us-east-1', () => {
+        process.env.AWS_REGION = 'us-east-1'
+        expect(['S', 'T']).toContain(generateGameId()[3])
+    })
+
+    it('uses VW prefix for us-west-2', () => {
+        process.env.AWS_REGION = 'us-west-2'
+        expect(['V', 'W']).toContain(generateGameId()[3])
+    })
+
     it('uses XZ prefix for unknown region', () => {
         process.env.AWS_REGION = 'unknown-region'
         const id = generateGameId()
         expect(['X', 'Z']).toContain(id[3])
+    })
+})
+
+describe('calculateColorScore', () => {
+    it('returns 100 for identical colors', () => {
+        expect(calculateColorScore({ h: 180, s: 50, l: 50 }, { h: 180, s: 50, l: 50 })).toBe(100)
+    })
+
+    it('returns a score between 0 and 100', () => {
+        const score = calculateColorScore({ h: 180, s: 50, l: 50 }, { h: 90, s: 25, l: 75 })
+        expect(score).toBeGreaterThanOrEqual(0)
+        expect(score).toBeLessThanOrEqual(100)
     })
 })
 

@@ -11,8 +11,9 @@ vi.mock('./aws-clients', () => ({
     broadcastToGame: mockBroadcastToGame,
     sendToConnection: mockSendToConnection,
 }))
+vi.mock('./deadlines', () => ({ checkAndEnforceDeadlines: vi.fn() }))
 
-import { handleCreateGame, handleJoinGame, handleRejoinGame, handleKickPlayer } from './game-handlers'
+import { handleCreateGame, handleJoinGame, handleRejoinGame, handleKickPlayer, handleGetGame } from './game-handlers'
 
 const makeGame = (overrides: any = {}) => ({
     gameId: 'game1',
@@ -30,6 +31,26 @@ beforeEach(() => {
     mockSend.mockReset()
     mockSendToConnection.mockReset()
     mockBroadcastToGame.mockReset()
+})
+
+// ============================================================
+// handleGetGame
+// ============================================================
+
+describe('handleGetGame', () => {
+    it('returns 404 when game is not found', async () => {
+        mockSend.mockResolvedValueOnce({ Item: undefined })
+        const result = await handleGetGame('conn1', 'game1')
+        expect(result.statusCode).toBe(404)
+    })
+
+    it('returns 200 and sends game state when found', async () => {
+        const game = makeGame()
+        mockSend.mockResolvedValueOnce({ Item: game })
+        const result = await handleGetGame('conn1', 'game1')
+        expect(result.statusCode).toBe(200)
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn1', expect.objectContaining({ type: 'gameStateUpdated' }))
+    })
 })
 
 // ============================================================
@@ -112,6 +133,25 @@ describe('handleJoinGame', () => {
         const result = await handleJoinGame('conn1', 'game1', 'Bob')
         expect(result.statusCode).toBe(200)
     })
+
+    it('returns 400 when existing player is already connected in an in-progress game', async () => {
+        const game = makeGame({ meta: { status: 'playing', currentRound: 0 } })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({ Items: [{ connectionId: 'existing-conn' }] })
+        const result = await handleJoinGame('conn1', 'game1', 'Alice') // Alice exists in game
+        expect(result.statusCode).toBe(400)
+    })
+
+    it('returns 200 when existing player reconnects to an in-progress game', async () => {
+        const game = makeGame({ meta: { status: 'playing', currentRound: 0 } })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })       // GetCommand: game
+            .mockResolvedValueOnce({ Items: [] })        // QueryCommand: not already connected
+            .mockResolvedValue({})                       // PutCommand + any further calls
+        const result = await handleJoinGame('conn1', 'game1', 'Alice')
+        expect(result.statusCode).toBe(200)
+    })
 })
 
 // ============================================================
@@ -174,5 +214,16 @@ describe('handleKickPlayer', () => {
         mockSend.mockResolvedValue({ Items: [] })
         const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
         expect(result.statusCode).toBe(200)
+    })
+
+    it('sends kicked notification when target connection is found', async () => {
+        mockSend
+            .mockResolvedValueOnce({ Item: makeGame() })
+            .mockResolvedValueOnce({})                                        // UpdateCommand: remove player
+            .mockResolvedValueOnce({ Items: [{ connectionId: 'p2-conn' }] }) // QueryCommand: find target connection
+            .mockResolvedValue({})                                            // UpdateCommand: clear connection
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+        expect(mockSendToConnection).toHaveBeenCalledWith('p2-conn', expect.objectContaining({ type: 'kicked' }))
     })
 })
