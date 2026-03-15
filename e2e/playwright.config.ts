@@ -4,13 +4,20 @@ import path from 'path';
 /**
  * Playwright E2E test configuration.
  *
- * Tests run against the Vite dev server (localhost:5173).
- * For full integration testing (daily challenge, multiplayer) the local
- * backend must also be running — see docs/local-development.md.
+ * By default, globalSetup starts the full local stack automatically:
+ *   DynamoDB Local → seed → SAM REST (:3000) + Lambda (:3002) + WS proxy (:3001)
  *
- * Quick start:
- *   npm run dev:client          # in one terminal
- *   npm run test:e2e            # in another
+ * The Vite dev server (:5173) is started via webServer below.
+ *
+ * Set SKIP_BACKEND_TESTS=1 to skip backend startup and backend-dependent tests.
+ *
+ * Quick start (everything automatic):
+ *   npm run test:e2e
+ *
+ * Prerequisites:
+ *   - Podman running (DOCKER_HOST set in service/.env.local)
+ *   - AWS SAM CLI installed
+ *   - npm install && npm run build --workspace=service
  */
 export default defineConfig({
   testDir: './tests',
@@ -19,6 +26,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [['html', { open: 'never' }], ['list']],
+  globalSetup: './global-setup.ts',
+  globalTeardown: './global-teardown.ts',
+  timeout: 60_000, // SAM cold starts can be slow on first run
 
   use: {
     baseURL: process.env.BASE_URL ?? 'http://localhost:5173',
