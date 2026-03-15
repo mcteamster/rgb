@@ -7,7 +7,7 @@ services:
     networks:
       - rgb-local
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8000 || exit 1"]
+      test: ["CMD-SHELL", "curl -s http://localhost:8000 -o /dev/null"]
       interval: 5s
       timeout: 3s
       retries: 5

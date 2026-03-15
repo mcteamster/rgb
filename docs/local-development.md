@@ -20,7 +20,7 @@ npm install
 npm run build --workspace=service
 
 # 3. Start DynamoDB Local
-podman compose up -d
+npm run local:up
 
 # 4. Create tables and seed today's daily challenge
 npm run seed
@@ -75,6 +75,7 @@ From the repo root:
 | Command | What it does |
 |---------|-------------|
 | `npm run build --workspace=service` | Compile TypeScript (required before `dev:service`) |
+| `npm run local:up` | Start DynamoDB Local via Podman |
 | `npm run seed` | Create DynamoDB tables + seed today's challenge |
 | `npm run dev:service` | Start REST (:3000), Lambda (:3002), and WS proxy (:3001) |
 | `npm run dev:client` | Vite dev server on :5173 |
@@ -116,7 +117,7 @@ DOCKER_HOST=unix://$HOME/.local/share/containers/podman/machine/podman.sock
 DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock
 ```
 
-`host.containers.internal` (used in `template.yaml` for the WS proxy endpoint) resolves to the host automatically in Podman on all platforms — no extra configuration needed.
+`host.containers.internal` (used in `service/template.yaml` for the WS proxy endpoint) resolves to the host automatically in Podman on all platforms — no extra configuration needed.
 
 ---
 

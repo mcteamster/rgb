@@ -16,7 +16,7 @@ Globals:
     Timeout: 30
     Environment:
       Variables:
-        # DynamoDB Local — reached via Docker network rgb-local
+        # DynamoDB Local — reached via Podman network rgb-local
         AWS_ENDPOINT_URL: http://dynamodb-local:8000
         CONNECTIONS_TABLE: rgb-connections
         GAMES_TABLE: rgb-games
@@ -36,21 +36,21 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ConnectFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/websocket/connect.handler
 
   DisconnectFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: DisconnectFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/websocket/disconnect.handler
 
   MessageFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: MessageFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/websocket/message.handler
 
   # ── REST Lambda functions ──────────────────────────────────────────────────
@@ -60,7 +60,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: GetCurrentChallengeFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/rest/get-current-challenge.handler
       Events:
         Api:
@@ -73,7 +73,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: SubmitChallengeFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/rest/submit-challenge.handler
       Events:
         Api:
@@ -86,7 +86,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: GetStatsFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/rest/get-stats.handler
       Events:
         Api:
@@ -99,7 +99,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: GetUserHistoryFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/rest/get-user-history.handler
       Events:
         Api:
@@ -112,7 +112,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: GetChallengeByDateFunction
-      CodeUri: service/
+      CodeUri: ./
       Handler: dist/lambda/rest/get-challenge-by-date.handler
       Events:
         Api:

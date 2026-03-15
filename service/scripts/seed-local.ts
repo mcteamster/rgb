@@ -145,7 +145,9 @@ async function seedChallenge() {
 
 // ── Main ───────────────────────────────────────────────────────────────────
 
-console.log(`DynamoDB Local: ${ENDPOINT}`);
-await createTables();
-await seedChallenge();
-console.log('\nDone. Next: npm run dev:service\n');
+(async () => {
+  console.log(`DynamoDB Local: ${ENDPOINT}`);
+  await createTables();
+  await seedChallenge();
+  console.log('\nDone. Next: npm run dev:service\n');
+})();
