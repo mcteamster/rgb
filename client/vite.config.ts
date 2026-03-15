@@ -7,6 +7,11 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     include: ['src/**/*.test.{ts,tsx}'],
-    passWithNoTests: true,
+    reporters: ['dot'],
+    silent: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text'],
+    },
   },
 })
