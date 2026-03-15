@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path';
 
 /**
  * Playwright E2E test configuration.
@@ -54,7 +55,8 @@ export default defineConfig({
   webServer: process.env.BASE_URL
     ? undefined
     : {
-        command: 'npm run dev:client --prefix ..',
+        command: 'npm run dev --workspace=client',
+        cwd: path.resolve(__dirname, '..'),
         url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 30_000,
