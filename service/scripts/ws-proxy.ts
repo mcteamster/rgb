@@ -111,8 +111,8 @@ wss.on('connection', async (ws: WebSocket) => {
   connections.set(connectionId, ws);
   console.log(`[WS] + ${connectionId}`);
 
-  await invokeLambda('ConnectFunction', wsEvent('$connect', connectionId));
-
+  // Register handlers synchronously before the first await so messages
+  // arriving during the ConnectFunction cold start are not dropped.
   ws.on('message', async (data) => {
     const body = data.toString();
     console.log(`[WS] → ${connectionId}  ${body.slice(0, 80)}`);
@@ -124,6 +124,8 @@ wss.on('connection', async (ws: WebSocket) => {
     await invokeLambda('DisconnectFunction', wsEvent('$disconnect', connectionId));
     connections.delete(connectionId);
   });
+
+  await invokeLambda('ConnectFunction', wsEvent('$connect', connectionId));
 });
 
 server.listen(PROXY_PORT, () => {
