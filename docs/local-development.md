@@ -5,7 +5,7 @@ Run the full RGB stack locally — no AWS account required.
 ## Prerequisites
 
 - **Node.js 22+**
-- **Docker** (for DynamoDB Local)
+- **Podman** with **podman-compose** (Podman 4.4+ includes `podman compose` built-in)
 - **AWS SAM CLI** — [install guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html)
 
 ---
@@ -20,7 +20,7 @@ npm install
 npm run build --workspace=service
 
 # 3. Start DynamoDB Local
-docker compose up -d
+podman compose up -d
 
 # 4. Create tables and seed today's daily challenge
 npm run seed
@@ -41,7 +41,7 @@ Open **http://localhost:5173**.
 
 ### SAM handles the backend
 
-[AWS SAM CLI](https://aws.amazon.com/serverless/sam/) runs the Lambda functions locally in Docker containers using the same Node.js 22 runtime as production.
+[AWS SAM CLI](https://aws.amazon.com/serverless/sam/) runs the Lambda functions locally in containers using the same Node.js 22 runtime as production. SAM uses Podman when `DOCKER_HOST` points to the Podman socket — set this in `service/.env.local` (see the example file).
 
 | Command | Port | Purpose |
 |---------|------|---------|
@@ -55,7 +55,7 @@ When Lambda wants to push data to a connected client (broadcasting), it calls `P
 
 ### DynamoDB Local
 
-State is stored in **DynamoDB Local** running in Docker on port `8000`. Lambda containers reach it via the `rgb-local` Docker network at `http://dynamodb-local:8000`. Data is in-memory and resets when the container restarts.
+State is stored in **DynamoDB Local** running in Podman on port `8000`. Lambda containers reach it via the `rgb-local` network at `http://dynamodb-local:8000`. Data is in-memory and resets when the container restarts.
 
 ### Client
 
@@ -104,16 +104,19 @@ aws dynamodb put-item \
 
 ---
 
-## Linux note
+## Podman socket (required for SAM)
 
-On Linux, `host.docker.internal` (the hostname Lambda containers use to reach the WS proxy) is not automatically available. The `docker-compose.yml` adds `extra_hosts: host.docker.internal:host-gateway` for the DynamoDB container. For SAM Lambda containers, pass the flag explicitly:
+SAM CLI communicates with the container runtime via the Docker-compatible socket. Point it at Podman by setting `DOCKER_HOST` in `service/.env.local`:
 
 ```bash
-# In service/package.json local:rest and local:lambda scripts, add:
---container-host-interface 0.0.0.0
+# macOS
+DOCKER_HOST=unix://$HOME/.local/share/containers/podman/machine/podman.sock
+
+# Linux (rootless)
+DOCKER_HOST=unix:///run/user/$UID/podman/podman.sock
 ```
 
-Or set `WEBSOCKET_ENDPOINT=http://172.17.0.1:3001` (the default Docker bridge gateway) in `template.yaml`.
+`host.containers.internal` (used in `template.yaml` for the WS proxy endpoint) resolves to the host automatically in Podman on all platforms — no extra configuration needed.
 
 ---
 
@@ -126,6 +129,6 @@ Or set `WEBSOCKET_ENDPOINT=http://172.17.0.1:3001` (the default Docker bridge ga
 | Region selection | Bypassed (`VITE_WS_LOCAL_URL`) | Virgo auto-detect |
 | DynamoDB TTL | Not enforced | Enforced by AWS |
 | EventBridge daily scheduler | Not running | Creates challenge at UTC midnight |
-| Lambda cold starts | Slow (SAM pulls Docker images) | Warm via provisioned concurrency |
-| Data persistence | Resets on Docker restart | Persistent |
+| Lambda cold starts | Slow (SAM pulls container images) | Warm via provisioned concurrency |
+| Data persistence | Resets on Podman restart | Persistent |
 | HTTPS / WSS | HTTP / WS only | HTTPS / WSS |

@@ -4,9 +4,6 @@ services:
     ports:
       - "8000:8000"
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
-    # Add host.docker.internal resolution for Linux
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     networks:
       - rgb-local
     healthcheck:

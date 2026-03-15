@@ -3,7 +3,7 @@ Transform: AWS::Serverless-2016-10-31
 Description: RGB Game — local development (SAM)
 
 # Before running:
-#   1. docker compose up -d            (start DynamoDB Local)
+#   1. podman compose up -d            (start DynamoDB Local)
 #   2. npm run build --workspace=service (compile TypeScript)
 #   3. npm run seed                    (create tables + seed challenge)
 #
@@ -23,8 +23,8 @@ Globals:
         CHALLENGES_TABLE: rgb-daily-challenges
         SUBMISSIONS_TABLE: rgb-daily-user-submissions
         # WebSocket management — ws-proxy.ts handles POST /@connections/:id
-        # On Linux replace host.docker.internal with 172.17.0.1
-        WEBSOCKET_ENDPOINT: http://host.docker.internal:3001
+        # host.containers.internal resolves to the host in Podman (all platforms)
+        WEBSOCKET_ENDPOINT: http://host.containers.internal:3001
 
 Resources:
 
