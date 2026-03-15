@@ -54,7 +54,7 @@ export default defineConfig({
   webServer: process.env.BASE_URL
     ? undefined
     : {
-        command: 'npm run dev:client',
+        command: 'npm run dev:client --prefix ..',
         url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI,
         timeout: 30_000,

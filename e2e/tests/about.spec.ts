@@ -15,7 +15,7 @@ test.describe('About page', () => {
   test('can navigate back to home', async ({ page }) => {
     await page.goto('/about');
     // Close / back button should return to home
-    const closeButton = page.getByRole('button', { name: /close|back|home/i }).first();
+    const closeButton = page.getByRole('button', { name: '✕' });
     await closeButton.click();
     await expect(page).toHaveURL('/');
   });
