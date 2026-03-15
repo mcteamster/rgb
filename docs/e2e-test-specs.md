@@ -32,7 +32,7 @@ Tests that require the local backend should be gated with `SKIP_BACKEND_TESTS=1`
 | 2.6 | Max players slider range 2–10 | |
 | 2.7 | Turns per player range 1–5 | |
 | 2.8 | Submitting the form creates a game and shows the lobby | |
-| 2.9 | Room code in lobby URL is 5 chars, consonants only | Regex: `/^[BCDFGHJKLMNPQRSTVWXZ]{5}$/` |
+| 2.9 | Room code in lobby URL is 4 chars, consonants only | Regex: `/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/` |
 | 2.10 | Session is saved to `localStorage` after creation | |
 
 ---
