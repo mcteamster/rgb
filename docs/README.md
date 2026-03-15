@@ -4,6 +4,13 @@ Technical documentation for the On the Spectrum color guessing game.
 
 ## Documentation Files
 
+### [local-development.md](./local-development.md)
+Step-by-step guide to running the full stack locally with SAM CLI and DynamoDB Local.
+
+**Use this for**: Local development, testing Lambda changes without deploying to AWS
+
+---
+
 ### [CHANGELOG.md](./CHANGELOG.md)
 Running log of notable changes to On the Spectrum.
 
