@@ -31,7 +31,7 @@ export default async function globalTeardown() {
       { shell: '/bin/bash', stdio: 'inherit' },
     );
   } catch { /* ignore */ }
-  execSync('podman compose down', {
+  execSync('podman compose down --remove-orphans', {
     cwd: path.join(ROOT, 'service'),
     stdio: 'inherit',
   });

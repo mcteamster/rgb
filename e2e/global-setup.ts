@@ -119,7 +119,15 @@ export default async function globalSetup() {
   const serviceEnv = loadEnvFile(path.join(ROOT, 'service', '.env.local'));
   const childEnv = { ...process.env, ...serviceEnv };
 
-  console.log('\n[e2e] Starting DynamoDB Local...');
+  // Tear down any leftovers from a previous unclean exit before starting fresh
+  console.log('\n[e2e] Cleaning up any leftover containers...');
+  try {
+    execSync('podman compose down --remove-orphans 2>/dev/null || true', {
+      cwd: path.join(ROOT, 'service'), shell: '/bin/bash', stdio: 'inherit', env: childEnv,
+    });
+  } catch { /* ignore */ }
+
+  console.log('[e2e] Starting DynamoDB Local...');
   execSync('npm run local:up', { cwd: ROOT, stdio: 'inherit', env: childEnv });
 
   console.log('[e2e] Waiting for DynamoDB Local to be ready...');
