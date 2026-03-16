@@ -156,8 +156,7 @@ export class GameWebSocket {
   connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       const currentRegion = localStorage.getItem('rgb-region') || 'AU';
-      const wsUrl = import.meta.env.VITE_WS_LOCAL_URL
-        || ENDPOINTS[currentRegion as keyof typeof ENDPOINTS]
+      const wsUrl = ENDPOINTS[currentRegion as keyof typeof ENDPOINTS]
         || ENDPOINTS.DEFAULT;
       
       this.ws = new WebSocket(wsUrl);

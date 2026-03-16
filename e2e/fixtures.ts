@@ -2,12 +2,15 @@ import { test as base, expect, Browser, BrowserContext } from '@playwright/test'
 
 const BLOCK_PATTERN = '**/api.ohnomer.com/**';
 const STUB_RESPONSE = { status: 200, body: '{}' };
+const TEST_REGION_SCRIPT = () => localStorage.setItem('rgb-region', 'TEST');
 
 // Intercept api.ohnomer.com so E2E test room creations don't pollute tracking data.
+// Force region to TEST so rooms are created on the test stack (ap-southeast-4) not prod.
 // Applies to pages created via the `page` / `context` fixtures.
 export const test = base.extend({
   context: async ({ context }, use) => {
     await context.route(BLOCK_PATTERN, route => route.fulfill(STUB_RESPONSE));
+    await context.addInitScript(TEST_REGION_SCRIPT);
     await use(context);
   },
 });
@@ -16,6 +19,7 @@ export const test = base.extend({
 export async function newContext(browser: Browser): Promise<BrowserContext> {
   const ctx = await browser.newContext();
   await ctx.route(BLOCK_PATTERN, route => route.fulfill(STUB_RESPONSE));
+  await ctx.addInitScript(TEST_REGION_SCRIPT);
   return ctx;
 }
 
