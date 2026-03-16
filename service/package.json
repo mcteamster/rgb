@@ -7,27 +7,18 @@
   "scripts": {
     "build": "tsc",
     "deploy": "npm run build; npx cdk deploy --all --concurrency=10",
-    "seed": "tsx scripts/seed-local.ts",
-    "local:up": "podman compose up -d",
-    "local:down": "podman compose down; pkill -f 'sam local start' || true; pkill -f 'ws-proxy.ts' || true",
-    "local:rest": "sam local start-api --port 3000 --warm-containers LAZY",
-    "local:lambda": "sam local start-lambda --port 3002 --warm-containers LAZY",
-    "local:ws": "tsx scripts/ws-proxy.ts",
     "manage-challenges": "npm run build && node dist/scripts/manage-challenges.js",
     "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
     "@types/node": "^24.10.1",
-    "@types/ws": "^8.5.0",
     "@vitest/coverage-v8": "^4.1.0",
     "aws-cdk": "^2.1108.0",
-    "concurrently": "^9.0.0",
     "ts-node": "^10.9.2",
     "tsx": "^4.0.0",
     "typescript": "~5.9.3",
-    "vitest": "^4.1.0",
-    "ws": "^8.18.0"
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.0.0",
