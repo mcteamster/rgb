@@ -1,6 +1,6 @@
 import http from 'http';
 import { execSync, spawn } from 'child_process';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, openSync } from 'fs';
 import net from 'net';
 import path from 'path';
 
@@ -12,6 +12,7 @@ export const BACKEND_MARKER = path.join(__dirname, '.backend-started');
 
 /** PID of the spawned dev:service process, used by teardown to kill cleanly. */
 export const SVC_PID_FILE = path.join(__dirname, '.svc-pid');
+export const SVC_LOG_FILE = path.join(__dirname, 'svc.log');
 
 /** Parse a .env file into a key→value map, ignoring comments and blanks. */
 function loadEnvFile(filePath: string): Record<string, string> {
@@ -128,9 +129,11 @@ export default async function globalSetup() {
   execSync('npm run seed', { cwd: ROOT, stdio: 'inherit', env: childEnv });
 
   console.log('[e2e] Starting backend services (SAM REST, SAM Lambda, WS proxy)...');
+  console.log(`[e2e] Service logs → ${SVC_LOG_FILE}`);
+  const logFd = openSync(SVC_LOG_FILE, 'w');
   const svc = spawn('npm', ['run', 'dev:service'], {
     cwd: ROOT,
-    stdio: 'ignore',
+    stdio: ['ignore', logFd, logFd],
     detached: true,
     env: childEnv,
   });
