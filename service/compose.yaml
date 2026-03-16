@@ -3,6 +3,8 @@ services:
     image: docker.io/amazon/dynamodb-local:latest
     ports:
       - "8000:8000"
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx512m
     command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
     networks:
       - rgb-local

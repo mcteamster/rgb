@@ -1,3 +1,4 @@
+import http from 'http';
 import { execSync, spawn } from 'child_process';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import net from 'net';
@@ -8,6 +9,9 @@ const ROOT = path.resolve(__dirname, '..');
 /** Marker file written when this setup starts the backend.
  *  Lets global-teardown know whether to shut things down. */
 export const BACKEND_MARKER = path.join(__dirname, '.backend-started');
+
+/** PID of the spawned dev:service process, used by teardown to kill cleanly. */
+export const SVC_PID_FILE = path.join(__dirname, '.svc-pid');
 
 /** Parse a .env file into a key→value map, ignoring comments and blanks. */
 function loadEnvFile(filePath: string): Record<string, string> {
@@ -42,6 +46,24 @@ async function waitForPort(port: number, timeout = 120_000): Promise<void> {
   throw new Error(`Port ${port} did not open within ${timeout / 1_000}s`);
 }
 
+/** Wait until DynamoDB Local responds to an HTTP request (not just TCP open). */
+async function waitForDynamo(timeout = 60_000): Promise<void> {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const ok = await new Promise<boolean>(resolve => {
+      const req = http.get('http://localhost:8000', res => {
+        res.resume();
+        resolve(true);
+      });
+      req.once('error', () => resolve(false));
+      req.setTimeout(2_000, () => { req.destroy(); resolve(false); });
+    });
+    if (ok) return;
+    await new Promise(r => setTimeout(r, 1_000));
+  }
+  throw new Error('DynamoDB Local did not respond within 60s');
+}
+
 export default async function globalSetup() {
   // Allow opting out entirely (e.g. CI without SAM/Podman)
   if (process.env.SKIP_BACKEND_TESTS) {
@@ -69,8 +91,8 @@ export default async function globalSetup() {
   console.log('\n[e2e] Starting DynamoDB Local...');
   execSync('npm run local:up', { cwd: ROOT, stdio: 'inherit', env: childEnv });
 
-  console.log('[e2e] Waiting for DynamoDB Local (port 8000)...');
-  await waitForPort(8000, 60_000);
+  console.log('[e2e] Waiting for DynamoDB Local to be ready...');
+  await waitForDynamo(60_000);
 
   console.log('[e2e] Seeding tables...');
   execSync('npm run seed', { cwd: ROOT, stdio: 'inherit', env: childEnv });
@@ -83,6 +105,9 @@ export default async function globalSetup() {
     env: childEnv,
   });
   svc.unref();
+
+  // Save PID so teardown can kill the process group cleanly
+  writeFileSync(SVC_PID_FILE, String(svc.pid));
 
   console.log('[e2e] Waiting for ports 3000 (REST), 3001 (WS), 3002 (Lambda)...');
   console.log('[e2e] Note: SAM pulls container images on first run — this can take a few minutes.\n');
