@@ -24,7 +24,11 @@ export default async function globalTeardown() {
     }
   }
 
-  // Stop DynamoDB Local
+  // Stop SAM-spawned Lambda containers and DynamoDB Local
+  try {
+    execSync('podman stop $(podman ps -q) 2>/dev/null || true', { shell: '/bin/bash', stdio: 'inherit' });
+    execSync('podman rm $(podman ps -aq) 2>/dev/null || true', { shell: '/bin/bash', stdio: 'inherit' });
+  } catch { /* ignore */ }
   execSync('podman compose down', {
     cwd: path.join(ROOT, 'service'),
     stdio: 'inherit',
