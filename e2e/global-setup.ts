@@ -119,12 +119,17 @@ export default async function globalSetup() {
   const serviceEnv = loadEnvFile(path.join(ROOT, 'service', '.env.local'));
   const childEnv = { ...process.env, ...serviceEnv };
 
-  // Tear down any leftovers from a previous unclean exit before starting fresh
+  // Tear down any leftovers from a previous unclean exit before starting fresh.
+  // Force-stop and remove by network first so aardvark DNS state is fully reset.
   console.log('\n[e2e] Cleaning up any leftover containers...');
   try {
-    execSync('podman compose down --remove-orphans 2>/dev/null || true', {
-      cwd: path.join(ROOT, 'service'), shell: '/bin/bash', stdio: 'inherit', env: childEnv,
-    });
+    execSync(
+      'podman ps -aq --filter network=rgb-local | xargs -r podman stop --time 0 2>/dev/null; ' +
+      'podman ps -aq --filter network=rgb-local | xargs -r podman rm --force 2>/dev/null; ' +
+      'podman network rm rgb-local --force 2>/dev/null; ' +
+      'podman compose down --remove-orphans 2>/dev/null; true',
+      { cwd: path.join(ROOT, 'service'), shell: '/bin/bash', stdio: 'inherit', env: childEnv },
+    );
   } catch { /* ignore */ }
 
   console.log('[e2e] Starting DynamoDB Local...');

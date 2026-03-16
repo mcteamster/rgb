@@ -24,15 +24,19 @@ export default async function globalTeardown() {
     }
   }
 
-  // Stop SAM-spawned Lambda containers (all containers on the rgb-local network)
+  // Stop SAM-spawned Lambda containers and reset aardvark DNS state.
   try {
     execSync(
-      'podman ps -q --filter network=rgb-local | xargs -r podman rm -f',
+      'podman ps -aq --filter network=rgb-local | xargs -r podman stop --time 0 2>/dev/null; ' +
+      'podman ps -aq --filter network=rgb-local | xargs -r podman rm --force 2>/dev/null; ' +
+      'podman network rm rgb-local --force 2>/dev/null; true',
       { shell: '/bin/bash', stdio: 'inherit' },
     );
   } catch { /* ignore */ }
-  execSync('podman compose down --remove-orphans', {
-    cwd: path.join(ROOT, 'service'),
-    stdio: 'inherit',
-  });
+  try {
+    execSync('podman compose down --remove-orphans', {
+      cwd: path.join(ROOT, 'service'),
+      stdio: 'inherit',
+    });
+  } catch { /* ignore */ }
 }
