@@ -46,13 +46,13 @@ async function waitForPort(port: number, timeout = 120_000): Promise<void> {
   throw new Error(`Port ${port} did not open within ${timeout / 1_000}s`);
 }
 
-async function waitForHttp(url: string, timeout = 60_000): Promise<void> {
+async function waitForHttp(url: string, timeout = 60_000, requestTimeout = 2_000): Promise<void> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     const ok = await new Promise<boolean>(resolve => {
       const req = http.get(url, res => { res.resume(); resolve(true); });
       req.once('error', () => resolve(false));
-      req.setTimeout(2_000, () => { req.destroy(); resolve(false); });
+      req.setTimeout(requestTimeout, () => { req.destroy(); resolve(false); });
     });
     if (ok) return;
     await new Promise(r => setTimeout(r, 1_000));
@@ -135,7 +135,8 @@ export default async function globalSetup() {
   // - REST Lambda: hit a real mapped route (root returns before invoking Lambda)
   // - WS Lambdas: invoke ConnectFunction directly via start-lambda endpoint
   console.log('[e2e] Warming up REST Lambda (daily-challenge/current)...');
-  await waitForHttp('http://localhost:3000/daily-challenge/current', 60_000);
+  // Use a long per-request timeout — SAM needs time to start the Lambda container
+  await waitForHttp('http://localhost:3000/daily-challenge/current', 180_000, 120_000);
 
   console.log('[e2e] Warming up WS Lambda (ConnectFunction)...');
   await new Promise<void>(resolve => {
