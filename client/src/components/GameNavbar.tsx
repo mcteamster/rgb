@@ -30,7 +30,7 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
     }
   }, [gameState]);
 
-  const shortDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const shortDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   const timeLeft = dailyChallenge ? (() => {
     const diff = Math.max(0, new Date(dailyChallenge.validUntil).getTime() - Date.now());
     const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
