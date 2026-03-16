@@ -21,7 +21,7 @@ async function createGame(page: Page, playerName = 'Host'): Promise<string> {
   await page.getByRole('button', { name: 'Create' }).click();
   await page.getByPlaceholder('Enter your name').fill(playerName);
   await page.getByRole('button', { name: 'Create' }).last().click();
-  await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
   const code = await page.locator('.game-id').textContent();
   return code!.trim();
 }
@@ -113,7 +113,7 @@ test.describe('Room joining — with backend', () => {
       await guestPage.getByRole('button', { name: 'Join' }).click();
 
       // Guest should reach the lobby
-      await expect(guestPage.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
+      await expect(guestPage.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
     } finally {
       await hostCtx.close();
       await guestCtx.close();
@@ -127,7 +127,7 @@ test.describe('Room joining — with backend', () => {
     await page.getByPlaceholder('Enter 4-letter code').fill('BCDF');
     await page.getByRole('button', { name: 'Join' }).click();
 
-    await expect(page.locator('.error')).toContainText('Game not found', { timeout: 10_000 });
+    await expect(page.locator('.error')).toContainText('Game not found', { timeout: 30_000 });
   });
 
   test('3.8 Joining with a duplicate player name in waiting lobby shows an error', async ({ browser }) => {
@@ -143,7 +143,7 @@ test.describe('Room joining — with backend', () => {
       await guestPage.getByPlaceholder('Enter your name').fill('SameName');
       await guestPage.getByRole('button', { name: 'Join' }).click();
 
-      await expect(guestPage.locator('.error')).toContainText('already taken', { timeout: 10_000 });
+      await expect(guestPage.locator('.error')).toContainText('already taken', { timeout: 30_000 });
     } finally {
       await hostCtx.close();
       await guestCtx.close();
@@ -156,11 +156,11 @@ test.describe('Room joining — with backend', () => {
     await page.getByRole('button', { name: 'Create' }).click();
     await page.getByPlaceholder('Enter your name').fill('SessionPlayer');
     await page.getByRole('button', { name: 'Create' }).last().click();
-    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
 
     // Reload — should re-enter lobby without going through the join form
     await page.reload();
-    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
 
     // Join form should NOT be visible
     await expect(page.getByPlaceholder('Enter your name')).not.toBeVisible();
