@@ -46,6 +46,20 @@ async function waitForPort(port: number, timeout = 120_000): Promise<void> {
   throw new Error(`Port ${port} did not open within ${timeout / 1_000}s`);
 }
 
+async function waitForHttp(url: string, timeout = 60_000): Promise<void> {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const ok = await new Promise<boolean>(resolve => {
+      const req = http.get(url, res => { res.resume(); resolve(true); });
+      req.once('error', () => resolve(false));
+      req.setTimeout(2_000, () => { req.destroy(); resolve(false); });
+    });
+    if (ok) return;
+    await new Promise(r => setTimeout(r, 1_000));
+  }
+  throw new Error(`${url} did not respond within ${timeout / 1_000}s`);
+}
+
 /** Wait until DynamoDB Local responds to an HTTP request (not just TCP open). */
 async function waitForDynamo(timeout = 60_000): Promise<void> {
   const deadline = Date.now() + timeout;
