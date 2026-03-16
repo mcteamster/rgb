@@ -19,6 +19,7 @@ const regions = [
   'sa-east-1', // Brazil
   'us-east-1', // US East
   'us-west-2', // US West
+  'ap-southeast-4', // Test (Melbourne)
 ]
 regions.forEach((region) => {
   new RgbStack(app, `rgb-service-${stage}-${region}`, { 

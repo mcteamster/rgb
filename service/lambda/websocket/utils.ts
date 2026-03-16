@@ -43,6 +43,9 @@ export function generateGameId(): string {
         case 'us-west-2':
             serverCode = 'VW'; // US West 🇺🇸
             break;
+        case 'ap-southeast-4':
+            serverCode = 'XZ'; // Test (Melbourne) 🇦🇺
+            break;
         default:
             serverCode = 'XZ'; // Local or Fallback
     }

@@ -5,17 +5,20 @@
   "license": "MIT",
   "workspaces": [
     "client",
+    "e2e",
     "service"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
+    "build": "npm run build --workspaces --if-present",
     "dev:client": "npm run dev --workspace=client",
     "dev:service": "concurrently -n rest,lambda,ws -c blue,green,yellow \"npm run local:rest --workspace=service\" \"npm run local:lambda --workspace=service\" \"npm run local:ws --workspace=service\"",
     "local:up": "npm run local:up --workspace=service",
     "local:down": "npm run local:down --workspace=service",
     "seed": "npm run seed --workspace=service",
     "deploy:service": "npm run deploy --workspace=service",
-    "test": "npm run test --workspaces"
+    "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run test --workspace=e2e",
+    "test:e2e:ui": "npm run test:ui --workspace=e2e"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"
