@@ -16,6 +16,7 @@ coverage
 # Playwright
 /e2e/playwright-report/
 /e2e/test-results/
+/e2e/test-results.json
 /e2e/.auth/
 /e2e/.backend-started
 .playwright-mcp

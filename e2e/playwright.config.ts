@@ -7,10 +7,10 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 2 : undefined,
   reporter: [['html', { open: 'never' }], ['list'], ['json', { outputFile: 'test-results.json' }]],
-  timeout: 30_000,
+  timeout: 10_000,
 
   use: {
-    baseURL: process.env.BASE_URL ?? 'https://test.rgb.mcteamster.com',
+    baseURL: 'https://rgb.mcteamster.com',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
