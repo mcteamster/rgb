@@ -12,7 +12,7 @@ Tests that require the local backend should be gated with `SKIP_BACKEND_TESTS=1`
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 1.1 | Home page loads, `<title>` contains "RGB" | Implemented |
+| 1.1 | Home page loads, `<title>` contains "On the Spectrum" | Implemented |
 | 1.2 | `/about` loads and displays content | Implemented |
 | 1.3 | `/daily` loads without 404 | Implemented |
 | 1.4 | `/:roomCode` (valid consonant code) loads the game container | Implemented |

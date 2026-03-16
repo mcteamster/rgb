@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 /**
  * Section 2: Room creation
@@ -10,7 +10,7 @@ import { test, expect } from '@playwright/test';
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 /** Navigate to home and open the create form. */
-async function openCreateForm(page: Parameters<Parameters<typeof test>[1]>[0]['page']) {
+async function openCreateForm(page: Page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Create' }).click();
 }

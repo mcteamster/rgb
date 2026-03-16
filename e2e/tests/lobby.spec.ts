@@ -1,12 +1,10 @@
-import { test, expect, Page, BrowserContext } from '@playwright/test';
+import { test, expect, Page, Browser, BrowserContext } from '@playwright/test';
 
 /**
  * Section 4: Lobby
  *
  * All tests require the local backend (gated by SKIP_BACKEND_TESTS).
  */
-
-test.skip(!!process.env.SKIP_BACKEND_TESTS, 'Set SKIP_BACKEND_TESTS=1 to skip backend tests');
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -22,7 +20,7 @@ async function createAndEnterLobby(page: Page, playerName = 'Host'): Promise<str
 
 /** Join an existing room in a new browser context. Returns { context, page }. */
 async function joinRoom(
-  browser: Parameters<Parameters<typeof test>[1]>[0]['browser'],
+  browser: Browser,
   code: string,
   playerName: string,
 ): Promise<{ ctx: BrowserContext; page: Page }> {
@@ -44,6 +42,8 @@ async function openRoomMenu(page: Page) {
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 test.describe('Lobby', () => {
+  test.skip(!!process.env.SKIP_BACKEND_TESTS, 'Requires local backend (npm run dev:service)');
+
   test('4.1 Host sees the Start Game button (with ≥2 players)', async ({ browser }) => {
     const hostCtx = await browser.newContext();
     const hostPage = await hostCtx.newPage();
