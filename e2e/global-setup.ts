@@ -131,9 +131,25 @@ export default async function globalSetup() {
     waitForPort(3002, 180_000),
   ]);
 
-  // Warm up the REST Lambda so the first test doesn't hit a cold start
-  console.log('[e2e] Warming up REST Lambda...');
-  await waitForHttp('http://localhost:3000/', 60_000);
+  // Warm up Lambdas so the first tests don't hit cold starts.
+  // - REST Lambda: hit a real mapped route (root returns before invoking Lambda)
+  // - WS Lambdas: invoke ConnectFunction directly via start-lambda endpoint
+  console.log('[e2e] Warming up REST Lambda (daily-challenge/current)...');
+  await waitForHttp('http://localhost:3000/daily-challenge/current', 60_000);
+
+  console.log('[e2e] Warming up WS Lambda (ConnectFunction)...');
+  await new Promise<void>(resolve => {
+    const body = JSON.stringify({ requestContext: { connectionId: 'warmup', eventType: 'CONNECT' } });
+    const req = http.request({
+      hostname: 'localhost', port: 3002, method: 'POST',
+      path: '/2015-03-31/functions/ConnectFunction/invocations',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+    }, res => { res.resume(); resolve(); });
+    req.once('error', () => resolve());
+    req.setTimeout(30_000, () => { req.destroy(); resolve(); });
+    req.write(body);
+    req.end();
+  });
 
   console.log('[e2e] All backend services ready\n');
 }
