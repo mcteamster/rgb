@@ -139,11 +139,14 @@ export default async function globalSetup() {
   console.log('[e2e] Starting backend services (SAM REST, SAM Lambda, WS proxy)...');
   console.log(`[e2e] Service logs → ${SVC_LOG_FILE}`);
   const logFd = openSync(SVC_LOG_FILE, 'w');
+  // Drop AWS_ENDPOINT_URL so service/.env.local (localhost:8000) can't override
+  // the template.yaml value (host.containers.internal:8000) inside Lambda containers.
+  const { AWS_ENDPOINT_URL: _drop, ...svcEnv } = childEnv;
   const svc = spawn('npm', ['run', 'dev:service'], {
     cwd: ROOT,
     stdio: ['ignore', logFd, logFd],
     detached: true,
-    env: childEnv,
+    env: svcEnv,
   });
   svc.unref();
 

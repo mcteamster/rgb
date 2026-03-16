@@ -16,8 +16,8 @@ Globals:
     Timeout: 30
     Environment:
       Variables:
-        # DynamoDB Local — reached via Podman network rgb-local
-        AWS_ENDPOINT_URL: http://dynamodb-local:8000
+        # DynamoDB Local — reached via the Podman host bridge (same as WS below)
+        AWS_ENDPOINT_URL: http://host.containers.internal:8000
         CONNECTIONS_TABLE: rgb-connections
         GAMES_TABLE: rgb-games
         CHALLENGES_TABLE: rgb-daily-challenges
