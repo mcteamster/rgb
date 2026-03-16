@@ -69,6 +69,9 @@ export default async function globalSetup() {
   console.log('\n[e2e] Starting DynamoDB Local...');
   execSync('npm run local:up', { cwd: ROOT, stdio: 'inherit', env: childEnv });
 
+  console.log('[e2e] Waiting for DynamoDB Local (port 8000)...');
+  await waitForPort(8000, 60_000);
+
   console.log('[e2e] Seeding tables...');
   execSync('npm run seed', { cwd: ROOT, stdio: 'inherit', env: childEnv });
 

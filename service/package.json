@@ -9,7 +9,7 @@
     "deploy": "npm run build; npx cdk deploy --all --concurrency=10",
     "seed": "tsx scripts/seed-local.ts",
     "local:up": "podman compose up -d",
-    "local:down": "podman compose down && pkill -f 'sam local' || true && pkill -f 'ws-proxy' || true",
+    "local:down": "podman compose down; pkill -f 'sam local start' || true; pkill -f 'ws-proxy.ts' || true",
     "local:rest": "sam local start-api --port 3000 --docker-network rgb-local",
     "local:lambda": "sam local start-lambda --port 3002 --docker-network rgb-local",
     "local:ws": "tsx scripts/ws-proxy.ts",
