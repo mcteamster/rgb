@@ -27,20 +27,20 @@ test.describe('Daily challenge page', () => {
       await page.goto('/daily');
       // Wait for the API call — prompt text should appear within 10s (SAM cold start)
       await expect(page.getByText(/today|challenge|colour|color/i).first()).toBeVisible({
-        timeout: 30_000,
+        timeout: 10_000,
       });
     });
 
     test('has interactive colour sliders', async ({ page }) => {
       await page.goto('/daily');
       const slider = page.getByRole('slider').first();
-      await expect(slider).toBeVisible({ timeout: 30_000 });
+      await expect(slider).toBeVisible({ timeout: 10_000 });
     });
 
     test('can submit a colour guess', async ({ page }) => {
       await page.goto('/daily');
       // Wait for sliders to appear (SAM cold start may be slow)
-      await page.getByRole('slider').first().waitFor({ timeout: 30_000 });
+      await page.getByRole('slider').first().waitFor({ timeout: 10_000 });
       // Submit button should be present
       const submitButton = page.getByRole('button', { name: /submit|guess|go/i }).first();
       await expect(submitButton).toBeVisible();

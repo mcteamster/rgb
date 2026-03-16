@@ -14,7 +14,7 @@ async function createAndEnterLobby(page: Page, playerName = 'Host'): Promise<str
   await page.getByRole('button', { name: 'Create' }).click();
   await page.getByPlaceholder('Enter your name').fill(playerName);
   await page.getByRole('button', { name: 'Create' }).last().click();
-  await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
   return (await page.locator('.game-id').textContent())!.trim();
 }
 
@@ -29,7 +29,7 @@ async function joinRoom(
   await page.goto(`/${code}`);
   await page.getByPlaceholder('Enter your name').fill(playerName);
   await page.getByRole('button', { name: 'Join' }).click();
-  await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
   return { ctx, page };
 }
 
@@ -52,7 +52,7 @@ test.describe('Lobby', () => {
       const { ctx: guestCtx } = await joinRoom(browser, code, 'Guest');
 
       // Host should see the Start Game button once the second player joins
-      await expect(hostPage.getByRole('button', { name: 'Start Game' })).toBeVisible({ timeout: 30_000 });
+      await expect(hostPage.getByRole('button', { name: 'Start Game' })).toBeVisible({ timeout: 10_000 });
 
       await guestCtx.close();
     } finally {
@@ -95,7 +95,7 @@ test.describe('Lobby', () => {
       const { ctx: guestCtx } = await joinRoom(browser, code, 'Guest');
 
       // Now Start Game should appear for the host
-      await expect(hostPage.getByRole('button', { name: 'Start Game' })).toBeVisible({ timeout: 30_000 });
+      await expect(hostPage.getByRole('button', { name: 'Start Game' })).toBeVisible({ timeout: 10_000 });
 
       await guestCtx.close();
     } finally {
@@ -119,7 +119,7 @@ test.describe('Lobby', () => {
       const { ctx: guestCtx } = await joinRoom(browser, code, 'Newcomer');
 
       // Host's player list should update to show the new player
-      await expect(hostPage.locator('.player-list')).toContainText('Newcomer', { timeout: 30_000 });
+      await expect(hostPage.locator('.player-list')).toContainText('Newcomer', { timeout: 10_000 });
 
       await guestCtx.close();
     } finally {
@@ -149,7 +149,7 @@ test.describe('Lobby', () => {
       const { ctx: guestCtx } = await joinRoom(browser, code, 'KickMe');
 
       // Wait for KickMe to appear, then check kick button is visible
-      await expect(hostPage.locator('.player-list')).toContainText('KickMe', { timeout: 30_000 });
+      await expect(hostPage.locator('.player-list')).toContainText('KickMe', { timeout: 10_000 });
       await expect(hostPage.locator('.kick-button').first()).toBeVisible();
 
       await guestCtx.close();
@@ -165,13 +165,13 @@ test.describe('Lobby', () => {
       const code = await createAndEnterLobby(hostPage, 'Host');
       const { ctx: guestCtx, page: guestPage } = await joinRoom(browser, code, 'KickMe');
 
-      await expect(hostPage.locator('.player-list')).toContainText('KickMe', { timeout: 30_000 });
+      await expect(hostPage.locator('.player-list')).toContainText('KickMe', { timeout: 10_000 });
 
       // Host kicks the guest
       await hostPage.locator('.kick-button').first().click();
 
       // Guest should leave the lobby (join form or home becomes visible)
-      await expect(guestPage.getByRole('button', { name: /Create|Join/ }).first()).toBeVisible({ timeout: 30_000 });
+      await expect(guestPage.getByRole('button', { name: /Create|Join/ }).first()).toBeVisible({ timeout: 10_000 });
 
       await guestCtx.close();
     } finally {
@@ -214,8 +214,8 @@ test.describe('Lobby', () => {
       await hostPage.getByRole('button', { name: 'Close Room' }).click();
 
       // Both players should return to home (Create/Join buttons visible)
-      await expect(hostPage.getByRole('button', { name: 'Create' })).toBeVisible({ timeout: 30_000 });
-      await expect(guestPage.getByRole('button', { name: /Create|Join/ }).first()).toBeVisible({ timeout: 30_000 });
+      await expect(hostPage.getByRole('button', { name: 'Create' })).toBeVisible({ timeout: 10_000 });
+      await expect(guestPage.getByRole('button', { name: /Create|Join/ }).first()).toBeVisible({ timeout: 10_000 });
 
       await guestCtx.close();
     } finally {

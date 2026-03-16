@@ -134,7 +134,7 @@ test.describe('Room creation — with backend', () => {
     await page.getByRole('button', { name: 'Create' }).last().click();
 
     // Should enter the lobby — navbar shows "Lobby Open"
-    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
   });
 
   test('2.9 Room code is 4 characters, consonants only', async ({ page }) => {
@@ -142,7 +142,7 @@ test.describe('Room creation — with backend', () => {
     await page.getByPlaceholder('Enter your name').fill('TestHost');
     await page.getByRole('button', { name: 'Create' }).last().click();
 
-    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
 
     const gameId = await page.locator('.game-id').textContent();
     expect(gameId).toMatch(/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/);
@@ -153,7 +153,7 @@ test.describe('Room creation — with backend', () => {
     await page.getByPlaceholder('Enter your name').fill('TestHost');
     await page.getByRole('button', { name: 'Create' }).last().click();
 
-    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
 
     const session = await page.evaluate(() => localStorage.getItem('rgb-game-session'));
     expect(session).not.toBeNull();
