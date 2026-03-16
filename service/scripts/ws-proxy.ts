@@ -24,8 +24,15 @@ const SAM_LAMBDA_BASE = `http://localhost:${SAM_LAMBDA_PORT}/2015-03-31/function
 // deliver messages without going through real API Gateway.
 const connections = new Map<string, WebSocket>();
 
+// ── Per-connection invocation queue ───────────────────────────────────────
+// SAM local kills a running Lambda container when a second invocation of ANY
+// function starts while the first is still in-flight.  For each WebSocket
+// connection, serialise Connect → Message* → Disconnect so the containers
+// are never hit concurrently from the same connection.
+const connectionQueues = new Map<string, Promise<void>>();
+
 // ── Invoke a SAM Lambda function ───────────────────────────────────────────
-async function invokeLambda(functionName: string, event: object): Promise<void> {
+async function invokeLambdaRaw(functionName: string, event: object): Promise<void> {
   const url = `${SAM_LAMBDA_BASE}/${functionName}/invocations`;
   try {
     const res = await fetch(url, {
@@ -40,6 +47,13 @@ async function invokeLambda(functionName: string, event: object): Promise<void> 
   } catch (err) {
     console.error(`[Lambda] Failed to invoke ${functionName}:`, err);
   }
+}
+
+function invokeLambdaForConnection(connectionId: string, functionName: string, event: object): Promise<void> {
+  const prev = connectionQueues.get(connectionId) ?? Promise.resolve();
+  const p = prev.then(() => invokeLambdaRaw(functionName, event));
+  connectionQueues.set(connectionId, p.catch(() => {}));
+  return p;
 }
 
 // ── Build a mock API Gateway WebSocket event ───────────────────────────────
@@ -111,21 +125,24 @@ wss.on('connection', async (ws: WebSocket) => {
   connections.set(connectionId, ws);
   console.log(`[WS] + ${connectionId}`);
 
-  // Register handlers synchronously before the first await so messages
-  // arriving during the ConnectFunction cold start are not dropped.
+  // Use a per-connection queue: ConnectFunction must finish before any message
+  // is forwarded, and Disconnect runs after all messages have been processed.
+  // This prevents concurrent Lambda container invocations for a single connection
+  // which cause SAM to kill the running container (signal: killed).
   ws.on('message', async (data) => {
     const body = data.toString();
     console.log(`[WS] → ${connectionId}  ${body.slice(0, 80)}`);
-    await invokeLambda('MessageFunction', wsEvent('$default', connectionId, body));
+    await invokeLambdaForConnection(connectionId, 'MessageFunction', wsEvent('$default', connectionId, body));
   });
 
   ws.on('close', async () => {
     console.log(`[WS] - ${connectionId}`);
-    await invokeLambda('DisconnectFunction', wsEvent('$disconnect', connectionId));
+    await invokeLambdaForConnection(connectionId, 'DisconnectFunction', wsEvent('$disconnect', connectionId));
+    connectionQueues.delete(connectionId);
     connections.delete(connectionId);
   });
 
-  await invokeLambda('ConnectFunction', wsEvent('$connect', connectionId));
+  await invokeLambdaForConnection(connectionId, 'ConnectFunction', wsEvent('$connect', connectionId));
 });
 
 server.listen(PROXY_PORT, () => {

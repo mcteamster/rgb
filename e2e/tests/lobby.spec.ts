@@ -1,10 +1,4 @@
-import { test, expect, Page, Browser, BrowserContext } from '@playwright/test';
-
-/**
- * Section 4: Lobby
- *
- * All tests require the local backend (gated by SKIP_BACKEND_TESTS).
- */
+import { test, expect, newContext, Page, Browser, BrowserContext } from '../fixtures';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -24,7 +18,7 @@ async function joinRoom(
   code: string,
   playerName: string,
 ): Promise<{ ctx: BrowserContext; page: Page }> {
-  const ctx = await browser.newContext();
+  const ctx = await newContext(browser);
   const page = await ctx.newPage();
   await page.goto(`/${code}`);
   await page.getByPlaceholder('Enter your name').fill(playerName);
@@ -42,10 +36,9 @@ async function openRoomMenu(page: Page) {
 // ── Tests ──────────────────────────────────────────────────────────────────
 
 test.describe('Lobby', () => {
-  test.skip(!!process.env.SKIP_BACKEND_TESTS, 'Requires local backend (npm run dev:service)');
 
   test('4.1 Host sees the Start Game button (with ≥2 players)', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');
@@ -61,7 +54,7 @@ test.describe('Lobby', () => {
   });
 
   test('4.2 Non-host does not see the Start Game button', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');
@@ -83,7 +76,7 @@ test.describe('Lobby', () => {
   });
 
   test('4.4 Start Game button appears once a second player joins', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');
@@ -110,7 +103,7 @@ test.describe('Lobby', () => {
   });
 
   test('4.6 Player list updates in real-time when a second player joins', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');
@@ -142,7 +135,7 @@ test.describe('Lobby', () => {
   });
 
   test('4.9 Host sees kick (✕) buttons next to other players', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');
@@ -159,7 +152,7 @@ test.describe('Lobby', () => {
   });
 
   test('4.10 Kicked player is redirected away from the lobby', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');
@@ -180,7 +173,7 @@ test.describe('Lobby', () => {
   });
 
   test('4.11 Non-host sees Leave Game button in room menu', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');
@@ -203,7 +196,7 @@ test.describe('Lobby', () => {
   });
 
   test('4.13 Closing the room returns all players to the home screen', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     try {
       const code = await createAndEnterLobby(hostPage, 'Host');

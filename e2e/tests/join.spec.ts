@@ -1,11 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
-
-/**
- * Section 3: Room joining
- *
- * Tests 3.1–3.4 and 3.9 are frontend-only (no backend required).
- * Tests 3.5–3.8 and 3.10 require the local backend (gated by SKIP_BACKEND_TESTS).
- */
+import { test, expect, newContext, Page } from '../fixtures';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -26,7 +19,7 @@ async function createGame(page: Page, playerName = 'Host'): Promise<string> {
   return code!.trim();
 }
 
-// ── Frontend-only tests ────────────────────────────────────────────────────
+// ── UI tests ───────────────────────────────────────────────────────────────
 
 test.describe('Room joining — UI', () => {
   test('3.1 Join button is visible on home page', async ({ page }) => {
@@ -93,14 +86,13 @@ test.describe('Room joining — UI', () => {
   });
 });
 
-// ── Backend-dependent tests ────────────────────────────────────────────────
+// ── Backend tests ──────────────────────────────────────────────────────────
 
 test.describe('Room joining — with backend', () => {
-  test.skip(!!process.env.SKIP_BACKEND_TESTS, 'Set SKIP_BACKEND_TESTS=1 to skip backend tests');
 
   test('3.5 Joining a valid room code adds the player to the lobby', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
-    const guestCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
+    const guestCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     const guestPage = await guestCtx.newPage();
 
@@ -131,8 +123,8 @@ test.describe('Room joining — with backend', () => {
   });
 
   test('3.8 Joining with a duplicate player name in waiting lobby shows an error', async ({ browser }) => {
-    const hostCtx = await browser.newContext();
-    const guestCtx = await browser.newContext();
+    const hostCtx = await newContext(browser);
+    const guestCtx = await newContext(browser);
     const hostPage = await hostCtx.newPage();
     const guestPage = await guestCtx.newPage();
 

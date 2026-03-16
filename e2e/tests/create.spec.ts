@@ -1,11 +1,4 @@
-import { test, expect, Page } from '@playwright/test';
-
-/**
- * Section 2: Room creation
- *
- * Tests 2.1–2.7 are frontend-only (no backend required).
- * Tests 2.8–2.10 require the local backend (gated by SKIP_BACKEND_TESTS).
- */
+import { test, expect, Page } from '../fixtures';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -15,7 +8,7 @@ async function openCreateForm(page: Page) {
   await page.getByRole('button', { name: 'Create' }).click();
 }
 
-// ── Frontend-only tests ────────────────────────────────────────────────────
+// ── UI tests ───────────────────────────────────────────────────────────────
 
 test.describe('Room creation — UI', () => {
   test('2.1 Create button is visible on home page', async ({ page }) => {
@@ -48,7 +41,6 @@ test.describe('Room creation — UI', () => {
   test('2.4 Clue time options: 15, 30, 45, 60, 120, OFF', async ({ page }) => {
     await openCreateForm(page);
     for (const label of ['15', '30', '45', '60', '120', 'OFF']) {
-      // Each value appears at least once as a button within the Clue Time group
       const clueGroup = page.locator('.config-group').filter({ hasText: 'Clue Time' });
       await expect(clueGroup.getByRole('button', { name: label })).toBeVisible();
     }
@@ -64,18 +56,14 @@ test.describe('Room creation — UI', () => {
 
   test('2.6 Max players can be incremented and decremented (range 2–10)', async ({ page }) => {
     await openCreateForm(page);
-    // Max Players is the first .number-input, Turns is the second (same config-group)
     const maxInput = page.locator('.number-input').first();
     const value = maxInput.locator('.number-value');
     const inc = maxInput.getByRole('button', { name: '+' });
     const dec = maxInput.getByRole('button', { name: '-' });
 
-    // Default is 6; increment to 7
     await expect(value).toHaveText('6');
     await inc.click();
     await expect(value).toHaveText('7');
-
-    // Decrement back to 6
     await dec.click();
     await expect(value).toHaveText('6');
   });
@@ -85,7 +73,6 @@ test.describe('Room creation — UI', () => {
     const maxInput = page.locator('.number-input').first();
     const dec = maxInput.getByRole('button', { name: '-' });
 
-    // Click down to 2
     for (let i = 0; i < 4; i++) await dec.click();
     await expect(maxInput.locator('.number-value')).toHaveText('2');
     await expect(dec).toBeDisabled();
@@ -93,13 +80,11 @@ test.describe('Room creation — UI', () => {
 
   test('2.7 Turns can be incremented and decremented (range 1–5)', async ({ page }) => {
     await openCreateForm(page);
-    // Turns is the second .number-input
     const turnsInput = page.locator('.number-input').nth(1);
     const value = turnsInput.locator('.number-value');
     const inc = turnsInput.getByRole('button', { name: '+' });
     const dec = turnsInput.getByRole('button', { name: '-' });
 
-    // Default is 2
     await expect(value).toHaveText('2');
     await inc.click();
     await expect(value).toHaveText('3');
@@ -123,17 +108,14 @@ test.describe('Room creation — UI', () => {
   });
 });
 
-// ── Backend-dependent tests ────────────────────────────────────────────────
+// ── Backend tests ──────────────────────────────────────────────────────────
 
 test.describe('Room creation — with backend', () => {
-  test.skip(!!process.env.SKIP_BACKEND_TESTS, 'Set SKIP_BACKEND_TESTS=1 to skip backend tests');
-
   test('2.8 Submitting the form creates a game and shows the lobby', async ({ page }) => {
     await openCreateForm(page);
     await page.getByPlaceholder('Enter your name').fill('TestHost');
     await page.getByRole('button', { name: 'Create' }).last().click();
 
-    // Should enter the lobby — navbar shows "Lobby Open"
     await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
   });
 
