@@ -31,18 +31,17 @@ test.describe('Daily challenge page', () => {
       });
     });
 
-    test('has interactive colour sliders', async ({ page }) => {
+    test('has interactive colour wheel', async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
       await page.goto('/daily');
-      const slider = page.getByRole('slider').first();
-      await expect(slider).toBeVisible({ timeout: 10_000 });
+      await expect(page.locator('.color-wheel').first()).toBeVisible({ timeout: 10_000 });
     });
 
     test('can submit a colour guess', async ({ page }) => {
+      await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
       await page.goto('/daily');
-      // Wait for sliders to appear (SAM cold start may be slow)
-      await page.getByRole('slider').first().waitFor({ timeout: 10_000 });
-      // Submit button should be present
-      const submitButton = page.getByRole('button', { name: /submit|guess|go/i }).first();
+      await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
+      const submitButton = page.getByRole('button', { name: /submit/i }).first();
       await expect(submitButton).toBeVisible();
     });
   });
