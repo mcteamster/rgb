@@ -46,6 +46,22 @@ async function waitForPort(port: number, timeout = 120_000): Promise<void> {
   throw new Error(`Port ${port} did not open within ${timeout / 1_000}s`);
 }
 
+/** Invoke a SAM local start-lambda function to warm its container. Ignores errors. */
+function invokeLambdaWarmup(functionName: string, event: object): Promise<void> {
+  return new Promise<void>(resolve => {
+    const body = JSON.stringify(event);
+    const req = http.request({
+      hostname: 'localhost', port: 3002, method: 'POST',
+      path: `/2015-03-31/functions/${functionName}/invocations`,
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+    }, res => { res.resume(); resolve(); });
+    req.once('error', () => resolve());
+    req.setTimeout(120_000, () => { req.destroy(); resolve(); });
+    req.write(body);
+    req.end();
+  });
+}
+
 async function waitForHttp(url: string, timeout = 60_000, requestTimeout = 2_000): Promise<void> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
@@ -132,25 +148,26 @@ export default async function globalSetup() {
   ]);
 
   // Warm up Lambdas so the first tests don't hit cold starts.
-  // - REST Lambda: hit a real mapped route (root returns before invoking Lambda)
-  // - WS Lambdas: invoke ConnectFunction directly via start-lambda endpoint
-  console.log('[e2e] Warming up REST Lambda (daily-challenge/current)...');
-  // Use a long per-request timeout — SAM needs time to start the Lambda container
-  await waitForHttp('http://localhost:3000/daily-challenge/current', 180_000, 120_000);
+  // - REST Lambda: hit a real mapped route (root URL returns before invoking Lambda)
+  // - WS Lambdas: invoke Connect + Message directly via start-lambda (port 3002)
+  //   Each function gets its own container in SAM local start-lambda.
+  console.log('[e2e] Warming up Lambdas (REST + WS) in parallel...');
+  await Promise.all([
+    // REST: daily-challenge Lambda — long per-request timeout for container startup
+    waitForHttp('http://localhost:3000/daily-challenge/current', 180_000, 120_000),
 
-  console.log('[e2e] Warming up WS Lambda (ConnectFunction)...');
-  await new Promise<void>(resolve => {
-    const body = JSON.stringify({ requestContext: { connectionId: 'warmup', eventType: 'CONNECT' } });
-    const req = http.request({
-      hostname: 'localhost', port: 3002, method: 'POST',
-      path: '/2015-03-31/functions/ConnectFunction/invocations',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
-    }, res => { res.resume(); resolve(); });
-    req.once('error', () => resolve());
-    req.setTimeout(30_000, () => { req.destroy(); resolve(); });
-    req.write(body);
-    req.end();
-  });
+    // WS: ConnectFunction
+    invokeLambdaWarmup('ConnectFunction', {
+      requestContext: { connectionId: 'warmup-connect', routeKey: '$connect', eventType: 'CONNECT' },
+      body: null, isBase64Encoded: false,
+    }),
+
+    // WS: MessageFunction (handles create/join/etc — has its own container)
+    invokeLambdaWarmup('MessageFunction', {
+      requestContext: { connectionId: 'warmup-msg', routeKey: '$default', eventType: 'MESSAGE' },
+      body: JSON.stringify({ action: 'warmup' }), isBase64Encoded: false,
+    }),
+  ]);
 
   console.log('[e2e] All backend services ready\n');
 }
