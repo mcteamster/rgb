@@ -24,10 +24,10 @@ export default async function globalTeardown() {
     }
   }
 
-  // Stop SAM-spawned Lambda containers (identified by the Lambda runtime image)
+  // Stop SAM-spawned Lambda containers (all containers on the rgb-local network)
   try {
     execSync(
-      'podman ps -q --filter ancestor=public.ecr.aws/lambda/nodejs:22-rapid-x86_64 | xargs -r podman rm -f',
+      'podman ps -q --filter network=rgb-local | xargs -r podman rm -f',
       { shell: '/bin/bash', stdio: 'inherit' },
     );
   } catch { /* ignore */ }
