@@ -10,7 +10,7 @@ export default defineConfig({
   timeout: 30_000,
 
   use: {
-    baseURL: process.env.BASE_URL ?? 'https://rgb.mcteamster.com',
+    baseURL: process.env.BASE_URL ?? 'https://test.rgb.mcteamster.com',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

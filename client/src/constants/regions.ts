@@ -8,6 +8,7 @@ export const AWS_REGIONS = {
   'sa-east-1': 'BR',
   'us-east-1': 'USE',
   'us-west-2': 'USW',
+  'ap-southeast-4': 'TEST',
 };
 
 export const API_BASE_URL = 'https://api.ohnomer.com';
@@ -22,6 +23,7 @@ export const ENDPOINTS = {
   'BR': 'wss://br.rgb.mcteamster.com',
   'USE': 'wss://use.rgb.mcteamster.com',
   'USW': 'wss://usw.rgb.mcteamster.com',
+  'TEST': 'wss://test.rgb.mcteamster.com',
   'DEFAULT': 'wss://au.rgb.mcteamster.com'
 };
 
@@ -35,6 +37,7 @@ export const FLAGS = {
   'BR': '🇧🇷',
   'USE': '🇺🇸',
   'USW': '🇺🇸',
+  'TEST': '🇦🇺',
 };
 
 export const REGION_LABELS = {
@@ -47,6 +50,7 @@ export const REGION_LABELS = {
   'BR': 'BR',
   'USE': 'US East',
   'USW': 'US West',
+  'TEST': 'Test',
 };
 
 export const getRegionFromCode = (roomCode: string): string => {
@@ -70,6 +74,8 @@ export const getRegionFromCode = (roomCode: string): string => {
     return 'USE'; // US East 🇺🇸
   } else if ('VW'.includes(lastLetter)) {
     return 'USW'; // US West 🇺🇸
+  } else if ('XZ'.includes(lastLetter)) {
+    return 'TEST'; // Test (Melbourne) 🇦🇺
   } else {
     return 'AU'; // Default fallback
   }
