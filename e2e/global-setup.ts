@@ -148,26 +148,22 @@ export default async function globalSetup() {
   ]);
 
   // Warm up Lambdas so the first tests don't hit cold starts.
-  // - REST Lambda: hit a real mapped route (root URL returns before invoking Lambda)
-  // - WS Lambdas: invoke Connect + Message directly via start-lambda (port 3002)
-  //   Each function gets its own container in SAM local start-lambda.
-  console.log('[e2e] Warming up Lambdas (REST + WS) in parallel...');
-  await Promise.all([
-    // REST: daily-challenge Lambda — long per-request timeout for container startup
-    waitForHttp('http://localhost:3000/daily-challenge/current', 180_000, 120_000),
+  // SAM local start-lambda creates a new container per function — each needs its own
+  // warm-up invocation. Run sequentially so SAM isn't overwhelmed.
+  console.log('[e2e] Warming up REST Lambda (daily-challenge/current)...');
+  await waitForHttp('http://localhost:3000/daily-challenge/current', 180_000, 120_000);
 
-    // WS: ConnectFunction
-    invokeLambdaWarmup('ConnectFunction', {
-      requestContext: { connectionId: 'warmup-connect', routeKey: '$connect', eventType: 'CONNECT' },
-      body: null, isBase64Encoded: false,
-    }),
+  console.log('[e2e] Warming up WS ConnectFunction...');
+  await invokeLambdaWarmup('ConnectFunction', {
+    requestContext: { connectionId: 'warmup-connect', routeKey: '$connect', eventType: 'CONNECT' },
+    body: null, isBase64Encoded: false,
+  });
 
-    // WS: MessageFunction (handles create/join/etc — has its own container)
-    invokeLambdaWarmup('MessageFunction', {
-      requestContext: { connectionId: 'warmup-msg', routeKey: '$default', eventType: 'MESSAGE' },
-      body: JSON.stringify({ action: 'warmup' }), isBase64Encoded: false,
-    }),
-  ]);
+  console.log('[e2e] Warming up WS MessageFunction...');
+  await invokeLambdaWarmup('MessageFunction', {
+    requestContext: { connectionId: 'warmup-msg', routeKey: '$default', eventType: 'MESSAGE' },
+    body: JSON.stringify({ action: 'warmup' }), isBase64Encoded: false,
+  });
 
   console.log('[e2e] All backend services ready\n');
 }
