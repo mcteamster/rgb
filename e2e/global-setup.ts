@@ -117,5 +117,9 @@ export default async function globalSetup() {
     waitForPort(3002, 180_000),
   ]);
 
+  // Warm up the REST Lambda so the first test doesn't hit a cold start
+  console.log('[e2e] Warming up REST Lambda...');
+  await waitForHttp('http://localhost:3000/', 60_000);
+
   console.log('[e2e] All backend services ready\n');
 }
