@@ -15,7 +15,7 @@ import { useColor } from '../contexts/ColorContext';
 import { MinimisedView } from './MinimisedView';
 import { useGame, loadSession, clearSession } from '../contexts/GameContext';
 import { setBodyBackground } from '../utils/colorUtils';
-import { discordSdk } from '../services/discord';
+import { discordSdk, subscribeToLayoutMode } from '../services/discord';
 import { API_BASE_URL } from '../constants/regions';
 
 export const GameContainer: React.FC = () => {
@@ -28,11 +28,12 @@ export const GameContainer: React.FC = () => {
   const [size, setSize] = useState(() => {
     return { width: window.innerWidth, height: window.innerHeight };
   });
+  const [isDiscordPip, setIsDiscordPip] = useState(false);
   const [lastRoundId, setLastRoundId] = useState<string | null>(null);
   const [showTips, setShowTips] = useState(false);
   const [shouldShowTips, setShouldShowTips] = useState<'auto' | 'manual' | 'dismissed'>('auto');
 
-  const isScreenTooSmall = size.width < 320;
+  const isScreenTooSmall = size.width < 320 || isDiscordPip;
 
   useEffect(() => {
     const handleResize = () => {
@@ -45,6 +46,10 @@ export const GameContainer: React.FC = () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
     };
+  }, []);
+
+  useEffect(() => {
+    return subscribeToLayoutMode((data) => setIsDiscordPip(data.layout_mode === 1));
   }, []);
 
   // Clear color lock when new round starts

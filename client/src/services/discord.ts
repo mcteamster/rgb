@@ -1,5 +1,13 @@
-import { DiscordSDK, patchUrlMappings } from "@discord/embedded-app-sdk";
+import { DiscordSDK, Events, patchUrlMappings } from "@discord/embedded-app-sdk";
 import { ENDPOINTS } from "../constants/regions";
+
+type LayoutModeCallback = (data: { layout_mode: number }) => void;
+
+export function subscribeToLayoutMode(callback: LayoutModeCallback): () => void {
+  if (!discordSdk) return () => {};
+  discordSdk.subscribe(Events.ACTIVITY_LAYOUT_MODE_UPDATE, callback);
+  return () => discordSdk.unsubscribe(Events.ACTIVITY_LAYOUT_MODE_UPDATE, callback);
+}
 
 // Initialise Discord Integration
 export let discordSdk: DiscordSDK;
