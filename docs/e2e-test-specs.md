@@ -21,16 +21,16 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 2.1 | "Create" button is visible on home page | |
-| 2.2 | Create form shows clue time, guess time, max players, turns per player controls | |
-| 2.3 | Estimated game duration updates when settings change | |
-| 2.4 | Clue time options: 15 s, 30 s, 45 s, 60 s, 120 s, OFF | |
-| 2.5 | Guess time options: 10 s, 15 s, 20 s, 30 s, 60 s, OFF | |
-| 2.6 | Max players slider range 2–10 | |
-| 2.7 | Turns per player range 1–5 | |
-| 2.8 | Submitting the form creates a game and shows the lobby | |
-| 2.9 | Room code in lobby URL is 4 chars, consonants only | Regex: `/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/` |
-| 2.10 | Session is saved to `localStorage` after creation | |
+| 2.1 | "Create" button is visible on home page | Implemented |
+| 2.2 | Create form shows clue time, guess time, max players, turns per player controls | Implemented |
+| 2.3 | Estimated game duration updates when settings change | Implemented |
+| 2.4 | Clue time options: 15 s, 30 s, 45 s, 60 s, 120 s, OFF | Implemented |
+| 2.5 | Guess time options: 10 s, 15 s, 20 s, 30 s, 60 s, OFF | Implemented |
+| 2.6 | Max players slider range 2–10 | Implemented |
+| 2.7 | Turns per player range 1–5 | Implemented |
+| 2.8 | Submitting the form creates a game and shows the lobby | Implemented |
+| 2.9 | Room code in lobby URL is 4 chars, consonants only | Regex: `/^[BCDFGHJKLMNPQRSTVWXZ]{4}$/` — Implemented |
+| 2.10 | Session is saved to `localStorage` after creation | Implemented |
 
 ---
 
@@ -38,16 +38,16 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 3.1 | "Join" button is visible on home page | |
-| 3.2 | Join form accepts a room code and player name | |
-| 3.3 | Room code field rejects non-consonant characters | |
-| 3.4 | Player name max length is 16 chars | |
-| 3.5 | Joining a valid room adds the player to the lobby | Requires 2 browser contexts |
-| 3.6 | Joining with an invalid room code shows an error | |
-| 3.7 | Joining a full room shows an error | Max players limit |
-| 3.8 | Joining with a duplicate player name (in waiting) shows an error | |
-| 3.9 | Navigating to `/:roomCode` pre-fills the join code | |
-| 3.10 | Rejoining an active game via saved session bypasses the join form | |
+| 3.1 | "Join" button is visible on home page | Implemented |
+| 3.2 | Join form accepts a room code and player name | Implemented |
+| 3.3 | Room code field rejects non-consonant characters | Implemented |
+| 3.4 | Player name max length is 16 chars | Implemented |
+| 3.5 | Joining a valid room adds the player to the lobby | Requires 2 browser contexts — Implemented |
+| 3.6 | Joining with an invalid room code shows an error | Implemented |
+| 3.7 | Joining a full room shows an error | Max players limit — Implemented |
+| 3.8 | Joining with a duplicate player name (in waiting) shows an error | Implemented |
+| 3.9 | Navigating to `/:roomCode` pre-fills the join code | Implemented |
+| 3.10 | Rejoining an active game via saved session bypasses the join form | Implemented |
 
 ---
 
@@ -55,19 +55,19 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 4.1 | Host sees "Start Game" button | |
-| 4.2 | Non-host does not see "Start Game" button | |
-| 4.3 | "Start Game" is disabled with only 1 player | |
-| 4.4 | "Start Game" is enabled with 2+ players | |
-| 4.5 | Player list shows all connected players | |
-| 4.6 | Player list updates in real-time when a second player joins | Requires 2 browser contexts |
-| 4.7 | QR code is visible to the host | SVG rendered on canvas |
-| 4.8 | "Copy URL" copies the room link to clipboard | |
-| 4.9 | Host can kick a player in the lobby | |
-| 4.10 | Kicked player is redirected to home | |
-| 4.11 | "Leave Game" button is visible to non-host | |
-| 4.12 | "Close Room" button is visible to host | |
-| 4.13 | Closing the room removes all players | |
+| 4.1 | Host sees "Start Game" button | Implemented |
+| 4.2 | Non-host does not see "Start Game" button | Implemented |
+| 4.3 | "Start Game" is disabled with only 1 player | Implemented |
+| 4.4 | "Start Game" is enabled with 2+ players | Implemented |
+| 4.5 | Player list shows all connected players | Implemented |
+| 4.6 | Player list updates in real-time when a second player joins | Requires 2 browser contexts — Implemented |
+| 4.7 | QR code is visible to the host | SVG rendered on canvas — Implemented |
+| 4.8 | "Copy URL" copies the room link to clipboard | Implemented |
+| 4.9 | Host can kick a player in the lobby | Implemented |
+| 4.10 | Kicked player is redirected to home | Implemented |
+| 4.11 | "Leave Game" button is visible to non-host | Implemented |
+| 4.12 | "Close Room" button is visible to host | Implemented |
+| 4.13 | Closing the room removes all players | Implemented |
 
 ---
 
@@ -129,14 +129,14 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 8.1 | Exact colour match scores 100 | `h`, `s`, `l` identical to target |
-| 8.2 | Colour within 1σ of all channels scores > 60 | Approximate |
-| 8.3 | Colour beyond 3σ on any channel scores 0 | Hard cutoff |
-| 8.4 | Describer score equals the average of guesser scores | |
-| 8.5 | No-clue round: guessers score 100, describer scores 0 | |
-| 8.6 | Skipped guess scores 0 | |
-| 8.7 | Scores accumulate across rounds | |
-| 8.8 | Hue difference is treated as circular (0° ≡ 360°) | Red wrap-around |
+| 8.1 | Exact colour match scores 100 | `h`, `s`, `l` identical to target — Not implemented (requires exact colour control) |
+| 8.2 | Colour within 1σ of all channels scores > 60 | Approximate — Not implemented |
+| 8.3 | Colour beyond 3σ on any channel scores 0 | Hard cutoff — Not implemented |
+| 8.4 | Describer score equals the average of guesser scores | Not implemented (requires exact colour control) |
+| 8.5 | No-clue round: guessers score 100, describer scores 0 | Implemented |
+| 8.6 | Skipped guess scores 0 | Not implemented (complex to trigger) |
+| 8.7 | Scores accumulate across rounds | Implemented |
+| 8.8 | Hue difference is treated as circular (0° ≡ 360°) | Red wrap-around — Not implemented |
 
 ---
 
@@ -144,13 +144,13 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 9.1 | Full standings shown after final round | All players, all rounds |
-| 9.2 | Winner(s) displayed with 🏆 | Ties allowed |
-| 9.3 | Host sees "Play Again" and "End Game" buttons | |
-| 9.4 | Non-host sees neither button | |
-| 9.5 | "Play Again" resets scores and returns to lobby | |
-| 9.6 | "End Game" closes the room and returns all players to home | |
-| 9.7 | Replay starts a new sequence with the same players | |
+| 9.1 | Full standings shown after final round | All players, all rounds — Implemented |
+| 9.2 | Winner(s) displayed with 🏆 | Ties allowed — Implemented |
+| 9.3 | Host sees "Replay" and "End Game" buttons | Implemented |
+| 9.4 | Non-host sees neither button | Implemented |
+| 9.5 | "Replay" resets scores and returns to lobby | Implemented |
+| 9.6 | "End Game" closes the room and returns all players to home | Implemented |
+| 9.7 | Replay starts a new sequence with the same players | Implemented |
 
 ---
 
@@ -158,18 +158,18 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 10.1 | `/daily` loads and shows today's prompt | Requires backend |
-| 10.2 | Colour wheel is interactive before submission | |
-| 10.3 | A confirmation dialog appears before submitting | |
-| 10.4 | After submission, the user's colour vs. community average is shown | |
-| 10.5 | Score and distance from average are displayed | |
-| 10.6 | Submitting the same challenge a second time is rejected | Idempotency |
-| 10.7 | Community stats (H/S/L mean and σ) are shown after submission | |
-| 10.8 | 30-day history calendar renders | |
-| 10.9 | Completed days in the calendar show the submitted colour | |
-| 10.10 | Clicking an unsubmitted past day loads that challenge | ≤ 30 days |
-| 10.11 | Streak counter shows 🔥 when today is already submitted | |
-| 10.12 | Streak counter shows ⏳ when today is not yet submitted | |
+| 10.1 | `/daily` loads and shows today's prompt | Implemented (smoke test only) |
+| 10.2 | Colour wheel is interactive before submission | Implemented (smoke test only) |
+| 10.3 | A confirmation dialog appears before submitting | Not implemented |
+| 10.4 | After submission, the user's colour vs. community average is shown | Not implemented |
+| 10.5 | Score and distance from average are displayed | Not implemented |
+| 10.6 | Submitting the same challenge a second time is rejected | Not implemented |
+| 10.7 | Community stats (H/S/L mean and σ) are shown after submission | Not implemented |
+| 10.8 | 30-day history calendar renders | Not implemented |
+| 10.9 | Completed days in the calendar show the submitted colour | Not implemented |
+| 10.10 | Clicking an unsubmitted past day loads that challenge | Not implemented |
+| 10.11 | Streak counter shows 🔥 when today is already submitted | Not implemented |
+| 10.12 | Streak counter shows ⏳ when today is not yet submitted | Not implemented |
 
 ---
 
@@ -177,11 +177,11 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 11.1 | Refreshing the page while in lobby re-joins automatically | Session in `localStorage` |
-| 11.2 | Refreshing during a round reconnects and shows the correct phase | |
-| 11.3 | Session expires after 12 hours and redirects to home | |
-| 11.4 | Navigating to a room URL with a saved session auto-rejoins | |
-| 11.5 | Navigating to a room URL without a saved session shows join form | |
+| 11.1 | Refreshing the page while in lobby re-joins automatically | Session in `localStorage` — Not implemented (rejoin race conditions) |
+| 11.2 | Refreshing during a round reconnects and shows the correct phase | Not implemented (rejoin race conditions) |
+| 11.3 | Session expires after 12 hours and redirects to home | Not implemented (impractical to test) |
+| 11.4 | Navigating to a room URL with a saved session auto-rejoins | Not implemented (rejoin race conditions) |
+| 11.5 | Navigating to a room URL without a saved session shows join form | Implemented |
 
 ---
 
@@ -189,14 +189,14 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 12.1 | Host disconnect transfers host to next-oldest player | |
-| 12.2 | Describer disconnect during describing nullifies the round (+100 to others) | |
-| 12.3 | Describer disconnect during guessing removes them without nullifying | |
-| 12.4 | Non-describer disconnect during guessing removes them; round completes | |
-| 12.5 | All players except one disconnect — last player sees a graceful state | |
-| 12.6 | Player rejoins mid-round and sees the correct phase | |
-| 12.7 | Simultaneous colour submissions from all guessers trigger reveal once | |
-| 12.8 | Two players create games at the same time — room codes are unique | |
+| 12.1 | Host disconnect transfers host to next-oldest player | Not implemented (requires network control) |
+| 12.2 | Describer disconnect during describing nullifies the round (+100 to others) | Not implemented |
+| 12.3 | Describer disconnect during guessing removes them without nullifying | Not implemented |
+| 12.4 | Non-describer disconnect during guessing removes them; round completes | Not implemented |
+| 12.5 | All players except one disconnect — last player sees a graceful state | Not implemented |
+| 12.6 | Player rejoins mid-round and sees the correct phase | Not implemented |
+| 12.7 | Simultaneous colour submissions from all guessers trigger reveal once | Not implemented |
+| 12.8 | Two players create games at the same time — room codes are unique | Implemented |
 
 ---
 
@@ -204,11 +204,11 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 13.1 | All interactive controls are keyboard-navigable | Tab, Enter, Space |
-| 13.2 | Colour wheel is operable via keyboard or sliders alone | Motor accessibility |
-| 13.3 | Mobile viewport (375 × 812) — game is playable without horizontal scroll | Pixel 5 / iPhone 12 |
-| 13.4 | Tablet viewport (768 × 1024) — layout adapts correctly | |
-| 13.5 | Font sizes are legible at 100% zoom on desktop | |
+| 13.1 | All interactive controls are keyboard-navigable | Tab, Enter, Space — Not implemented |
+| 13.2 | Colour wheel is operable via keyboard or sliders alone | Motor accessibility — Not implemented |
+| 13.3 | Mobile viewport (375 × 812) — game is playable without horizontal scroll | Implemented (all tests run on Pixel 5) |
+| 13.4 | Tablet viewport (768 × 1024) — layout adapts correctly | Implemented |
+| 13.5 | Font sizes are legible at 100% zoom on desktop | Implemented |
 
 ---
 
