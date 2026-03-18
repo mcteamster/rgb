@@ -94,17 +94,17 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 6.1 | Guessers see the colour wheel and the clue text | |
-| 6.2 | Clicking the colour wheel updates the selected colour | |
-| 6.3 | HSL sliders (toggled with 🎨) update the selected colour | |
-| 6.4 | Submit button locks the guess and shows "Locked In 🔒" | |
-| 6.5 | Locked guess cannot be changed | |
-| 6.6 | Describer sees submission count (e.g. "2/4 🔒") | |
-| 6.7 | Live colour previews of other players are visible | Draft colour broadcast |
-| 6.8 | Countdown timer shown when guess time is finite | |
-| 6.9 | Timer expiry auto-submits the current colour selection | |
-| 6.10 | All guessers submitting triggers the reveal phase | |
-| 6.11 | Describer cannot submit a colour guess in this phase | |
+| 6.1 | Guessers see the colour wheel and the clue text | Implemented |
+| 6.2 | Clicking the colour wheel updates the selected colour | Implemented |
+| 6.3 | HSL sliders (toggled with 🎨) update the selected colour | Implemented |
+| 6.4 | Submit button locks the guess and shows "Locked In 🔒" | Implemented |
+| 6.5 | Locked guess cannot be changed | Implemented |
+| 6.6 | Describer sees submission count (e.g. "2/4 🔒") | Implemented |
+| 6.7 | Live colour previews of other players are visible | Implemented — WebSocket frame assertion |
+| 6.8 | Countdown timer shown when guess time is finite | Implemented |
+| 6.9 | Timer expiry auto-submits the current colour selection | Implemented — 10 s guess time, 40 s timeout |
+| 6.10 | All guessers submitting triggers the reveal phase | Implemented |
+| 6.11 | Describer cannot submit a colour guess in this phase | Implemented |
 
 ---
 
@@ -112,16 +112,16 @@ scenarios that should eventually be covered, organised by feature area.
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 7.1 | Results screen shows each player's guessed colour | Coloured square |
-| 7.2 | Target colour is shown as the border of each square | |
-| 7.3 | Scores are displayed for the round | |
-| 7.4 | Standings list is ordered by total score | |
-| 7.5 | Skipped guess shows ⏭️ emoji | |
-| 7.6 | No-clue round shows ❌ emoji for describer | |
-| 7.7 | "Next Round" button is disabled for 3 s (prevents mis-click) | |
-| 7.8 | "Next Round" starts the next describing phase | |
-| 7.9 | Button label changes to "Game Summary" when all turns are done | |
-| 7.10 | Only the host can advance to the next round | |
+| 7.1 | Results screen shows each player's guessed colour | Implemented |
+| 7.2 | Target colour is shown in the reveal | Implemented |
+| 7.3 | Scores are displayed for the round | Implemented |
+| 7.4 | Standings list is ordered by total score | Not implemented — hard to assert reliably |
+| 7.5 | Skipped guess shows ⏭️ emoji | Not implemented — complex to trigger |
+| 7.6 | No-clue round shows "No clue was given" | Implemented — 15 s clue timer, 40 s timeout |
+| 7.7 | "Next Round" button is disabled for 3 s (prevents mis-click) | Implemented |
+| 7.8 | "Next Round" starts the next describing phase | Implemented |
+| 7.9 | Button label changes to "Game Summary" when all turns are done | Implemented — turnsOne=true, 2 rounds, 90 s timeout |
+| 7.10 | Only the host can advance to the next round | Implemented — host click advances game |
 
 ---
 
