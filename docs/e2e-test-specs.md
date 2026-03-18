@@ -3,9 +3,6 @@
 Playwright smoke tests live in `e2e/tests/`. This document specifies the full set of
 scenarios that should eventually be covered, organised by feature area.
 
-Tests that require the local backend should be gated with `SKIP_BACKEND_TESTS=1`
-(see `e2e/tests/daily-challenge.spec.ts` for the pattern).
-
 ---
 
 ## 1. Navigation & smoke
@@ -16,7 +13,7 @@ Tests that require the local backend should be gated with `SKIP_BACKEND_TESTS=1`
 | 1.2 | `/about` loads and displays content | Implemented |
 | 1.3 | `/daily` loads without 404 | Implemented |
 | 1.4 | `/:roomCode` (valid consonant code) loads the game container | Implemented |
-| 1.5 | Invalid path shows fallback or redirects to `/` | Requires routing edge-case handling |
+| 1.5 | Invalid path shows fallback or redirects to `/` | Implemented |
 
 ---
 
@@ -78,18 +75,18 @@ Tests that require the local backend should be gated with `SKIP_BACKEND_TESTS=1`
 
 | # | Scenario | Notes |
 |---|----------|-------|
-| 5.1 | Describer sees the target colour box | |
-| 5.2 | Describer sees a text input for the clue | |
-| 5.3 | Clue input max length is 50 chars | |
-| 5.4 | Guessers see a "waiting for describer" message | |
-| 5.5 | Pressing Enter once shows a confirm prompt | Double-enter pattern |
-| 5.6 | Pressing Enter twice submits the clue | |
-| 5.7 | Submitted clue advances the game to guessing phase | |
-| 5.8 | Countdown timer is shown when clue time is finite | |
-| 5.9 | Timer expiry auto-submits the current clue draft | |
-| 5.10 | Submitting an empty clue (no-clue) awards +100 to all guessers | |
-| 5.11 | Draft clue updates are broadcast while typing | Throttled 1 s |
-| 5.12 | Non-describer cannot interact with the clue input | |
+| 5.1 | Describer sees the target colour box | Implemented |
+| 5.2 | Describer sees a text input for the clue | Implemented |
+| 5.3 | Clue input max length is 50 chars | Implemented |
+| 5.4 | Guessers see a "waiting for describer" message | Implemented |
+| 5.5 | Pressing Enter once shows a confirm prompt | Implemented — double-enter pattern |
+| 5.6 | Pressing Enter twice submits the clue | Implemented |
+| 5.7 | Submitted clue advances the game to guessing phase | Implemented |
+| 5.8 | Countdown timer is shown when clue time is finite | Implemented |
+| 5.9 | Timer expiry auto-submits the current clue draft | Implemented — 15 s clue time, 40 s timeout |
+| 5.10 | Submitting an empty clue (no-clue) awards +100 to all guessers | Implemented — server-driven via timer expiry |
+| 5.11 | Draft clue updates are broadcast while typing | Implemented — WebSocket frame assertion |
+| 5.12 | Non-describer cannot interact with the clue input | Implemented |
 
 ---
 

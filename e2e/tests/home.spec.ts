@@ -18,4 +18,9 @@ test.describe('Home page', () => {
     // Should still load the game container for any room code
     await expect(page).not.toHaveURL('/404');
   });
+
+  test('1.5 invalid path redirects to home', async ({ page }) => {
+    await page.goto('/AAAA');
+    await expect(page).toHaveURL('/');
+  });
 });
