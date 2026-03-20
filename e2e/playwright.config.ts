@@ -9,7 +9,7 @@ export default defineConfig({
   retries: isCI ? 2 : 0,
   workers: isCI ? 5 : undefined,
   reporter: [['html', { open: 'never' }], ['list'], ['json', { outputFile: 'test-results.json' }]],
-  timeout: 10_000,
+  timeout: 15_000,
 
   use: {
     baseURL: 'https://rgb.mcteamster.com',

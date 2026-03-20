@@ -5,8 +5,8 @@
   "license": "MIT",
   "workspaces": [
     "client",
-    "e2e",
-    "service"
+    "service",
+    "e2e"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
