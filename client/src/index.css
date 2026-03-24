@@ -77,6 +77,11 @@ body {
   transform: translate(-50%, -50%);
 }
 
+canvas {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
 /* Color Sliders */
 .hsl-slider-content {
   background: white;
