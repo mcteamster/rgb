@@ -49,6 +49,11 @@ body {
   height: 100%;
 }
 
+canvas {
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+
 /* Base Layout */
 .app-container {
   width: 100vw;
