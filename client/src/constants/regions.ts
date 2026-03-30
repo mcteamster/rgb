@@ -8,7 +8,6 @@ export const AWS_REGIONS = {
   'sa-east-1': 'BR',
   'us-east-1': 'USE',
   'us-west-2': 'USW',
-  'ap-southeast-4': 'TEST',
 };
 
 export const API_BASE_URL = 'https://api.ohnomer.com';
