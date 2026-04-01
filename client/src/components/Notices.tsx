@@ -8,8 +8,7 @@ interface NotificationProps {
 }
 
 interface Notice {
-  message?: string;
-  regions?: string[];
+  messages?: Record<string, string>;
 }
 
 export const Notification: React.FC<NotificationProps> = ({ region, errors = [], onClearError }) => {
@@ -19,9 +18,7 @@ export const Notification: React.FC<NotificationProps> = ({ region, errors = [],
   const checkNotices = useCallback(async () => {
     try {
       const data = await (await fetch(`${API_BASE_URL}/common/notices/rgb`)).json();
-      // Handle both single notice and array of notices
-      const noticeArray = Array.isArray(data) ? data : [data];
-      setNotices(noticeArray.filter(notice => notice.message));
+      setNotices([data].filter(notice => notice.messages));
     } catch (err) {
       console.warn('Error fetching notices', err);
     }
@@ -44,27 +41,23 @@ export const Notification: React.FC<NotificationProps> = ({ region, errors = [],
 
   // Auto-dismiss notices after 3 seconds
   useEffect(() => {
-    const applicableNotices = notices.filter(notice => 
-      notice.message &&
-      (!notice.regions || notice.regions.length === 0 || notice.regions.includes(region)) &&
-      !dismissedNotices.has(notice.message)
-    );
+    const applicableNotices = notices
+      .map(notice => notice.messages?.[region] ?? notice.messages?.ALL ?? '')
+      .filter(msg => msg && !dismissedNotices.has(msg));
 
     if (applicableNotices.length > 0) {
       const timer = setTimeout(() => {
-        applicableNotices.forEach(notice => {
-          setDismissedNotices(prev => new Set([...prev, notice.message!]));
+        applicableNotices.forEach(msg => {
+          setDismissedNotices(prev => new Set([...prev, msg]));
         });
       }, 3000);
       return () => clearTimeout(timer);
     }
   }, [notices, region, dismissedNotices]);
 
-  const applicableNotices = notices.filter(notice => 
-    notice.message &&
-    (!notice.regions || notice.regions.length === 0 || notice.regions.includes(region)) &&
-    !dismissedNotices.has(notice.message)
-  );
+  const applicableNotices = notices
+    .map(notice => notice.messages?.[region] ?? notice.messages?.ALL ?? '')
+    .filter(msg => msg && !dismissedNotices.has(msg));
 
   const dismissNotice = (message: string) => {
     setDismissedNotices(prev => new Set([...prev, message]));
@@ -77,7 +70,7 @@ export const Notification: React.FC<NotificationProps> = ({ region, errors = [],
           {error}
         </div>
       ))}
-      {applicableNotices.map((notice, index) => (
+      {applicableNotices.map((message, index) => (
         <div key={`notice-${index}`} style={{
           background: 'white',
           color: '#333',
@@ -87,8 +80,8 @@ export const Notification: React.FC<NotificationProps> = ({ region, errors = [],
           textAlign: 'center',
           border: '1px solid #ddd',
           cursor: 'pointer'
-        }} onClick={() => dismissNotice(notice.message!)}>
-          {notice.message}
+        }} onClick={() => dismissNotice(message)}>
+          {message}
         </div>
       ))}
     </div>
