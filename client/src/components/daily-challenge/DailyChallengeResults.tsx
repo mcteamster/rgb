@@ -1,19 +1,25 @@
 import React, { useEffect, useState } from 'react';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 import { dailyChallengeApi } from '../../services/dailyChallengeApi';
+import { getUserId } from '../../utils/userId';
 import { StatsResponse } from '../../types/dailyChallenge';
 
 export const DailyChallengeResults: React.FC = () => {
   const { currentChallenge } = useDailyChallenge();
   const [stats, setStats] = useState<StatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (currentChallenge) {
       setIsLoading(true);
-      dailyChallengeApi.getStats(currentChallenge.challengeId)
+      setError(null);
+      dailyChallengeApi.getStats(currentChallenge.challengeId, getUserId())
         .then(setStats)
-        .catch(console.error)
+        .catch((err) => {
+          console.error(err);
+          setError('Play this challenge to view its stats.');
+        })
         .finally(() => setIsLoading(false));
     }
   }, [currentChallenge]);
@@ -32,6 +38,8 @@ export const DailyChallengeResults: React.FC = () => {
 
         {isLoading ? (
           <div className="loading-message">Loading statistics...</div>
+        ) : error ? (
+          <p className="no-submissions">{error}</p>
         ) : !stats || stats.totalSubmissions === 0 ? (
           <p className="no-submissions">No submissions yet. Be the first!</p>
         ) : (

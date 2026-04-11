@@ -73,14 +73,15 @@ describe('DailyChallengeAPI', () => {
     describe('getStats', () => {
         it('returns parsed response on success', async () => {
             const payload = { totalSubmissions: 42, averageColor: { h: 180, s: 60, l: 50 } }
-            mockFetch(payload)
-            const result = await api.getStats('2026-03-15')
+            const spy = mockFetch(payload)
+            const result = await api.getStats('2026-03-15', 'user123')
             expect(result).toEqual(payload)
+            expect(spy.mock.calls[0][0]).toContain('userId=user123')
         })
 
         it('throws on non-ok response', async () => {
             mockFetch({}, false)
-            await expect(api.getStats('2026-03-15')).rejects.toThrow('Failed to fetch stats')
+            await expect(api.getStats('2026-03-15', 'user123')).rejects.toThrow('Failed to fetch stats')
         })
     })
 

@@ -10,27 +10,44 @@ vi.mock('@aws-sdk/lib-dynamodb', () => ({
 
 import { handler } from './get-stats'
 
-const makeEvent = (challengeId?: string) => ({
+const makeEvent = (challengeId?: string, userId?: string) => ({
     pathParameters: challengeId ? { challengeId } : null,
+    queryStringParameters: userId ? { userId } : null,
 }) as any
 
 beforeEach(() => { mockSend.mockReset() })
 
 describe('get-stats handler', () => {
     it('returns 400 when challengeId is missing', async () => {
-        const result = await handler(makeEvent())
+        const result = await handler(makeEvent(undefined, 'user-123'))
         expect(result.statusCode).toBe(400)
+        expect(JSON.parse(result.body).error).toMatch(/challengeId/)
+    })
+
+    it('returns 400 when userId is missing', async () => {
+        const result = await handler(makeEvent('2026-03-15'))
+        expect(result.statusCode).toBe(400)
+        expect(JSON.parse(result.body).error).toMatch(/userId/)
     })
 
     it('returns 404 when challenge is not found', async () => {
         mockSend.mockResolvedValueOnce({ Item: undefined })
-        const result = await handler(makeEvent('2026-03-15'))
+        const result = await handler(makeEvent('2026-03-15', 'user-123'))
         expect(result.statusCode).toBe(404)
+    })
+
+    it('returns 403 when user has no submission for the challenge', async () => {
+        mockSend.mockResolvedValueOnce({ Item: { challengeId: '2026-03-15', totalSubmissions: 5 } })
+        mockSend.mockResolvedValueOnce({ Item: undefined })
+        const result = await handler(makeEvent('2026-03-15', 'user-123'))
+        expect(result.statusCode).toBe(403)
+        expect(JSON.parse(result.body).error).toMatch(/Submit a guess/)
     })
 
     it('returns 200 with null stats when no submissions', async () => {
         mockSend.mockResolvedValueOnce({ Item: { challengeId: '2026-03-15', totalSubmissions: 0 } })
-        const result = await handler(makeEvent('2026-03-15'))
+        mockSend.mockResolvedValueOnce({ Item: { userId: 'user-123', challengeId: '2026-03-15' } })
+        const result = await handler(makeEvent('2026-03-15', 'user-123'))
         expect(result.statusCode).toBe(200)
         const body = JSON.parse(result.body)
         expect(body.totalSubmissions).toBe(0)
@@ -47,7 +64,8 @@ describe('get-stats handler', () => {
                 // No componentStats
             }
         })
-        const result = await handler(makeEvent('2026-03-15'))
+        mockSend.mockResolvedValueOnce({ Item: { userId: 'user-123', challengeId: '2026-03-15' } })
+        const result = await handler(makeEvent('2026-03-15', 'user-123'))
         expect(result.statusCode).toBe(200)
         const body = JSON.parse(result.body)
         expect(body.totalSubmissions).toBe(10)
@@ -67,7 +85,8 @@ describe('get-stats handler', () => {
                 }
             }
         })
-        const result = await handler(makeEvent('2026-03-15'))
+        mockSend.mockResolvedValueOnce({ Item: { userId: 'user-123', challengeId: '2026-03-15' } })
+        const result = await handler(makeEvent('2026-03-15', 'user-123'))
         expect(result.statusCode).toBe(200)
         const body = JSON.parse(result.body)
         // stdDev = sqrt(m2 / n) = sqrt(100 / 4) = 5
@@ -79,7 +98,7 @@ describe('get-stats handler', () => {
 
     it('returns 500 on unexpected error', async () => {
         mockSend.mockRejectedValueOnce(new Error('DynamoDB error'))
-        const result = await handler(makeEvent('2026-03-15'))
+        const result = await handler(makeEvent('2026-03-15', 'user-123'))
         expect(result.statusCode).toBe(500)
     })
 })

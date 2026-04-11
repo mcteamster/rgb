@@ -54,6 +54,7 @@ export const DailyChallenge: React.FC = () => {
     const handleSelectDate = (date: string) => {
         loadChallengeByDate(date);
         setShowHistory(false);
+        setShowLeaderboard(false);
         setIsColorLocked(false);
     };
 

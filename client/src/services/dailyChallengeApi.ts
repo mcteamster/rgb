@@ -43,9 +43,9 @@ export class DailyChallengeAPI {
         return response.json();
     }
 
-    async getStats(challengeId: string): Promise<StatsResponse> {
+    async getStats(challengeId: string, userId: string): Promise<StatsResponse> {
         const response = await fetch(
-            `${this.baseUrl}/daily-challenge/stats/${challengeId}`
+            `${this.baseUrl}/daily-challenge/stats/${challengeId}?userId=${userId}`
         );
         if (!response.ok) {
             throw new Error(`Failed to fetch stats: ${response.statusText}`);

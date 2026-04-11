@@ -6,10 +6,13 @@ const client = new DynamoDBClient({});
 const dynamodb = DynamoDBDocumentClient.from(client);
 
 const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE || '';
+const SUBMISSIONS_TABLE = process.env.SUBMISSIONS_TABLE || '';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         const challengeId = event.pathParameters?.challengeId;
+        const userId = event.queryStringParameters?.userId;
+
         if (!challengeId) {
             return {
                 statusCode: 400,
@@ -18,6 +21,17 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify({ error: 'Missing challengeId' })
+            };
+        }
+
+        if (!userId) {
+            return {
+                statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ error: 'Missing userId' })
             };
         }
 
@@ -35,6 +49,23 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify({ error: 'Challenge not found' })
+            };
+        }
+
+        // Require the user to have submitted before revealing stats
+        const submissionResult = await dynamodb.send(new GetCommand({
+            TableName: SUBMISSIONS_TABLE,
+            Key: { userId, challengeId }
+        }));
+
+        if (!submissionResult.Item) {
+            return {
+                statusCode: 403,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ error: 'Submit a guess before viewing stats' })
             };
         }
 
