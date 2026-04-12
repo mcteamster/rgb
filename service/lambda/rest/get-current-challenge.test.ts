@@ -11,8 +11,8 @@ vi.mock('@aws-sdk/lib-dynamodb', () => ({
 
 import { handler } from './get-current-challenge'
 
-const makeEvent = (params: { userId?: string } = {}) => ({
-    queryStringParameters: params.userId ? { userId: params.userId } : null,
+const makeEvent = (params: { userId?: string; localDate?: string } = {}) => ({
+    queryStringParameters: (params.userId || params.localDate) ? params : null,
 }) as any
 
 beforeEach(() => { mockSend.mockReset() })
@@ -41,6 +41,21 @@ describe('get-current-challenge handler', () => {
         expect(body.prompt).toBe('Cherry Blossom')
         expect(body.totalSubmissions).toBe(42)
         expect(body.userSubmission).toBeNull()
+    })
+
+    it('uses localDate param as challengeId when provided', async () => {
+        mockSend.mockResolvedValueOnce({
+            Item: { challengeId: '2026-04-11', prompt: 'Test', totalSubmissions: 0 }
+        })
+        const result = await handler(makeEvent({ localDate: '2026-04-11' }))
+        expect(result.statusCode).toBe(200)
+        expect(JSON.parse(result.body).challengeId).toBe('2026-04-11')
+    })
+
+    it('returns 404 when localDate challenge does not exist', async () => {
+        mockSend.mockResolvedValueOnce({ Item: undefined })
+        const result = await handler(makeEvent({ localDate: '2026-04-11' }))
+        expect(result.statusCode).toBe(404)
     })
 
     it('includes userSubmission when userId is provided and submission exists', async () => {

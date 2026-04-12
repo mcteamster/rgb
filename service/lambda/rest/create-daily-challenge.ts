@@ -9,9 +9,12 @@ const CHALLENGES_TABLE = process.env.CHALLENGES_TABLE || '';
 
 export const handler = async (event: EventBridgeEvent<string, any>): Promise<void> => {
     try {
-        // Calculate today's challengeId (YYYY-MM-DD in UTC)
-        const today = new Date();
-        const challengeId = today.toISOString().split('T')[0];
+        // UTC+14 is the first timezone to see a new day (Pacific/Kiritimati, Christmas Island).
+        // The EventBridge fires at 10:00 UTC = midnight UTC+14, so the challenge ID is
+        // always the date that UTC+14 users are starting, ensuring every timezone has
+        // the challenge available when their local day begins.
+        const utcPlus14 = new Date(Date.now() + 14 * 60 * 60 * 1000);
+        const challengeId = utcPlus14.toISOString().split('T')[0];
 
         console.log(`Creating daily challenge for ${challengeId}`);
 
@@ -36,8 +39,8 @@ export const handler = async (event: EventBridgeEvent<string, any>): Promise<voi
             console.warn(`No prompt queued for ${challengeId}, using fallback`);
         }
 
-        // Calculate validFrom and validUntil
-        const validFrom = new Date(today);
+        // Calculate validFrom and validUntil (UTC boundaries, kept for reference)
+        const validFrom = new Date(utcPlus14);
         validFrom.setUTCHours(0, 0, 0, 0);
 
         const validUntil = new Date(validFrom);
@@ -66,9 +69,12 @@ export const handler = async (event: EventBridgeEvent<string, any>): Promise<voi
 
         console.log(`Successfully created challenge for ${challengeId}: "${prompt}"`);
 
-        // Mark challenges older than 30 days as inactive
-        const thirtyDaysAgo = new Date(today);
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Mark challenges older than 30 days as inactive.
+        // Use Baker Island (UTC-12) as the reference — the last timezone to finish each day —
+        // so no currently-playing user is affected when we close off old challenges.
+        const bakerIslandNow = new Date(Date.now() - 12 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(bakerIslandNow);
+        thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
         const oldChallengeId = thirtyDaysAgo.toISOString().split('T')[0];
 
         try {

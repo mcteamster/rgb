@@ -19,9 +19,10 @@ describe('DailyChallengeAPI', () => {
     describe('getCurrentChallenge', () => {
         it('returns parsed response on success', async () => {
             const payload = { challengeId: '2026-03-15', prompt: 'Ocean Blue' }
-            mockFetch(payload)
+            const spy = mockFetch(payload)
             const result = await api.getCurrentChallenge('user123')
             expect(result).toEqual(payload)
+            expect(spy.mock.calls[0][0]).toContain('localDate=')
         })
 
         it('throws on non-ok response', async () => {

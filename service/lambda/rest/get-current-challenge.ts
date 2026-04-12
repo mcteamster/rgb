@@ -10,14 +10,17 @@ const SUBMISSIONS_TABLE = process.env.SUBMISSIONS_TABLE || '';
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
-        // Calculate today's challengeId (YYYY-MM-DD in UTC)
-        const today = new Date();
-        const challengeId = today.toISOString().split('T')[0];
+        // Prefer the client's local date (YYYY-MM-DD in the user's timezone) so each
+        // player sees the challenge for their current calendar day. Fall back to the
+        // UTC+14 date so the response is consistent with how challenges are created.
+        const utcPlus14 = new Date(Date.now() + 14 * 60 * 60 * 1000);
+        const challengeId = event.queryStringParameters?.localDate
+            || utcPlus14.toISOString().split('T')[0];
 
         // Get userId from query string
         const userId = event.queryStringParameters?.userId;
 
-        // Query challenges table for today's challenge
+        // Query challenges table for the requested challenge
         const challengeResult = await dynamodb.send(new GetCommand({
             TableName: CHALLENGES_TABLE,
             Key: { challengeId }

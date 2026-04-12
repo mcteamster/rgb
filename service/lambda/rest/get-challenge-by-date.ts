@@ -43,11 +43,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
         const challenge = challengeResult.Item;
 
-        // Check if challenge is older than 30 days
+        // Check if challenge is older than 30 days.
+        // Use Baker Island (UTC-12) as the reference — the last timezone to finish each day —
+        // so users there are never cut off before their local day ends.
         const challengeDate = new Date(challengeId + 'T00:00:00Z');
-        const now = new Date();
-        const thirtyDaysAgo = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        thirtyDaysAgo.setUTCDate(thirtyDaysAgo.getUTCDate() - 30);
+        const bakerIslandNow = new Date(Date.now() - 12 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date(Date.UTC(
+            bakerIslandNow.getUTCFullYear(),
+            bakerIslandNow.getUTCMonth(),
+            bakerIslandNow.getUTCDate() - 30
+        ));
 
         if (challengeDate < thirtyDaysAgo) {
             return {

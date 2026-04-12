@@ -59,6 +59,25 @@ describe('get-challenge-by-date handler', () => {
         expect(body.userSubmission).toBeNull()
     })
 
+    it('allows access at the Baker Island boundary (challenge UTC-30d still valid)', async () => {
+        // System time: 2026-03-15T12:00:00Z (noon UTC)
+        // Baker Island (UTC-12): 2026-03-15T00:00:00 (exact midnight — start of March 15)
+        // 30 days before Baker Island's March 15 = Feb 13
+        // Challenge 2026-02-13 should still be accessible (Baker Island cutoff = Feb 13 00:00 UTC)
+        mockSend.mockResolvedValueOnce({ Item: { challengeId: '2026-02-13', prompt: 'Old Challenge', totalSubmissions: 5 } })
+        const result = await handler(makeEvent('2026-02-13'))
+        expect(result.statusCode).toBe(200)
+    })
+
+    it('blocks access when challenge is past the Baker Island 30-day boundary', async () => {
+        // System time: 2026-03-15T12:00:00Z
+        // Baker Island cutoff = 2026-02-13 00:00 UTC
+        // Challenge 2026-02-12 is before the cutoff → 410
+        mockSend.mockResolvedValueOnce({ Item: { challengeId: '2026-02-12', prompt: 'Too Old', totalSubmissions: 3 } })
+        const result = await handler(makeEvent('2026-02-12'))
+        expect(result.statusCode).toBe(410)
+    })
+
     it('includes userSubmission when userId is provided and submission exists', async () => {
         mockSend
             .mockResolvedValueOnce({ Item: recentChallenge })

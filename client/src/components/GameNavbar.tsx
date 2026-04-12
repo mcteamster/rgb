@@ -30,9 +30,12 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
     }
   }, [gameState]);
 
-  const shortDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  // Use the user's local date and count down to their local midnight
+  const shortDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   const timeLeft = dailyChallenge ? (() => {
-    const diff = Math.max(0, new Date(dailyChallenge.validUntil).getTime() - Date.now());
+    const endOfDay = new Date();
+    endOfDay.setHours(23, 59, 59, 999);
+    const diff = Math.max(0, endOfDay.getTime() - Date.now());
     const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
     const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
     return `${h}h ${m}m`;

@@ -15,7 +15,10 @@ export class DailyChallengeAPI {
     }
 
     async getCurrentChallenge(userId: string): Promise<CurrentChallengeResponse> {
-        const response = await fetch(`${this.baseUrl}/daily-challenge/current?userId=${userId}`);
+        // Send the client's local date so the server returns the challenge for their
+        // current calendar day rather than the UTC date.
+        const localDate = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local tz
+        const response = await fetch(`${this.baseUrl}/daily-challenge/current?userId=${userId}&localDate=${localDate}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch current challenge: ${response.statusText}`);
         }

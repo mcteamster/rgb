@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }))
 
@@ -20,6 +20,7 @@ import { handler } from './create-daily-challenge'
 const makeEvent = () => ({} as any)
 
 beforeEach(() => { mockSend.mockReset() })
+afterEach(() => { vi.useRealTimers() })
 
 describe('create-daily-challenge handler', () => {
     it('skips creation when challenge is already active', async () => {
@@ -62,6 +63,33 @@ describe('create-daily-challenge handler', () => {
         expect(values[':from']).toBeTruthy()
         expect(values[':until']).toBeTruthy()
         expect(new Date(values[':until']).getTime()).toBeGreaterThan(new Date(values[':from']).getTime())
+    })
+
+    it('uses UTC+14 date as challengeId (fires at 10:00 UTC = midnight UTC+14)', async () => {
+        vi.useFakeTimers()
+        // April 11 10:00 UTC → UTC+14 = April 12 00:00 → challengeId should be 2026-04-12
+        vi.setSystemTime(new Date('2026-04-11T10:00:00Z'))
+        mockSend
+            .mockResolvedValueOnce({ Item: { status: 'queued', prompt: 'Sunrise' } })
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({})
+        await handler(makeEvent())
+        const getCall = mockSend.mock.calls[0][0]
+        expect(getCall.Key.challengeId).toBe('2026-04-12')
+    })
+
+    it('uses Baker Island (UTC-12) reference for 30-day cleanup', async () => {
+        vi.useFakeTimers()
+        // April 11 10:00 UTC → Baker Island (UTC-12) = April 10 22:00 → date = April 10
+        // 30 days before April 10 = March 11 → oldChallengeId should be 2026-03-11
+        vi.setSystemTime(new Date('2026-04-11T10:00:00Z'))
+        mockSend
+            .mockResolvedValueOnce({ Item: { status: 'queued', prompt: 'Sunrise' } })
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({})
+        await handler(makeEvent())
+        const cleanupCall = mockSend.mock.calls[2][0]
+        expect(cleanupCall.Key.challengeId).toBe('2026-03-11')
     })
 
     it('throws on unexpected DynamoDB error', async () => {

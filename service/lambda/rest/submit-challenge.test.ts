@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 
 const { mockSend } = vi.hoisted(() => ({ mockSend: vi.fn() }))
 
@@ -32,6 +32,7 @@ const todayChallenge = {
 }
 
 beforeEach(() => { mockSend.mockReset() })
+afterEach(() => { vi.useRealTimers() })
 
 describe('submit-challenge handler', () => {
     describe('input validation', () => {
@@ -82,6 +83,20 @@ describe('submit-challenge handler', () => {
             mockSend.mockResolvedValueOnce({ Item: { ...todayChallenge, challengeId: '2020-01-01' } })
             const result = await handler(makeEvent({ ...validBody, challengeId: '2020-01-01' }))
             expect(result.statusCode).toBe(410)
+        })
+
+        it('allows submission at the Baker Island 30-day boundary', async () => {
+            // System time: 2026-03-15T12:00:00Z (noon UTC)
+            // Baker Island (UTC-12): 2026-03-15T00:00:00 → date = March 15
+            // 30 days before = Feb 13 → challenge 2026-02-13 should still be allowed
+            vi.useFakeTimers()
+            vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
+            mockSend
+                .mockResolvedValueOnce({ Item: { ...todayChallenge, challengeId: '2026-02-13' } })
+                .mockResolvedValueOnce({})
+                .mockResolvedValueOnce({})
+            const result = await handler(makeEvent({ ...validBody, challengeId: '2026-02-13' }))
+            expect(result.statusCode).toBe(200)
         })
 
         it('returns 400 for duplicate submission (ConditionalCheckFailedException)', async () => {

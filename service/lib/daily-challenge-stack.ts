@@ -218,7 +218,7 @@ export class DailyChallengeStack extends cdk.Stack {
     const createChallengeRule = new events.Rule(this, 'CreateDailyChallengeRule', {
       schedule: events.Schedule.cron({
         minute: '0',
-        hour: '0',
+        hour: '10',  // 10:00 UTC = midnight UTC+14 (first new day on Earth)
         day: '*',
         month: '*',
         year: '*'

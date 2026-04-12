@@ -69,7 +69,7 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
       .finally(() => setIsLoading(false));
   }, [userId]);
 
-  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const today = useMemo(() => new Date().toLocaleDateString('en-CA'), []); // YYYY-MM-DD in local tz
   const playedToday = useMemo(() => history?.submissions.some(s => s.challengeId === today), [history, today]);
   const streakDisplay = playedToday ? `${history!.stats.currentStreak} 🔥` : '⏳';
   const submissionMap = useMemo(() => new Map<string, HistorySubmission>(
