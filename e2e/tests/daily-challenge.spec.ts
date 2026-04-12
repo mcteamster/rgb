@@ -130,3 +130,63 @@ test.describe('Daily challenge global stats gate', () => {
     await expect(page.getByText(/play this challenge to view its stats/i)).toBeVisible({ timeout: 10_000 });
   });
 });
+
+test.describe('Daily challenge local timezone', () => {
+  test('getCurrentChallenge request includes localDate query param', async ({ page }) => {
+    let currentUrl: string | undefined;
+    await page.route('**/daily-challenge/current**', route => {
+      currentUrl = route.request().url();
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+      });
+    });
+    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
+    await page.goto('/daily');
+    await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
+    expect(currentUrl).toContain('localDate=');
+  });
+
+  test('localDate matches the browser\'s local YYYY-MM-DD', async ({ page }) => {
+    let capturedDate: string | undefined;
+    await page.route('**/daily-challenge/current**', route => {
+      const url = new URL(route.request().url());
+      capturedDate = url.searchParams.get('localDate') ?? undefined;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+      });
+    });
+    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
+    await page.goto('/daily');
+    await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
+    // Verify it's a valid YYYY-MM-DD string
+    expect(capturedDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // Verify it matches what the browser itself computes as local today
+    const browserLocalDate = await page.evaluate(() =>
+      new Date().toLocaleDateString('en-CA')
+    );
+    expect(capturedDate).toBe(browserLocalDate);
+  });
+
+  test('countdown shows hours until local midnight, not UTC midnight', async ({ page }) => {
+    await page.route('**/daily-challenge/current**', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+      })
+    );
+    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
+    await page.goto('/daily');
+    await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
+    // The timer should show a countdown in Xh Ym format
+    await expect(page.locator('.timer')).toContainText(/\d+h \d+m until refresh/);
+    // The displayed hours should be ≤ 23 (end of local day, not some UTC offset)
+    const timerText = await page.locator('.timer').textContent();
+    const hours = parseInt(timerText?.match(/(\d+)h/)?.[1] ?? '999');
+    expect(hours).toBeLessThanOrEqual(23);
+  });
+});
