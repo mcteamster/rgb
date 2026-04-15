@@ -23,7 +23,8 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   useEffect(() => {
     if (!gameState) {
       const baseUrl = import.meta.env.VITE_DAILY_CHALLENGE_API_URL || '';
-      fetch(`${baseUrl}/daily-challenge/current?userId=preview`)
+      const localDate = new Date().toLocaleDateString('en-CA');
+      fetch(`${baseUrl}/daily-challenge/current?userId=preview&localDate=${localDate}`)
         .then(res => res.json())
         .then(data => setDailyChallenge({ prompt: data.prompt, validUntil: data.validUntil }))
         .catch(() => setDailyChallenge(null));

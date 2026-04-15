@@ -1,58 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { dailyChallengeApi } from '../../services/dailyChallengeApi';
 import { HistoryResponse, HistorySubmission } from '../../types/dailyChallenge';
+import { buildMonthGroups } from '../../utils/calendarUtils';
 import '../../styles/daily-challenge-calendar.css';
 
 interface DailyChallengeHistoryProps {
   userId: string;
   onSelectDate: (date: string) => void;
-}
-
-function buildMonthGroups() {
-  const now = new Date();
-  const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const startUTC = new Date(todayUTC);
-  startUTC.setUTCDate(startUTC.getUTCDate() - 29);
-
-  const days = [];
-  const current = new Date(startUTC);
-  while (current <= todayUTC) {
-    const date = current.toISOString().split('T')[0];
-    days.push({
-      date,
-      dayOfMonth: current.getUTCDate(),
-      dayOfWeek: current.getUTCDay(),
-      month: current.toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' }),
-      monthYear: `${current.getUTCFullYear()}-${current.getUTCMonth()}`,
-      isToday: date === todayUTC.toISOString().split('T')[0],
-    });
-    current.setUTCDate(current.getUTCDate() + 1);
-  }
-
-  const groups: Record<string, typeof days> = {};
-  days.forEach(d => { (groups[d.month] ??= []).push(d); });
-
-  return Object.keys(groups).map(month => {
-    const monthDays = groups[month];
-    const first = monthDays[0];
-    const last = monthDays[monthDays.length - 1];
-    const firstDow = first.dayOfWeek === 0 ? 6 : first.dayOfWeek - 1;
-    const lastDow = last.dayOfWeek === 0 ? 6 : last.dayOfWeek - 1;
-    const [year, monthNum] = last.monthYear.split('-').map(Number);
-    const lastDayOfMonth = new Date(Date.UTC(year, monthNum + 1, 0)).getUTCDate();
-
-    const padded: Array<{ type: string; dayOfMonth?: number; date?: string; isToday?: boolean }> = [];
-    for (let i = 0; i < firstDow; i++) {
-      const n = first.dayOfMonth - firstDow + i;
-      padded.push(n > 0 ? { type: 'disabled', dayOfMonth: n } : { type: 'empty' });
-    }
-    padded.push(...monthDays.map(d => ({ type: 'active', ...d })));
-    for (let i = lastDow + 1; i < 7; i++) {
-      const n = last.dayOfMonth + (i - lastDow);
-      padded.push(n <= lastDayOfMonth ? { type: 'disabled', dayOfMonth: n } : { type: 'empty' });
-    }
-    return { month, days: padded };
-  });
 }
 
 export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ userId, onSelectDate }) => {

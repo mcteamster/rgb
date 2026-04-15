@@ -171,6 +171,72 @@ test.describe('Daily challenge local timezone', () => {
     expect(capturedDate).toBe(browserLocalDate);
   });
 
+  test('navbar preview fetch includes localDate query param', async ({ page }) => {
+    const previewUrls: string[] = [];
+    await page.route('**/daily-challenge/current**', route => {
+      previewUrls.push(route.request().url());
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+      });
+    });
+    await page.goto('/');
+    // Wait for the navbar preview fetch to fire
+    await page.waitForFunction(() => document.querySelector('.game-header') !== null);
+    await page.waitForTimeout(1000);
+    expect(previewUrls.length).toBeGreaterThan(0);
+    expect(previewUrls[0]).toContain('localDate=');
+  });
+
+  test('navbar preview localDate matches browser local YYYY-MM-DD', async ({ page }) => {
+    let previewDate: string | undefined;
+    await page.route('**/daily-challenge/current**', route => {
+      const url = new URL(route.request().url());
+      previewDate ??= url.searchParams.get('localDate') ?? undefined;
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+      });
+    });
+    await page.goto('/');
+    await page.waitForFunction(() => document.querySelector('.game-header') !== null);
+    await page.waitForTimeout(1000);
+    expect(previewDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    const browserLocalDate = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
+    expect(previewDate).toBe(browserLocalDate);
+  });
+
+  test('history calendar today marker matches browser local date', async ({ page }) => {
+    await page.route('**/daily-challenge/current**', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+      })
+    );
+    await page.route('**/daily-challenge/history/**', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ submissions: [], stats: { currentStreak: 0, averageScore: 0, bestScore: 0 } }),
+      })
+    );
+    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
+    await page.goto('/daily');
+    await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
+    // Open the history calendar
+    await page.locator('.game-header').getByText('🗓️').click();
+    await page.locator('.calendar-months').waitFor({ timeout: 5_000 });
+    // The "today" button's aria label / text should correspond to local today's day-of-month
+    const todayButton = page.locator('.day-button.today');
+    await expect(todayButton).toBeVisible();
+    const dayNum = await todayButton.textContent();
+    const browserLocalDayOfMonth = await page.evaluate(() => new Date().getDate());
+    expect(Number(dayNum)).toBe(browserLocalDayOfMonth);
+  });
+
   test('countdown shows hours until local midnight, not UTC midnight', async ({ page }) => {
     await page.route('**/daily-challenge/current**', route =>
       route.fulfill({
