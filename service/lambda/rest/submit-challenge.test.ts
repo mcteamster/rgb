@@ -31,7 +31,11 @@ const todayChallenge = {
     totalSubmissions: 0,
 }
 
-beforeEach(() => { mockSend.mockReset() })
+beforeEach(() => {
+    mockSend.mockReset()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-15T12:00:00Z'))
+})
 afterEach(() => { vi.useRealTimers() })
 
 describe('submit-challenge handler', () => {

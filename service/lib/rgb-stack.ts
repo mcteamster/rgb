@@ -126,7 +126,8 @@ export class RgbStack extends cdk.Stack {
       code: lambda.Code.fromAsset('dist/lambda/websocket'),
       role: lambdaExecutionRole,
       environment: {
-        CONNECTIONS_TABLE: connectionsTable.tableName
+        CONNECTIONS_TABLE: connectionsTable.tableName,
+        GAMES_TABLE: gamesTable.tableName
       }
     });
 
@@ -145,6 +146,7 @@ export class RgbStack extends cdk.Stack {
 
     // Grant permissions
     gamesTable.grantReadWriteData(messageFunction);
+    gamesTable.grantReadWriteData(disconnectFunction);
     connectionsTable.grantReadWriteData(connectFunction);
     connectionsTable.grantReadWriteData(disconnectFunction);
     connectionsTable.grantReadWriteData(messageFunction);
