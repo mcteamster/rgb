@@ -140,7 +140,8 @@ export class RgbStack extends cdk.Stack {
       environment: {
         CONNECTIONS_TABLE: connectionsTable.tableName,
         GAMES_TABLE: gamesTable.tableName,
-        WEBSOCKET_ENDPOINT: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${webSocketStage.stageName}`
+        WEBSOCKET_ENDPOINT: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${webSocketStage.stageName}`,
+        ANALYTICS_BUCKET: `rgb-analytics-${this.account}`
       }
     });
 
@@ -155,6 +156,12 @@ export class RgbStack extends cdk.Stack {
     lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
       actions: ['execute-api:ManageConnections'],
       resources: [`arn:aws:execute-api:${this.region}:${this.account}:${webSocketApi.apiId}/*`]
+    }));
+
+    // Grant cross-region S3 write for round analytics
+    lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['s3:PutObject'],
+      resources: [`arn:aws:s3:::rgb-analytics-${this.account}/multiplayer/*`]
     }));
 
     // WebSocket Routes

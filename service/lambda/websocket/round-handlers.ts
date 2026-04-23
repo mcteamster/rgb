@@ -3,6 +3,7 @@ import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { HSLColor, Player } from './types';
 import { dynamodb, broadcastToGame, sendToConnection } from './aws-clients';
 import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame } from './utils';
+import { writeRoundToS3 } from './analytics';
 
 export async function handleUpdateDraftDescription(connectionId: string, gameId: string, playerId: string, description: string): Promise<APIGatewayProxyResultV2> {
     if (description.length > 100) {
@@ -143,6 +144,8 @@ export async function handleSubmitDescription(connectionId: string, gameId: stri
             type: 'playersUpdated',
             players: updatedGame.Item!.players
         });
+
+        await writeRoundToS3(updatedGame.Item!, game.meta.currentRound);
 
         return { statusCode: 200 };
     }
@@ -387,6 +390,8 @@ export async function handleSubmitColor(connectionId: string, gameId: string, pl
             type: 'playersUpdated',
             players: finalGame.Item!.players
         });
+
+        await writeRoundToS3(finalGame.Item!, updatedGame.Item!.meta.currentRound);
     } else {
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',

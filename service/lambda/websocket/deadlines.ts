@@ -2,6 +2,7 @@ import { UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { dynamodb, broadcastToGame } from './aws-clients';
 import { getCurrentRound, findLastSubmittedColor, calculateColorScore, shouldEndGame } from './utils';
+import { writeRoundToS3 } from './analytics';
 
 export async function checkAndEnforceDeadlines(gameId: string): Promise<void> {
     const gameResult = await dynamodb.send(new GetCommand({
@@ -121,6 +122,8 @@ async function enforceDescriptionDeadline(gameId: string): Promise<void> {
                 type: 'playersUpdated',
                 players: updatedGame.Item!.players
             });
+
+            await writeRoundToS3(updatedGame.Item!, game.meta.currentRound);
 
             return;
         }
@@ -271,5 +274,8 @@ async function enforceGuessingDeadline(gameId: string): Promise<void> {
         await broadcastToGame(gameId, {
             type: 'playersUpdated',
             players: updatedGame.Item!.players
-        });    }
+        });
+
+        await writeRoundToS3(updatedGame.Item!, game.meta.currentRound);
+    }
 }
