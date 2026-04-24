@@ -107,6 +107,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
                 <li>Anonymous user ID (stored locally) for daily challenge history</li>
                 <li>Browser fingerprint for duplicate submission prevention</li>
                 <li>Usage analytics via Microsoft Clarity</li>
+                <li>Multiplayer round data (anonymous descriptions, guesses, and scores) stored for game improvement</li>
               </ul>
 
               <h4>What We DON'T Collect</h4>
@@ -127,7 +128,8 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
 
               <h4>Data Storage</h4>
               <ul>
-                <li>Multiplayer game data deleted when sessions end</li>
+                <li>Active multiplayer game state deleted when sessions end</li>
+                <li>Multiplayer round analytics (anonymous) stored permanently</li>
                 <li>Daily challenge submissions stored for 30 days</li>
                 <li>Aggregate statistics (averages, standard deviations) stored permanently</li>
                 <li>Anonymous user ID stored in your browser's local storage</li>
@@ -139,7 +141,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
               <h4>Your Control</h4>
               <p>Playing is voluntary. Leave anytime. Choose any display name. Clear your browser data to reset your daily challenge history.</p>
 
-              <p><em>Updated February 20, 2026.</em></p>
+              <p><em>Updated April 24, 2026.</em></p>
             </div>
           )}
 
