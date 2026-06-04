@@ -42,7 +42,7 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
     return `${h}h ${m}m`;
   })() : null;
   const texts = [
-    `🗓️ Daily Challenge - ${shortDate}`,
+    `🗓️ Color of the Day - ${shortDate}`,
     `"${dailyChallenge?.prompt || 'Loading...'}"`,
     timeLeft ? `${timeLeft} ⏳ Tap to Play` : 'Tap to Play Now!'
   ];
@@ -86,7 +86,7 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
           >
             🏠
           </div>
-          <div className="game-status">{isLoading ? 'Loading...' : `Daily Challenge - ${dateString}`}</div>
+          <div className="game-status">{isLoading ? 'Loading...' : `Color of the Day - ${dateString}`}</div>
           <div
             onClick={onToggleHistory}
             style={{ cursor: onToggleHistory ? 'pointer' : 'default' }}

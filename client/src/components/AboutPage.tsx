@@ -77,7 +77,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
               <h4>Multiplayer</h4>
               <p>Create a game, share the code, and take turns giving clues. Highest score wins.</p>
 
-              <h4>Daily Challenge</h4>
+              <h4>Color of the Day</h4>
               <p>Everybody gets the same prompt each day. Test how close you are to the community average!</p>
 
               {onShowTips && (
@@ -103,8 +103,8 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
                 <li>Display names you choose each game</li>
                 <li>Your color descriptions and guesses</li>
                 <li>Game scores and basic connection info</li>
-                <li>Daily challenge submissions (colors and scores)</li>
-                <li>Anonymous user ID (stored locally) for daily challenge history</li>
+                <li>Color of the Day submissions (colors and scores)</li>
+                <li>Anonymous user ID (stored locally) for Color of the Day history</li>
                 <li>Browser fingerprint for duplicate submission prevention</li>
                 <li>Usage analytics via Microsoft Clarity</li>
                 <li>Multiplayer round data (anonymous descriptions, guesses, and scores) stored for game improvement</li>
@@ -121,8 +121,8 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
               <ul>
                 <li>Enable multiplayer gameplay</li>
                 <li>Calculate scores and prevent cheating</li>
-                <li>Generate daily challenge statistics and averages</li>
-                <li>Track your personal daily challenge history (30 days)</li>
+                <li>Generate Color of the Day statistics and averages</li>
+                <li>Track your personal Color of the Day history (30 days)</li>
                 <li>Keep the game running smoothly</li>
               </ul>
 
@@ -130,7 +130,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
               <ul>
                 <li>Active multiplayer game state deleted when sessions end</li>
                 <li>Multiplayer round analytics (anonymous) stored permanently</li>
-                <li>Daily challenge submissions stored for 30 days</li>
+                <li>Color of the Day submissions stored for 30 days</li>
                 <li>Aggregate statistics (averages, standard deviations) stored permanently</li>
                 <li>Anonymous user ID stored in your browser's local storage</li>
               </ul>
@@ -139,7 +139,7 @@ export const AboutPage: React.FC<AboutPageProps> = ({ onClose, onShowTips }) => 
               <p>Other players see your display name, descriptions, and scores during games. Daily challenge statistics (averages, standard deviations) are publicly visible but not linked to individual players. Your personal submission history is only visible to you. We don't sell or share your data with anyone else.</p>
 
               <h4>Your Control</h4>
-              <p>Playing is voluntary. Leave anytime. Choose any display name. Clear your browser data to reset your daily challenge history.</p>
+              <p>Playing is voluntary. Leave anytime. Choose any display name. Clear your browser data to reset your Color of the Day history.</p>
 
               <p><em>Updated April 24, 2026.</em></p>
             </div>
