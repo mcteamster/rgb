@@ -1,4 +1,5 @@
 import React from 'react';
+import { Hourglass, Check } from 'lucide-react';
 import { Button } from './Button';
 
 interface TimerButtonProps {
@@ -44,7 +45,7 @@ export const TimerButton: React.FC<TimerButtonProps> = ({
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
         {children}
-        {timerActive && countdown > 0 ? <span>{!disabled && '⏳'} {countdown}s</span> : <span>✅</span>}
+        {timerActive && countdown > 0 ? <span>{!disabled && <Hourglass size={14} />} {countdown}s</span> : <span><Check size={14} /></span>}
       </div>
     </Button>
   );
