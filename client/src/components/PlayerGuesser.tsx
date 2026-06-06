@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Pencil, Check } from 'lucide-react';
 import { TimerButton } from './TimerButton';
 import { ColorSliders } from './ColorSliders';
 import { Button } from './Button';
@@ -111,7 +112,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
             backgroundColor: buttonColor
           }}
         >
-          ✏️
+          <Pencil size={18} />
         </div>
         {dailyChallengeMode ? (
           <Button
@@ -127,7 +128,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
               Submit Color
-              <span>✅</span>
+              <Check size={16} />
             </div>
           </Button>
         ) : (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Hourglass, Palette } from 'lucide-react';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 
 export const DailyChallengeDisplay: React.FC = () => {
@@ -19,7 +20,7 @@ export const DailyChallengeDisplay: React.FC = () => {
       const diff = endOfDay.getTime() - now.getTime();
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      return `⏳ ${hours}h ${minutes}m until refresh`;
+      return `${hours}h ${minutes}m until refresh`;
     }
 
     // Past challenge — calculate time until 30-day limit
@@ -39,11 +40,11 @@ export const DailyChallengeDisplay: React.FC = () => {
     if (daysLeft < 1) {
       const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
       const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-      return `⏳ ${hoursLeft}h ${minutesLeft}m left to play`;
+      return `${hoursLeft}h ${minutesLeft}m left to play`;
     }
 
     // Other days - show days left
-    return `⏳ ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to play`;
+    return `${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} left to play`;
   };
 
   return (
@@ -51,9 +52,9 @@ export const DailyChallengeDisplay: React.FC = () => {
       <div className="prompt-card">
         <p className="prompt">"{currentChallenge.prompt}"</p>
         <p className="submissions-count">
-          🎨 {currentChallenge.totalSubmissions} {currentChallenge.totalSubmissions === 1 ? 'player' : 'players'}
+          <Palette size={14} /> {currentChallenge.totalSubmissions} {currentChallenge.totalSubmissions === 1 ? 'player' : 'players'}
         </p>
-        <p className="timer">{formatTimeRemaining(currentChallenge.challengeId)}</p>
+        <p className="timer"><Hourglass size={14} /> {formatTimeRemaining(currentChallenge.challengeId)}</p>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'qrcode';
+import { Check, Share2, Clipboard } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useColor } from '../contexts/ColorContext';
 import { Button } from './Button';
@@ -124,7 +125,7 @@ export const RoomMenu: React.FC<RoomMenuProps> = ({ isVisible, onClose }) => {
           onClick={shareUrl}
         >
           <span className="copy-icon">
-            {urlCopied ? '✅' : hasShareApi ? '🔗' : '📋'}
+            {urlCopied ? <Check size={16} /> : hasShareApi ? <Share2 size={16} /> : <Clipboard size={16} />}
           </span>
           <span className="url-text">
             {urlCopied ? 'Copied!' : `https://rgb.mcteamster.com/${gameState.gameId}`}
