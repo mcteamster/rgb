@@ -93,7 +93,7 @@ The community average is updated in real-time using **Welford's online algorithm
 
 ### 9 Regions, One Game Code
 
-The last two characters of every game code encode the AWS region. Region selection is handled by **[Virgo](https://virgo.tonz.io)** ([mcteamster/virgo](https://github.com/mcteamster/virgo)) — a lightweight browser library that picks the nearest server from the player's device timezone, with no GPS, no IP lookup, and no external requests.
+The last two characters of every game code encode the AWS region. Region selection is handled by **[Virgo](https://virgo.tonz.io)** ([mcteamster/virgo](https://github.com/tonzdev/virgo)) — a lightweight browser library that picks the nearest server from the player's device timezone, with no GPS, no IP lookup, and no external requests.
 
 ```mermaid
 flowchart
