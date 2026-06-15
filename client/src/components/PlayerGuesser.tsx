@@ -109,7 +109,8 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
           className={`color-preview-square ${isColorLocked || confirming ? 'locked' : ''}`}
           onClick={() => !isColorLocked && !confirming && setShowSliders(!showSliders)}
           style={{
-            backgroundColor: buttonColor
+            backgroundColor: buttonColor,
+            color: textColor
           }}
         >
           <Pencil size={18} />
