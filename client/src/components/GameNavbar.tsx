@@ -42,8 +42,8 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
     return `${h}h ${m}m`;
   })() : null;
   const texts = [
-    `🗓️ Color of the Day - ${shortDate}`,
     `"${dailyChallenge?.prompt || 'Loading...'}"`,
+    `🗓️ Color of the Day - ${shortDate}`,
     timeLeft ? `${timeLeft} ⏳ Tap to Play` : 'Tap to Play Now!'
   ];
 
@@ -108,7 +108,7 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
           <CyclingText
             text={texts[displayIndex]}
             exiting={exiting}
-            style={{ color: displayIndex === 1 ? '#667eea' : '#333', fontStyle: displayIndex === 1 ? 'italic' : 'normal', fontSize: '1rem', fontWeight: '600' }}
+            style={{ color: displayIndex === 0 ? '#667eea' : '#333', fontStyle: displayIndex === 0 ? 'italic' : 'normal', fontSize: '1rem', fontWeight: '600' }}
           />
         </div>
       </div>
