@@ -250,7 +250,13 @@ test.describe('Daily challenge local timezone', () => {
     await page.goto('/daily');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
     // Get the browser's local date so we can build a matching stub
-    const browserLocalDate = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
+    const browserLocalDate = await page.evaluate(() => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    });
 
     // Re-route with today's challengeId and reload
     await page.unroute('**/daily-challenge/current**');
