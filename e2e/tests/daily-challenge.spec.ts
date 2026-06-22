@@ -238,17 +238,20 @@ test.describe('Daily challenge local timezone', () => {
   });
 
   test('countdown shows hours until local midnight, not UTC midnight', async ({ page }) => {
-    // Use today's local date so formatTimeRemaining hits the "until refresh" branch
-    const todayId = new Date().toLocaleDateString('en-CA');
-    const todayStub = { ...CHALLENGE_STUB, challengeId: todayId };
-    await page.route('**/daily-challenge/current**', route =>
-      route.fulfill({
+    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
+    // Navigate once to get the browser's local date (before stubbing, so the real API fires)
+    let todayId: string;
+    await page.route('**/daily-challenge/current**', async route => {
+      // Capture the localDate param sent by the app — it matches the browser's local date
+      const url = new URL(route.request().url());
+      todayId = url.searchParams.get('localDate') ?? new Date().toLocaleDateString('en-CA');
+      const todayStub = { ...CHALLENGE_STUB, challengeId: todayId };
+      await route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({ challenge: todayStub, userSubmission: null }),
-      })
-    );
-    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
+      });
+    });
     await page.goto('/daily');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
     // The timer should show a countdown in Xh Ym format
