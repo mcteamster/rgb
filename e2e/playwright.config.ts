@@ -12,13 +12,11 @@ export default defineConfig({
   timeout: 15_000,
 
   webServer: isCI ? {
-    command: 'npm run build --workspace=client && npx --prefix client vite preview --port 4173',
+    command: 'VITE_DAILY_CHALLENGE_API_URL=https://rest.rgb.mcteamster.com npm run build --workspace=client && npm run preview --workspace=client',
     cwd: '..',
     url: 'http://localhost:4173',
     reuseExistingServer: false,
-    env: {
-      VITE_DAILY_CHALLENGE_API_URL: 'https://rest.rgb.mcteamster.com',
-    },
+    timeout: 120_000,
   } : undefined,
 
   use: {
