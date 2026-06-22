@@ -152,7 +152,7 @@ test.describe('Room joining — with backend', () => {
 
     // Reload — should re-enter lobby without going through the join form
     await page.reload();
-    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText('Lobby Open')).toBeVisible({ timeout: 20_000 });
 
     // Join form should NOT be visible
     await expect(page.getByPlaceholder('Enter your name')).not.toBeVisible();

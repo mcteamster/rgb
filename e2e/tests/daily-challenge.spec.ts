@@ -238,11 +238,14 @@ test.describe('Daily challenge local timezone', () => {
   });
 
   test('countdown shows hours until local midnight, not UTC midnight', async ({ page }) => {
+    // Use today's local date so formatTimeRemaining hits the "until refresh" branch
+    const todayId = new Date().toLocaleDateString('en-CA');
+    const todayStub = { ...CHALLENGE_STUB, challengeId: todayId };
     await page.route('**/daily-challenge/current**', route =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+        body: JSON.stringify({ challenge: todayStub, userSubmission: null }),
       })
     );
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
