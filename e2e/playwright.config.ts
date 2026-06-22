@@ -11,8 +11,16 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }], ['list'], ['json', { outputFile: 'test-results.json' }]],
   timeout: 15_000,
 
+  webServer: isCI ? {
+    command: 'VITE_DAILY_CHALLENGE_API_URL=https://rest.rgb.mcteamster.com npm run build --workspace=client && npm run preview --workspace=client',
+    cwd: '..',
+    url: 'http://localhost:4173',
+    reuseExistingServer: false,
+    timeout: 120_000,
+  } : undefined,
+
   use: {
-    baseURL: 'https://rgb.mcteamster.com',
+    baseURL: isCI ? 'http://localhost:4173' : 'https://rgb.mcteamster.com',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
