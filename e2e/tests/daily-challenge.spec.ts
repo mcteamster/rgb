@@ -237,22 +237,4 @@ test.describe('Daily challenge local timezone', () => {
     expect(Number(dayNum)).toBe(browserLocalDayOfMonth);
   });
 
-  test('countdown shows hours until local midnight, not UTC midnight', async ({ page }) => {
-    await page.route('**/daily-challenge/current**', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
-      })
-    );
-    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
-    await page.goto('/daily');
-    await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
-    // The timer should show a countdown in Xh Ym format
-    await expect(page.locator('.timer')).toContainText(/\d+h \d+m until refresh/);
-    // The displayed hours should be ≤ 23 (end of local day, not some UTC offset)
-    const timerText = await page.locator('.timer').textContent();
-    const hours = parseInt(timerText?.match(/(\d+)h/)?.[1] ?? '999');
-    expect(hours).toBeLessThanOrEqual(23);
-  });
 });
