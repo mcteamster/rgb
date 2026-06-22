@@ -173,7 +173,7 @@ test.describe('Endgame', () => {
     test.setTimeout(90_000);
     const { hostCtx, guestCtx, hostPage } = await advanceToEndgame(browser);
     try {
-      await expect(hostPage.locator('.podium-section')).toContainText('🏆');
+      await expect(hostPage.locator('.podium-section svg')).toBeVisible();
       await expect(hostPage.locator('.winner-name').first()).toBeVisible();
     } finally {
       await hostCtx.close();

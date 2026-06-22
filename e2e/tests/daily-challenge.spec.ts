@@ -227,7 +227,7 @@ test.describe('Daily challenge local timezone', () => {
     await page.goto('/daily');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
     // Open the history calendar
-    await page.locator('.game-header').getByText('🗓️').click();
+    await page.locator('.game-header svg').click();
     await page.locator('.calendar-months').waitFor({ timeout: 5_000 });
     // The "today" button's aria label / text should correspond to local today's day-of-month
     const todayButton = page.locator('.day-button.today');
