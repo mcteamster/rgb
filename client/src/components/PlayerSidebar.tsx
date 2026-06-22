@@ -1,4 +1,5 @@
 import React from 'react';
+import { Megaphone, User, Star } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useColor } from '../contexts/ColorContext';
 import { useIsHost } from '../hooks/useIsHost';
@@ -108,10 +109,10 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
                 >
                   <div className="player-info">
                     <span>
-                      {isDescriber ? '📣 ' : ''}
+                      {isDescriber ? <><Megaphone size={12} />{' '}</> : ''}
                       {player.playerName}
-                      {player.playerId === playerId && ' 👤'}
-                      {player.playerId === hostPlayer.playerId ? ' ⭐' : ''}
+                      {player.playerId === playerId && <>{' '}<User size={12} /></>}
+                      {player.playerId === hostPlayer.playerId ? <>{' '}<Star size={12} /></> : ''}
                     </span>
                   </div>
                   <div className="player-score" style={{ color: 'inherit' }}>
@@ -180,7 +181,7 @@ export const PlayerSidebar: React.FC<PlayerSidebarProps> = ({ isOpen, onToggle }
                 <div>
                   {player.playerName.substring(0, 4)}
                   {player.playerName.length > 4 ? '.' : ''}
-                  {isDescriber ? ' 📣' : ''}
+                  {isDescriber ? <>{' '}<Megaphone size={10} /></> : ''}
                 </div>
                 <div className="player-tab-name">
                   {player.totalScore}

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Trophy, Megaphone, X, SkipForward } from 'lucide-react';
 import { Player } from '../types/game';
 import { getOrdinalSuffix } from '../utils/formatUtils';
 
@@ -24,7 +25,7 @@ export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => 
         <div className="podium-section">
           <div className="podium-content">
             <div className="trophy-emoji">
-              🏆
+              <Trophy size={24} />
             </div>
             {winners.map((winner) => (
               <div key={winner.playerId} className="winner-name">
@@ -83,7 +84,7 @@ export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => 
                               color: targetColor.l > 50 ? '#000' : '#fff'
                             }}
                           >
-                            {hasDescription ? '📣' : '❌'}
+                            {hasDescription ? <Megaphone size={14} /> : <X size={14} />}
                           </div>
                         );
                       }
@@ -106,7 +107,7 @@ export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => 
                               color: targetColor.l > 50 ? '#000' : '#fff'
                             }}
                           >
-                            ⏭️
+                            <SkipForward size={16} />
                           </div>
                         );
                       }
