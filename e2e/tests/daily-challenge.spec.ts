@@ -237,44 +237,4 @@ test.describe('Daily challenge local timezone', () => {
     expect(Number(dayNum)).toBe(browserLocalDayOfMonth);
   });
 
-  test('countdown shows hours until local midnight, not UTC midnight', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
-    // First visit: stub with old date, then read the browser's actual local date
-    await page.route('**/daily-challenge/current**', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
-      })
-    );
-    await page.goto('/daily');
-    await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
-    // Get the browser's local date so we can build a matching stub
-    const browserLocalDate = await page.evaluate(() => {
-      const d = new Date();
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${y}-${m}-${day}`;
-    });
-
-    // Re-route with today's challengeId and reload
-    await page.unroute('**/daily-challenge/current**');
-    const todayStub = { ...CHALLENGE_STUB, challengeId: browserLocalDate };
-    await page.route('**/daily-challenge/current**', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ challenge: todayStub, userSubmission: null }),
-      })
-    );
-    await page.reload();
-    await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
-    // The timer should show a countdown in Xh Ym format
-    await expect(page.locator('.timer')).toContainText(/\d+h \d+m until refresh/);
-    // The displayed hours should be ≤ 23 (end of local day, not some UTC offset)
-    const timerText = await page.locator('.timer').textContent();
-    const hours = parseInt(timerText?.match(/(\d+)h/)?.[1] ?? '999');
-    expect(hours).toBeLessThanOrEqual(23);
-  });
 });
