@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { User } from 'lucide-react';
 import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
@@ -226,7 +227,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
             <div className="config-group">
               <label>Player Name</label>
               <div className="input-with-icon">
-                <span className="input-icon">👤</span>
+                <span className="input-icon"><User size={16} /></span>
                 <input
                   type="text"
                   placeholder="Enter your name"
@@ -259,7 +260,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
               <div className="config-group">
                 <label>Player Name</label>
                 <div className="input-with-icon">
-                  <span className="input-icon">👤</span>
+                  <span className="input-icon"><User size={16} /></span>
                   <input
                     type="text"
                     placeholder="Enter your name"

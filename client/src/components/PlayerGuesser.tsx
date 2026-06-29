@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pencil, Check } from 'lucide-react';
+import { Pencil, Check, Lock } from 'lucide-react';
 import { TimerButton } from './TimerButton';
 import { ColorSliders } from './ColorSliders';
 import { Button } from './Button';
@@ -153,7 +153,7 @@ export const PlayerGuesser: React.FC<PlayerGuesserProps> = ({
             ) : isColorLocked ? (
               <>
                 Locked In
-                <span style={{ fontSize: '16px' }}>🔒</span>
+                <span style={{ fontSize: '16px' }}><Lock size={16} /></span>
               </>
             ) : (
               'Submit'
