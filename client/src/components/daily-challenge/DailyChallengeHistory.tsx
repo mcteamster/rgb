@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { Flame, Hourglass } from 'lucide-react';
 import { dailyChallengeApi } from '../../services/dailyChallengeApi';
 import { HistoryResponse, HistorySubmission } from '../../types/dailyChallenge';
 import { buildMonthGroups } from '../../utils/calendarUtils';
@@ -25,7 +26,7 @@ export const DailyChallengeHistory: React.FC<DailyChallengeHistoryProps> = ({ us
 
   const today = useMemo(() => new Date().toLocaleDateString('en-CA'), []); // YYYY-MM-DD in local tz
   const playedToday = useMemo(() => history?.submissions.some(s => s.challengeId === today), [history, today]);
-  const streakDisplay = playedToday ? `${history!.stats.currentStreak} 🔥` : '⏳';
+  const streakDisplay = playedToday ? <>{history!.stats.currentStreak} <Flame size={14} /></> : <Hourglass size={14} />;
   const submissionMap = useMemo(() => new Map<string, HistorySubmission>(
     history?.submissions.map(s => [s.challengeId, s]) ?? []
   ), [history]);

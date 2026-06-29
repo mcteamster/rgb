@@ -243,7 +243,7 @@ test.describe('Guessing phase', () => {
     const { hostCtx, guestCtx, guesserPage } = await advanceToGuessing(browser);
     try {
       // TimerButton shows "⏳ Xs" when timer is active and not disabled
-      await expect(guesserPage.getByRole('button', { name: /⏳/ })).toBeVisible();
+      await expect(guesserPage.locator('button:has(svg)')).toBeVisible();
     } finally {
       await hostCtx.close();
       await guestCtx.close();

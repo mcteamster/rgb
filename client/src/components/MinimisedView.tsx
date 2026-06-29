@@ -1,13 +1,14 @@
 import React from 'react';
+import { Pencil, Palette, Target, Trophy, Hourglass } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useColor } from '../contexts/ColorContext';
 import { useTimer } from '../hooks/useTimer';
 
-const PHASE_EMOJI: Record<string, string> = {
-  describing: '✏️',
-  guessing: '🎨',
-  reveal: '🎯',
-  endgame: '🏆',
+const PHASE_ICONS: Record<string, React.ReactNode> = {
+  describing: <Pencil size={14} />,
+  guessing: <Palette size={14} />,
+  reveal: <Target size={14} />,
+  endgame: <Trophy size={14} />,
 };
 
 export const MinimisedView: React.FC = () => {
@@ -33,7 +34,7 @@ export const MinimisedView: React.FC = () => {
   const actionNeeded =
     (currentRound?.phase === 'describing' && isDescriber) ||
     (currentRound?.phase === 'guessing' && !isDescriber && !hasGuessed);
-  const emoji = currentRound?.phase ? PHASE_EMOJI[currentRound.phase] : '⏳';
+  const icon = currentRound?.phase ? PHASE_ICONS[currentRound.phase] : <Hourglass size={14} />;
 
   let turnLabel
   switch(currentRound?.phase) {
@@ -56,7 +57,7 @@ export const MinimisedView: React.FC = () => {
       turnLabel = 'Waiting for Players'
   }
 
-  const infoLine = turnLabel ? `${emoji} ${turnLabel}` : null;
+  const infoLine = turnLabel ? <>{icon} {turnLabel}</> : null;
   const waitingCount = !currentRound && gameState ? `${gameState.players.length}/${gameState.config.maxPlayers}` : null;
   const displayScore = currentRound?.phase === 'reveal' && playerId
     ? currentRound?.scores?.[playerId] ?? null

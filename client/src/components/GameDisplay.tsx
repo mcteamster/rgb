@@ -1,4 +1,5 @@
 import React from 'react';
+import { Lock } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { useTimer } from '../hooks/useTimer';
 import { RoundReveal } from './RoundReveal';
@@ -61,7 +62,7 @@ export const GameDisplay: React.FC = () => {
             <p>Players are guessing{guessingTimer.countdown > 0 ? ` (${guessingTimer.countdown}s)` : ''}</p>
             <h3>"{currentRound.description}"</h3>
             <div className="submissions-count">
-              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} 🔒
+              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} <Lock size={14} />
             </div>
           </div>
         </div>
@@ -73,7 +74,7 @@ export const GameDisplay: React.FC = () => {
             <p>{gameState.players.find(p => p.playerId === currentRound.describerId)?.playerName || 'Player'} said</p>
             <h3>"{currentRound.description}"</h3>
             <div className="submissions-count">
-              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} 🔒
+              {Object.keys(currentRound.submissions || {}).length}/{gameState.players.length - 1} <Lock size={14} />
             </div>
           </div>
         </div>
