@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 
-export function useCyclingText(texts: string[], interval = 3000, enabled = true) {
+export function useCyclingText(texts: ReactNode[], interval = 3000, enabled = true) {
   const [displayIndex, setDisplayIndex] = useState(0);
   const [exiting, setExiting] = useState(false);
 

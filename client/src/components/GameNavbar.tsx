@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Home } from 'lucide-react';
+import { Calendar, Home, Hourglass } from 'lucide-react';
 import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
@@ -44,8 +44,8 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   })() : null;
   const texts = [
     `"${dailyChallenge?.prompt || 'Loading...'}"`,
-    `Color of the Day - ${shortDate}`,
-    timeLeft ? `${timeLeft} remaining` : 'Tap to Play Now!'
+    <><Calendar size={14} /> Color of the Day - {shortDate}</>,
+    timeLeft ? <><Hourglass size={14} /> {timeLeft} remaining</> : 'Tap to Play Now!'
   ];
 
   const { displayIndex, exiting } = useCyclingText(texts, 3000, !gameState && !!dailyChallenge);

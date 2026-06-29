@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface CyclingTextProps {
-  text: string;
+  text: React.ReactNode;
   exiting: boolean;
   style?: React.CSSProperties;
 }
@@ -9,7 +9,7 @@ interface CyclingTextProps {
 export const CyclingText: React.FC<CyclingTextProps> = ({ text, exiting, style }) => (
   <>
     <span
-      key={`${text}-${exiting}`}
+      key={String(exiting)}
       style={{
         display: 'inline-block',
         animation: exiting ? 'slideOutUp 0.3s ease-in forwards' : 'slideInUp 0.3s ease-out',
