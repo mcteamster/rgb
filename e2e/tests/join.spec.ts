@@ -119,7 +119,7 @@ test.describe('Room joining — with backend', () => {
     await page.getByPlaceholder('Enter 4-letter code').fill('BCDF');
     await page.getByRole('button', { name: 'Join' }).click();
 
-    await expect(page.locator('.error')).toContainText('Game not found', { timeout: 10_000 });
+    await expect(page.locator('.game-header')).toContainText('Game not found', { timeout: 10_000 });
   });
 
   test('3.8 Joining with a duplicate player name in waiting lobby shows an error', async ({ browser }) => {
@@ -135,7 +135,7 @@ test.describe('Room joining — with backend', () => {
       await guestPage.getByPlaceholder('Enter your name').fill('SameName');
       await guestPage.getByRole('button', { name: 'Join' }).click();
 
-      await expect(guestPage.locator('.error')).toContainText('already taken', { timeout: 10_000 });
+      await expect(guestPage.locator('.game-header')).toContainText('already taken', { timeout: 10_000 });
     } finally {
       await hostCtx.close();
       await guestCtx.close();

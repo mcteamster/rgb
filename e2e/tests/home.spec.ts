@@ -1,10 +1,16 @@
 import { test, expect } from '../fixtures';
 
+const yesterday = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() - 5);
+  return d.toLocaleDateString('en-CA');
+})();
+
 const CHALLENGE_STUB = {
-  challengeId: '2026-04-11',
+  challengeId: yesterday,
   prompt: 'Ocean Blue',
-  validFrom: '2026-04-11T00:00:00Z',
-  validUntil: '2026-04-12T00:00:00Z',
+  validFrom: `${yesterday}T00:00:00Z`,
+  validUntil: `${yesterday}T23:59:59Z`,
   totalSubmissions: 42,
 };
 
