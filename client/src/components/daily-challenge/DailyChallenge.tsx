@@ -107,15 +107,12 @@ export const DailyChallenge: React.FC = () => {
                     <div className="status-bar">
                         <DailyChallengeReveal />
                     </div>
-                    <DailyChallengeManager
-                        onShowAbout={() => setShowAbout(true)}
-                    /></>
+                    <DailyChallengeManager /></>
 
             ) : (
                 <>
                     <DailyChallengeDisplay />
                     <DailyChallengeManager
-                        onShowAbout={() => setShowAbout(true)}
                         onShowTips={() => setShowTips(true)}
                     />
                 </>

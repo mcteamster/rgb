@@ -6,7 +6,6 @@ import { Button } from '../Button';
 import { PlayerGuesser } from '../PlayerGuesser';
 
 interface DailyChallengeManagerProps {
-  onShowAbout: () => void;
   onShowTips?: () => void;
 }
 
