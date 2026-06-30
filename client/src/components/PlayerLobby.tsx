@@ -135,7 +135,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                   "{dailyChallenge.prompt}"
                 </span>
               )}
-              <span>{isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}</span>
+              <span>{isDailySubmitting ? 'Submitting...' : '🗓️ Submit Daily Challenge'}</span>
             </button>
           )}
           {dailySubmission && selectedColor && (
