@@ -31,18 +31,20 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
     const MIN_DATE = minDate.toLocaleDateString('en-CA');
     const isFirst = currentChallenge.challengeId <= MIN_DATE;
 
-    const navigate = (offset: number) => {
-      const d = new Date(currentChallenge.challengeId);
-      d.setDate(d.getDate() + offset);
+    const goToChallenge = (offset: number) => {
+      // Parse date parts directly to avoid UTC-midnight parse shifting the date
+      // in timezones east of UTC (e.g. AEST: new Date('2026-07-01') = Jun 30 locally)
+      const [y, m, d] = currentChallenge.challengeId.split('-').map(Number);
+      const date = new Date(y, m - 1, d + offset); // local date constructor, no UTC shift
       setIsColorLocked(false);
-      loadChallengeByDate(d.toLocaleDateString('en-CA'));
+      loadChallengeByDate(date.toLocaleDateString('en-CA'));
     };
 
     return (
       <div className="game-controls results-actions">
-        {!isFirst && <Button onClick={() => navigate(-1)} variant="primary">← Previous</Button>}
+        {!isFirst && <Button onClick={() => goToChallenge(-1)} variant="primary">← Previous</Button>}
         {!isToday && (
-          <Button onClick={() => navigate(1)} variant="primary">Next →</Button>
+          <Button onClick={() => goToChallenge(1)} variant="primary">Next →</Button>
         )}
       </div>
     );
