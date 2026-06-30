@@ -23,9 +23,9 @@ export const DailyChallengeDisplay: React.FC = () => {
     }
 
     // Past challenge — calculate time until 30-day limit
-    const challengeDate = new Date(challengeId);
-    const thirtyDaysFromChallenge = new Date(challengeDate);
-    thirtyDaysFromChallenge.setDate(challengeDate.getDate() + 30);
+    // Parse date parts directly to avoid UTC-midnight shift in timezones east of UTC
+    const [cy, cm, cd] = challengeId.split('-').map(Number);
+    const thirtyDaysFromChallenge = new Date(cy, cm - 1, cd + 30); // local date constructor
 
     const timeLeft = thirtyDaysFromChallenge.getTime() - now.getTime();
 
