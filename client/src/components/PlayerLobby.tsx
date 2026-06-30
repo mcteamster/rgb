@@ -114,7 +114,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 padding: '0.75rem 1.5rem',
                 borderRadius: '16px',
                 border: 'none',
-                fontSize: '1.1rem',
+                fontSize: '0.9rem',
                 fontWeight: '600',
                 cursor: isDailySubmitting ? 'not-allowed' : 'pointer',
                 backgroundColor: `hsl(${selectedColor.h}, ${selectedColor.s}%, ${selectedColor.l}%)`,
@@ -131,7 +131,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
               }}
             >
               {dailyChallenge.prompt && (
-                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
+                <span style={{ fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
                   "{dailyChallenge.prompt}"
                 </span>
               )}
@@ -148,7 +148,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 border: dailySubmission.averageColor
                   ? `2px solid hsl(${dailySubmission.averageColor.h}, ${dailySubmission.averageColor.s}%, ${dailySubmission.averageColor.l}%)`
                   : '2px solid transparent',
-                fontSize: '1.1rem',
+                fontSize: '0.9rem',
                 fontWeight: '600',
                 cursor: 'pointer',
                 backgroundColor: `hsl(${dailySubmission.color.h}, ${dailySubmission.color.s}%, ${dailySubmission.color.l}%)`,
@@ -165,7 +165,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
             >
               <span>{dailySubmission.score} / 100 · See more →</span>
               {dailyChallenge?.prompt && (
-                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
+                <span style={{ fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
                   "{dailyChallenge.prompt}"
                 </span>
               )}
