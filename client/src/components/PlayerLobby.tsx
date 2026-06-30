@@ -6,11 +6,28 @@ import { Notification } from './Notices';
 
 type LobbyStep = 'choose' | 'create' | 'join';
 
-interface PlayerLobbyProps {
-  roomCode?: string;
+interface DailyChallengeInfo {
+  challengeId: string;
+  prompt: string;
 }
 
-export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
+interface UserSubmission {
+  score: number;
+  color: { h: number; s: number; l: number };
+  averageColor: { h: number; s: number; l: number } | null;
+}
+
+interface PlayerLobbyProps {
+  roomCode?: string;
+  dailyChallenge?: DailyChallengeInfo | null;
+  dailySubmission?: UserSubmission | null;
+  selectedColor?: { h: number; s: number; l: number };
+  onDailySubmit?: (color: { h: number; s: number; l: number }) => Promise<void>;
+  dailyError?: string | null;
+  isDailySubmitting?: boolean;
+}
+
+export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallenge, dailySubmission, selectedColor, onDailySubmit, dailyError, isDailySubmitting = false }) => {
   const { createGame, joinGame, error, clearError, savedPlayerName, currentRegion, setRegion } = useGame();
   const [step, setStep] = useState<LobbyStep>(() => {
     // If there's a valid room code or stored session, go to join form
@@ -94,6 +111,41 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
           <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
             Join
           </Button>
+          {dailyChallenge && !dailySubmission && onDailySubmit && selectedColor && (
+            <div className="lobby-actions" style={{ marginTop: '0.5rem' }}>
+              <button
+                onClick={() => onDailySubmit(selectedColor)}
+                disabled={isDailySubmitting}
+                style={{
+                  width: '100%',
+                  padding: '1rem 1.5rem',
+                  borderRadius: '16px',
+                  border: 'none',
+                  fontSize: '1.1rem',
+                  fontWeight: '600',
+                  cursor: isDailySubmitting ? 'not-allowed' : 'pointer',
+                  backgroundColor: `hsl(${selectedColor.h}, ${selectedColor.s}%, ${selectedColor.l}%)`,
+                  color: selectedColor.l > 50 ? '#000' : '#fff',
+                  minHeight: '56px',
+                  touchAction: 'manipulation',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                  opacity: isDailySubmitting ? 0.7 : 1,
+                }}
+              >
+                {isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}
+              </button>
+            </div>
+          )}
+          {dailyError && !isDailySubmitting && (
+            <div style={{
+              color: '#ff6b6b',
+              fontSize: '0.85rem',
+              textAlign: 'center',
+              marginTop: '0.25rem',
+            }}>
+              {dailyError}
+            </div>
+          )}
         </div>
       )}
 

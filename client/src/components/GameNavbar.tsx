@@ -3,51 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
-import { CyclingText } from './CyclingText';
-import { useCyclingText } from '../hooks/useCyclingText';
+
+interface DailyChallengeInfo {
+  challengeId: string;
+  prompt: string;
+}
+
+interface UserSubmission {
+  score: number;
+  color: { h: number; s: number; l: number };
+  averageColor: { h: number; s: number; l: number } | null;
+}
 
 interface GameNavbarProps {
   dailyChallengeMode?: boolean;
   onToggleHistory?: () => void;
   isLoading?: boolean;
   challengeDate?: string;
+  dailyChallenge?: DailyChallengeInfo | null;
+  dailySubmission?: UserSubmission | null;
+  selectedColor?: { h: number; s: number; l: number };
 }
 
-export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading, challengeDate }) => {
+export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading, challengeDate, dailyChallenge, dailySubmission, selectedColor }) => {
   const navigate = useNavigate();
   const { gameState, playerName, getCurrentRound } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
-  const [dailyChallenge, setDailyChallenge] = useState<{ prompt: string; validUntil: string } | null>(null);
-
-  // Fetch daily challenge prompt when no game is active
-  useEffect(() => {
-    if (!gameState) {
-      const baseUrl = import.meta.env.VITE_DAILY_CHALLENGE_API_URL || '';
-      const localDate = new Date().toLocaleDateString('en-CA');
-      fetch(`${baseUrl}/daily-challenge/current?userId=preview&localDate=${localDate}`)
-        .then(res => res.json())
-        .then(data => setDailyChallenge({ prompt: data.prompt, validUntil: data.validUntil }))
-        .catch(() => setDailyChallenge(null));
-    }
-  }, [gameState]);
-
-  // Use the user's local date and count down to their local midnight
-  const shortDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const timeLeft = dailyChallenge ? (() => {
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-    const diff = Math.max(0, endOfDay.getTime() - Date.now());
-    const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
-    const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
-    return `${h}h ${m}m`;
-  })() : null;
-  const texts = [
-    `"${dailyChallenge?.prompt || 'Loading...'}"`,
-    `🗓️ Color of the Day - ${shortDate}`,
-    timeLeft ? `${timeLeft} ⏳ Tap to Play` : 'Tap to Play Now!'
-  ];
-
-  const { displayIndex, exiting } = useCyclingText(texts, 3000, !gameState && !!dailyChallenge);
 
   // Close room menu when joining a new game
   useEffect(() => {
@@ -99,17 +80,47 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   }
 
   if (!gameState) {
+    // Don't render until we have challenge data — avoids a "Loading..." flash
+    // and the grey swatch on first paint.
+    if (!dailyChallenge) return null;
+
+    const swatchStyle: React.CSSProperties = dailySubmission?.averageColor
+      ? {
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          backgroundColor: `hsl(${dailySubmission.color.h}, ${dailySubmission.color.s}%, ${dailySubmission.color.l}%)`,
+          border: `2px solid hsl(${dailySubmission.averageColor.h}, ${dailySubmission.averageColor.s}%, ${dailySubmission.averageColor.l}%)`,
+        }
+      : {
+          width: '16px',
+          height: '16px',
+          borderRadius: '50%',
+          backgroundColor: selectedColor ? `hsl(${selectedColor.h}, ${selectedColor.s}%, ${selectedColor.l}%)` : '#ccc',
+          border: 'none',
+        };
+
     return (
       <div className="game-header"
         onClick={() => navigate('/daily')}
         style={{ cursor: 'pointer' }}
       >
-        <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px' }}>
-          <CyclingText
-            text={texts[displayIndex]}
-            exiting={exiting}
-            style={{ color: displayIndex === 0 ? '#667eea' : '#333', fontStyle: displayIndex === 0 ? 'italic' : 'normal', fontSize: '1rem', fontWeight: '600' }}
-          />
+        <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px', gap: '8px' }}>
+          {dailySubmission ? (
+            <>
+              <div style={swatchStyle} />
+              <span style={{ color: '#333', fontSize: '1rem', fontWeight: '600' }}>
+                {dailySubmission.score} / 100 · See more →
+              </span>
+            </>
+          ) : (
+            <>
+              <div style={swatchStyle} />
+              <span style={{ color: '#667eea', fontSize: '1rem', fontWeight: '600', fontStyle: 'italic' }}>
+                {dailyChallenge?.prompt || 'Loading...'}
+              </span>
+            </>
+          )}
         </div>
       </div>
     );

@@ -17,6 +17,19 @@ import { useGame, loadSession, clearSession } from '../contexts/GameContext';
 import { setBodyBackground } from '../utils/colorUtils';
 import { discordSdk, subscribeToLayoutMode } from '../services/discord';
 import { API_BASE_URL } from '../constants/regions';
+import { dailyChallengeApi } from '../services/dailyChallengeApi';
+import { getUserId, getUserName, setUserName, generateFingerprint } from '../utils/userId';
+
+interface DailyChallengeState {
+  challengeId: string;
+  prompt: string;
+}
+
+interface UserSubmission {
+  score: number;
+  color: { h: number; s: number; l: number };
+  averageColor: { h: number; s: number; l: number } | null;
+}
 
 export const GameContainer: React.FC = () => {
   const { roomCode } = useParams<{ roomCode?: string }>();
@@ -32,6 +45,10 @@ export const GameContainer: React.FC = () => {
   const [lastRoundId, setLastRoundId] = useState<string | null>(null);
   const [showTips, setShowTips] = useState(false);
   const [shouldShowTips, setShouldShowTips] = useState<'auto' | 'manual' | 'dismissed'>('auto');
+  const [dailyChallenge, setDailyChallenge] = useState<DailyChallengeState | null>(null);
+  const [dailySubmission, setDailySubmission] = useState<UserSubmission | null>(null);
+  const [dailyError, setDailyError] = useState<string | null>(null);
+  const [isDailySubmitting, setIsDailySubmitting] = useState(false);
 
   const isScreenTooSmall = size.width < 320 || isDiscordPip;
 
@@ -95,6 +112,64 @@ export const GameContainer: React.FC = () => {
     setBodyBackground(selectedColor);
   }, [selectedColor]);
 
+  // Fetch daily challenge when no game is active
+  useEffect(() => {
+    if (gameState) return;
+    
+    const fetchChallenge = async () => {
+      try {
+        const userId = getUserId();
+        const response = await dailyChallengeApi.getCurrentChallenge(userId);
+        setDailyChallenge({ challengeId: response.challengeId, prompt: response.prompt });
+        const userSub = response.userSubmission;
+        if (userSub && userSub.color) {
+          setDailySubmission({
+            score: userSub.score,
+            color: userSub.color,
+            averageColor: userSub.averageColor ?? null,
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load daily challenge:', error);
+        setDailyError(error instanceof Error ? error.message : 'Failed to load challenge');
+      }
+    };
+    fetchChallenge();
+  }, [gameState]);
+
+  // Submit daily challenge handler
+  const handleDailySubmit = async (color: { h: number; s: number; l: number }) => {
+    if (!dailyChallenge) return;
+    try {
+      setDailyError(null);
+      setIsDailySubmitting(true);
+      const userId = getUserId();
+      const userName = getUserName();
+      
+      const response = await dailyChallengeApi.submitChallenge({
+        challengeId: dailyChallenge.challengeId,
+        userId,
+        userName: userName || 'Anonymous',
+        color,
+        fingerprint: generateFingerprint(),
+      });
+
+      // Persist name only after a successful submission
+      setUserName(userName || 'Anonymous');
+      
+      setDailySubmission({
+        score: response.submission.score,
+        color,
+        averageColor: response.submission.averageColor,
+      });
+    } catch (error) {
+      console.error('Failed to submit daily challenge:', error);
+      setDailyError(error instanceof Error ? error.message : 'Failed to submit');
+    } finally {
+      setIsDailySubmitting(false);
+    }
+  };
+
   // Check if URL room code matches saved session and attempt rejoin
   useEffect(() => {
     // Discord room sync - check if we need to redirect to existing room (only run once)
@@ -147,10 +222,22 @@ export const GameContainer: React.FC = () => {
       <div className="app-container" style={{ visibility: isScreenTooSmall ? 'hidden' : 'visible' }}>
         <RainbowIcon onShowAbout={() => setShowAbout(true)} />
         <ConnectionStatus />
-        <GameNavbar />
+        <GameNavbar
+          dailyChallenge={dailyChallenge}
+          dailySubmission={dailySubmission}
+          selectedColor={selectedColor}
+        />
         <GameTitle />
         <ColorWheel size={size} />
-        <PlayerLobby roomCode={roomCode} />
+        <PlayerLobby
+          roomCode={roomCode}
+          dailyChallenge={dailyChallenge}
+          dailySubmission={dailySubmission}
+          selectedColor={selectedColor}
+          onDailySubmit={handleDailySubmit}
+          dailyError={dailyError}
+          isDailySubmitting={isDailySubmitting}
+        />
         {showAbout && <AboutPage onClose={() => setShowAbout(false)} />}
       </div>
     );
