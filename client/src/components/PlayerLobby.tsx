@@ -105,14 +105,6 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
 
       {step === 'choose' && (
         <>
-          <div className="lobby-actions">
-            <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
-              Create
-            </Button>
-            <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
-              Join
-            </Button>
-          </div>
           {dailyChallenge && !dailySubmission && onDailySubmit && selectedColor && (
             <button
               onClick={() => onDailySubmit(selectedColor)}
@@ -131,19 +123,19 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 touchAction: 'manipulation',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 opacity: isDailySubmitting ? 0.7 : 1,
-                marginTop: '0.75rem',
+                marginBottom: '0.75rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
                 gap: '0.15rem',
               }}
             >
-              <span>{isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}</span>
               {dailyChallenge.prompt && (
                 <span style={{ fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
                   "{dailyChallenge.prompt}"
                 </span>
               )}
+              <span>{isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}</span>
             </button>
           )}
           {dailySubmission && selectedColor && (
@@ -164,7 +156,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 minHeight: '56px',
                 touchAction: 'manipulation',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                marginTop: '0.75rem',
+                marginBottom: '0.75rem',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
@@ -179,6 +171,14 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
               )}
             </button>
           )}
+          <div className="lobby-actions">
+            <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
+              Create
+            </Button>
+            <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
+              Join
+            </Button>
+          </div>
           {dailyError && !isDailySubmitting && (
             <div style={{
               color: '#ff6b6b',
