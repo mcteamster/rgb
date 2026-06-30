@@ -131,7 +131,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 touchAction: 'manipulation',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 opacity: isDailySubmitting ? 0.7 : 1,
-                marginTop: '0.5rem',
+                marginTop: '0.75rem',
               }}
             >
               {isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}
