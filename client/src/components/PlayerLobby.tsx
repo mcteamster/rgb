@@ -104,37 +104,38 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
       <Notification region={currentRegion} errors={error} onClearError={clearError} />
 
       {step === 'choose' && (
-        <div className="lobby-actions">
-          <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
-            Create
-          </Button>
-          <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
-            Join
-          </Button>
+        <>
+          <div className="lobby-actions">
+            <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
+              Create
+            </Button>
+            <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
+              Join
+            </Button>
+          </div>
           {dailyChallenge && !dailySubmission && onDailySubmit && selectedColor && (
-            <div className="lobby-actions" style={{ marginTop: '0.5rem' }}>
-              <button
-                onClick={() => onDailySubmit(selectedColor)}
-                disabled={isDailySubmitting}
-                style={{
-                  width: '100%',
-                  padding: '1rem 1.5rem',
-                  borderRadius: '16px',
-                  border: 'none',
-                  fontSize: '1.1rem',
-                  fontWeight: '600',
-                  cursor: isDailySubmitting ? 'not-allowed' : 'pointer',
-                  backgroundColor: `hsl(${selectedColor.h}, ${selectedColor.s}%, ${selectedColor.l}%)`,
-                  color: selectedColor.l > 50 ? '#000' : '#fff',
-                  minHeight: '56px',
-                  touchAction: 'manipulation',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                  opacity: isDailySubmitting ? 0.7 : 1,
-                }}
-              >
-                {isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}
-              </button>
-            </div>
+            <button
+              onClick={() => onDailySubmit(selectedColor)}
+              disabled={isDailySubmitting}
+              style={{
+                width: '100%',
+                padding: '1rem 1.5rem',
+                borderRadius: '16px',
+                border: 'none',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                cursor: isDailySubmitting ? 'not-allowed' : 'pointer',
+                backgroundColor: `hsl(${selectedColor.h}, ${selectedColor.s}%, ${selectedColor.l}%)`,
+                color: selectedColor.l > 50 ? '#000' : '#fff',
+                minHeight: '56px',
+                touchAction: 'manipulation',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                opacity: isDailySubmitting ? 0.7 : 1,
+                marginTop: '0.5rem',
+              }}
+            >
+              {isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}
+            </button>
           )}
           {dailyError && !isDailySubmitting && (
             <div style={{
@@ -146,7 +147,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
               {dailyError}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {step === 'create' && (
