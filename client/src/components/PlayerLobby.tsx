@@ -130,13 +130,12 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 gap: '0.15rem',
               }}
             >
+              <span>{isDailySubmitting ? 'Submitting...' : 'Color of the Day - Guess Now'}</span>
               {dailyChallenge.prompt && (
                 <span style={{ fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
                   "{dailyChallenge.prompt}"
                 </span>
-              )}
-              <span>{isDailySubmitting ? 'Submitting...' : `🗓️ Color of the Day ${dailyChallenge.challengeId}`}</span>
-            </button>
+              )}            </button>
           )}
           {dailySubmission && selectedColor && (
             <button
@@ -163,7 +162,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 gap: '0.15rem',
               }}
             >
-              <span>{dailySubmission.score} / 100 · {dailyChallenge?.challengeId} · See more →</span>
+              <span>{dailySubmission.score} / 100 · Details →</span>
               {dailyChallenge?.prompt && (
                 <span style={{ fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
                   "{dailyChallenge.prompt}"

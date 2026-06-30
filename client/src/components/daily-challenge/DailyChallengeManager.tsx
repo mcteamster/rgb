@@ -8,15 +8,13 @@ import { PlayerGuesser } from '../PlayerGuesser';
 interface DailyChallengeManagerProps {
   onShowAbout: () => void;
   onShowTips?: () => void;
-  onShowLeaderboard?: () => void;
 }
 
 export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({ 
   onShowTips, 
-  onShowLeaderboard
 }) => {
   const { selectedColor, isColorLocked, setIsColorLocked, showSliders, setShowSliders } = useColor();
-  const { currentChallenge, userSubmission, submitColor: submitDailyColor, error, isLoading } = useDailyChallenge();
+  const { currentChallenge, userSubmission, submitColor: submitDailyColor, loadChallengeByDate, error, isLoading } = useDailyChallenge();
   const [userName] = useState(getUserName());
 
   if (!currentChallenge) return null;
@@ -25,13 +23,28 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
     await submitDailyColor(color, userName);
   };
 
-  // Show results with leaderboard button
+  // Show results — prev/next challenge navigation
   if (userSubmission) {
+    const today = new Date().toLocaleDateString('en-CA');
+    const isToday = currentChallenge.challengeId === today;
+    const minDate = new Date();
+    minDate.setDate(minDate.getDate() - 30);
+    const MIN_DATE = minDate.toLocaleDateString('en-CA');
+    const isFirst = currentChallenge.challengeId <= MIN_DATE;
+
+    const navigate = (offset: number) => {
+      const d = new Date(currentChallenge.challengeId);
+      d.setDate(d.getDate() + offset);
+      setIsColorLocked(false);
+      loadChallengeByDate(d.toLocaleDateString('en-CA'));
+    };
+
     return (
       <div className="game-controls results-actions">
-        <Button onClick={onShowLeaderboard} variant="primary">
-          Global Stats
-        </Button>
+        {!isFirst && <Button onClick={() => navigate(-1)} variant="primary">← Previous</Button>}
+        {!isToday && (
+          <Button onClick={() => navigate(1)} variant="primary">Next →</Button>
+        )}
       </div>
     );
   }

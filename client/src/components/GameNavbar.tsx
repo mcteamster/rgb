@@ -69,17 +69,17 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
       <div className="game-header">
         <div className="header-main">
           <div
-            onClick={() => navigate('/')}
-            style={{ cursor: 'pointer' }}
-          >
-            🏠
-          </div>
-          <div className="game-status">{isLoading ? 'Loading...' : `Color of the Day - ${dateString}`}</div>
-          <div
             onClick={onToggleHistory}
             style={{ cursor: onToggleHistory ? 'pointer' : 'default' }}
           >
             🗓️
+          </div>
+          <div className="game-status">{isLoading ? 'Loading...' : `Color of the Day - ${dateString}`}</div>
+          <div
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer' }}
+          >
+            ❌
           </div>
         </div>
       </div>
