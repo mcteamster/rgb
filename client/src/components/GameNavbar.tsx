@@ -17,7 +17,6 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   const { gameState, playerName, getCurrentRound, currentRegion } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
   const [noticeText, setNoticeText] = useState<string | null>(null);
-  const [noticeDismissed, setNoticeDismissed] = useState(false);
 
   // Fetch notice for the home screen banner
   useEffect(() => {
@@ -27,7 +26,6 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
       .then(data => {
         const msg = data?.messages?.[currentRegion] ?? data?.messages?.ALL ?? null;
         setNoticeText(msg || null);
-        setNoticeDismissed(false);
       })
       .catch(() => setNoticeText(null));
   }, [gameState, currentRegion]);
@@ -82,19 +80,14 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   }
 
   if (!gameState) {
-    if (!noticeText || noticeDismissed) return null;
+    if (!noticeText) return null;
 
     return (
-      <div
-        className="game-header"
-        onClick={() => setNoticeDismissed(true)}
-        style={{ cursor: 'pointer' }}
-      >
+      <div className="game-header">
         <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px', gap: '8px' }}>
           <span style={{ fontSize: '1rem', fontWeight: '600', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {noticeText}
           </span>
-          <span style={{ color: '#999', fontSize: '0.85rem', flexShrink: 0 }}>✕</span>
         </div>
       </div>
     );
