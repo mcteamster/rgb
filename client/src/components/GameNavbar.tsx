@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
@@ -18,23 +18,28 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
   const [noticeText, setNoticeText] = useState<string | null>(null);
 
+  // Stable reference so the error-clear timer doesn't re-register on every render
+  const stableClearError = useCallback(() => clearError(), [clearError]);
+
   // Auto-clear errors after 3 seconds
   useEffect(() => {
     if (error.length === 0) return;
-    const timer = setTimeout(() => clearError(), 3000);
+    const timer = setTimeout(() => stableClearError(), 3000);
     return () => clearTimeout(timer);
-  }, [error, clearError]);
+  }, [error, stableClearError]);
 
   // Fetch notice for the home screen banner
   useEffect(() => {
     if (gameState) return;
-    fetch(`${API_BASE_URL}/common/notices/rgb`)
+    const controller = new AbortController();
+    fetch(`${API_BASE_URL}/common/notices/rgb`, { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         const msg = data?.messages?.[currentRegion] ?? data?.messages?.ALL ?? null;
         setNoticeText(msg || null);
       })
-      .catch(() => setNoticeText(null));
+      .catch(err => { if (err.name !== 'AbortError') setNoticeText(null); });
+    return () => controller.abort();
   }, [gameState, currentRegion]);
 
   // Close room menu when joining a new game

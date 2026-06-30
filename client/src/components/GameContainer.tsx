@@ -49,6 +49,9 @@ export const GameContainer: React.FC = () => {
   const [dailySubmission, setDailySubmission] = useState<UserSubmission | null>(null);
   const [dailyError, setDailyError] = useState<string | null>(null);
   const [isDailySubmitting, setIsDailySubmitting] = useState(false);
+  // Synchronous re-entry guard — isDailySubmitting state update is async and cannot
+  // prevent a second gesture that fires before the first re-render completes.
+  const dailySubmittingRef = useRef(false);
 
   const isScreenTooSmall = size.width < 320 || isDiscordPip;
 
@@ -115,7 +118,10 @@ export const GameContainer: React.FC = () => {
   // Fetch daily challenge when no game is active
   useEffect(() => {
     if (gameState) return;
-    
+    // Reset stale submission state so the button doesn't show a yesterday result
+    setDailySubmission(null);
+    setDailyChallenge(null);
+
     const fetchChallenge = async () => {
       try {
         const userId = getUserId();
@@ -140,6 +146,10 @@ export const GameContainer: React.FC = () => {
   // Submit daily challenge handler
   const handleDailySubmit = async (color: { h: number; s: number; l: number }) => {
     if (!dailyChallenge) return;
+    // Synchronous guard prevents double-submit from rapid gestures before
+    // isDailySubmitting state update propagates to the next render
+    if (dailySubmittingRef.current) return;
+    dailySubmittingRef.current = true;
     try {
       setDailyError(null);
       setIsDailySubmitting(true);
@@ -154,8 +164,8 @@ export const GameContainer: React.FC = () => {
         fingerprint: generateFingerprint(),
       });
 
-      // Persist name only after a successful submission
-      setUserName(userName || 'Anonymous');
+      // Only persist a non-empty name — never write the literal "Anonymous" to localStorage
+      if (userName) setUserName(userName);
       
       setDailySubmission({
         score: response.submission.score,
@@ -167,6 +177,7 @@ export const GameContainer: React.FC = () => {
       setDailyError(error instanceof Error ? error.message : 'Failed to submit');
     } finally {
       setIsDailySubmitting(false);
+      dailySubmittingRef.current = false;
     }
   };
 

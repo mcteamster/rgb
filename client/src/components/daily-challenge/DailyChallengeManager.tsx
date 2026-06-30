@@ -22,24 +22,24 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
     await submitDailyColor(color, userName);
   };
 
+  const today = new Date().toLocaleDateString('en-CA');
+  const isToday = currentChallenge.challengeId === today;
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() - 30);
+  const MIN_DATE = minDate.toLocaleDateString('en-CA');
+  const isFirst = currentChallenge.challengeId <= MIN_DATE;
+
+  const goToChallenge = (offset: number) => {
+    // Parse date parts directly to avoid UTC-midnight parse shifting the date
+    // in timezones east of UTC (e.g. AEST: new Date('2026-07-01') = Jun 30 locally)
+    const [y, m, d] = currentChallenge.challengeId.split('-').map(Number);
+    const date = new Date(y, m - 1, d + offset); // local date constructor, no UTC shift
+    setIsColorLocked(false);
+    loadChallengeByDate(date.toLocaleDateString('en-CA'));
+  };
+
   // Show results — prev/next challenge navigation
   if (userSubmission) {
-    const today = new Date().toLocaleDateString('en-CA');
-    const isToday = currentChallenge.challengeId === today;
-    const minDate = new Date();
-    minDate.setDate(minDate.getDate() - 30);
-    const MIN_DATE = minDate.toLocaleDateString('en-CA');
-    const isFirst = currentChallenge.challengeId <= MIN_DATE;
-
-    const goToChallenge = (offset: number) => {
-      // Parse date parts directly to avoid UTC-midnight parse shifting the date
-      // in timezones east of UTC (e.g. AEST: new Date('2026-07-01') = Jun 30 locally)
-      const [y, m, d] = currentChallenge.challengeId.split('-').map(Number);
-      const date = new Date(y, m - 1, d + offset); // local date constructor, no UTC shift
-      setIsColorLocked(false);
-      loadChallengeByDate(date.toLocaleDateString('en-CA'));
-    };
-
     return (
       <div className="game-controls results-actions">
         {!isFirst && <Button onClick={() => goToChallenge(-1)} variant="primary">← Previous</Button>}
@@ -67,6 +67,12 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
         isSubmitting={isLoading}
       />
       {error && <div className="error-message">{error}</div>}
+      {(!isFirst || !isToday) && (
+        <div className="results-actions" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+          {!isFirst && <Button onClick={() => goToChallenge(-1)} variant="primary">← Previous</Button>}
+          {!isToday && <Button onClick={() => goToChallenge(1)} variant="primary">Next →</Button>}
+        </div>
+      )}
     </div>
   );
 };
