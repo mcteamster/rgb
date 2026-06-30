@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
-import { Notification } from './Notices';
 
 type LobbyStep = 'choose' | 'create' | 'join';
 
@@ -28,7 +27,7 @@ interface PlayerLobbyProps {
 }
 
 export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallenge, dailySubmission, selectedColor, onDailySubmit, dailyError, isDailySubmitting = false }) => {
-  const { createGame, joinGame, error, clearError, savedPlayerName, currentRegion, setRegion } = useGame();
+  const { createGame, joinGame, savedPlayerName, currentRegion, setRegion } = useGame();
   const [step, setStep] = useState<LobbyStep>(() => {
     // If there's a valid room code or stored session, go to join form
     if (roomCode && /^[BCDFGHJKLMNPQRSTVWXZ]{4}$/.test(roomCode)) {
@@ -101,7 +100,6 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
 
   return (
     <div className="join-controls">
-      <Notification region={currentRegion} errors={error} onClearError={clearError} />
 
       {step === 'choose' && (
         <>

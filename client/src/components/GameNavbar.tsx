@@ -14,9 +14,16 @@ interface GameNavbarProps {
 
 export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading, challengeDate }) => {
   const navigate = useNavigate();
-  const { gameState, playerName, getCurrentRound, currentRegion } = useGame();
+  const { gameState, playerName, getCurrentRound, currentRegion, error, clearError } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
   const [noticeText, setNoticeText] = useState<string | null>(null);
+
+  // Auto-clear errors after 3 seconds
+  useEffect(() => {
+    if (error.length === 0) return;
+    const timer = setTimeout(() => clearError(), 3000);
+    return () => clearTimeout(timer);
+  }, [error, clearError]);
 
   // Fetch notice for the home screen banner
   useEffect(() => {
@@ -80,13 +87,22 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   }
 
   if (!gameState) {
-    if (!noticeText) return null;
+    const bannerText = error.length > 0 ? error[0] : noticeText;
+    const isError = error.length > 0;
+    if (!bannerText) return null;
 
     return (
       <div className="game-header">
-        <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px', gap: '8px' }}>
-          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {noticeText}
+        <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px' }}>
+          <span style={{
+            fontSize: '1rem',
+            fontWeight: '600',
+            color: isError ? '#e53e3e' : '#333',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {bannerText}
           </span>
         </div>
       </div>
