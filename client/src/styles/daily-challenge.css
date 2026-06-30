@@ -443,7 +443,6 @@
   overflow-y: auto;
   gap: 12px;
   background: white;
-  border-radius: var(--border-radius-large);
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
 }

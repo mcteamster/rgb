@@ -20,7 +20,7 @@ export default defineConfig({
   } : undefined,
 
   use: {
-    baseURL: isCI ? 'http://localhost:4173' : 'https://rgb.mcteamster.com',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? (isCI ? 'http://localhost:4173' : 'https://rgb.mcteamster.com'),
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },

@@ -3,9 +3,7 @@ import { GameTitle } from '../GameTitle';
 import { DailyChallengeManager } from './DailyChallengeManager';
 import { DailyChallengeDisplay } from './DailyChallengeDisplay';
 import { DailyChallengeReveal } from './DailyChallengeReveal';
-import { DailyChallengeResults } from './DailyChallengeResults';
 import { DailyChallengeHistory } from './DailyChallengeHistory';
-import { Button } from '../Button';
 import { DailyChallengeLayout } from './DailyChallengeLayout';
 import { useDailyChallenge } from '../../contexts/DailyChallengeContext';
 import { useColor } from '../../contexts/ColorContext';
@@ -20,7 +18,6 @@ export const DailyChallenge: React.FC = () => {
     const { selectedColor, setIsColorLocked } = useColor();
     const { currentChallenge, userSubmission, loadCurrentChallenge, loadChallengeByDate, isLoading } = useDailyChallenge();
     const [showAbout, setShowAbout] = useState(false);
-    const [showLeaderboard, setShowLeaderboard] = useState(false);
     const [showHistory, setShowHistory] = useState(false);
     const [showTips, setShowTips] = useState(false);
     const size = useWindowSize();
@@ -54,7 +51,6 @@ export const DailyChallenge: React.FC = () => {
     const handleSelectDate = (date: string) => {
         loadChallengeByDate(date);
         setShowHistory(false);
-        setShowLeaderboard(false);
         setIsColorLocked(false);
     };
 
@@ -106,28 +102,17 @@ export const DailyChallenge: React.FC = () => {
                         <DailyChallengeHistory userId={getUserId()} onSelectDate={handleSelectDate} />
                     </div>
                 </div>
-            ) : showLeaderboard ? (
-                <>
-                    <DailyChallengeResults />
-                    <div className="game-controls results-actions">
-                        <Button onClick={() => setShowLeaderboard(false)} variant="primary">Your Results</Button>
-                    </div>
-                </>
             ) : userSubmission ? (
                 <>
                     <div className="status-bar">
                         <DailyChallengeReveal />
                     </div>
-                    <DailyChallengeManager
-                        onShowAbout={() => setShowAbout(true)}
-                        onShowLeaderboard={() => setShowLeaderboard(true)}
-                    />
-                </>
+                    <DailyChallengeManager /></>
+
             ) : (
                 <>
                     <DailyChallengeDisplay />
                     <DailyChallengeManager
-                        onShowAbout={() => setShowAbout(true)}
                         onShowTips={() => setShowTips(true)}
                     />
                 </>

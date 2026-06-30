@@ -1,17 +1,35 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
-import { Notification } from './Notices';
 
 type LobbyStep = 'choose' | 'create' | 'join';
 
-interface PlayerLobbyProps {
-  roomCode?: string;
+interface DailyChallengeInfo {
+  challengeId: string;
+  prompt: string;
 }
 
-export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
-  const { createGame, joinGame, error, clearError, savedPlayerName, currentRegion, setRegion } = useGame();
+interface UserSubmission {
+  score: number;
+  color: { h: number; s: number; l: number };
+  averageColor: { h: number; s: number; l: number } | null;
+}
+
+interface PlayerLobbyProps {
+  roomCode?: string;
+  dailyChallenge?: DailyChallengeInfo | null;
+  dailySubmission?: UserSubmission | null;
+  selectedColor?: { h: number; s: number; l: number };
+  onDailySubmit?: (color: { h: number; s: number; l: number }) => Promise<void>;
+  dailyError?: string | null;
+  isDailySubmitting?: boolean;
+}
+
+export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallenge, dailySubmission, selectedColor, onDailySubmit, dailyError, isDailySubmitting = false }) => {
+  const navigate = useNavigate();
+  const { createGame, joinGame, savedPlayerName, currentRegion, setRegion } = useGame();
   const [step, setStep] = useState<LobbyStep>(() => {
     // If there's a valid room code or stored session, go to join form
     if (roomCode && /^[BCDFGHJKLMNPQRSTVWXZ]{4}$/.test(roomCode)) {
@@ -84,17 +102,94 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode }) => {
 
   return (
     <div className="join-controls">
-      <Notification region={currentRegion} errors={error} onClearError={clearError} />
 
       {step === 'choose' && (
-        <div className="lobby-actions">
-          <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
-            Create
-          </Button>
-          <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
-            Join
-          </Button>
-        </div>
+        <>
+          {dailyChallenge && !dailySubmission && onDailySubmit && selectedColor && (
+            <button
+              onClick={() => onDailySubmit(selectedColor)}
+              disabled={isDailySubmitting}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '16px',
+                border: 'none',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: isDailySubmitting ? 'not-allowed' : 'pointer',
+                backgroundColor: `hsl(${selectedColor.h}, ${selectedColor.s}%, ${selectedColor.l}%)`,
+                color: selectedColor.l > 50 ? '#000' : '#fff',
+                minHeight: '56px',
+                touchAction: 'manipulation',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                opacity: isDailySubmitting ? 0.7 : 1,
+                marginBottom: '0.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.15rem',
+              }}
+            >
+              <span>{isDailySubmitting ? 'Submitting...' : 'Color of the Day - Guess Now'}</span>
+              {dailyChallenge.prompt && (
+                <span style={{ fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
+                  "{dailyChallenge.prompt}"
+                </span>
+              )}
+            </button>
+          )}
+          {dailySubmission && selectedColor && (
+            <button
+              onClick={() => navigate('/daily')}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '16px',
+                border: dailySubmission.averageColor
+                  ? `2px solid hsl(${dailySubmission.averageColor.h}, ${dailySubmission.averageColor.s}%, ${dailySubmission.averageColor.l}%)`
+                  : '2px solid transparent',
+                fontSize: '0.9rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                backgroundColor: `hsl(${dailySubmission.color.h}, ${dailySubmission.color.s}%, ${dailySubmission.color.l}%)`,
+                color: dailySubmission.color.l > 50 ? '#000' : '#fff',
+                minHeight: '56px',
+                touchAction: 'manipulation',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                marginBottom: '0.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.15rem',
+              }}
+            >
+              {dailyChallenge?.prompt && (
+                <span style={{ fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
+                  "{dailyChallenge.prompt}"
+                </span>
+              )}
+              <span>{dailySubmission.score} Points - See More</span>
+            </button>
+          )}
+          <div className="lobby-actions">
+            <Button onClick={() => setStep('create')} variant="create" disabled={isLoading}>
+              Create
+            </Button>
+            <Button onClick={() => setStep('join')} variant="join" disabled={isLoading}>
+              Join
+            </Button>
+          </div>
+          {dailyError && !isDailySubmitting && (
+            <div style={{
+              color: '#ff6b6b',
+              fontSize: '0.85rem',
+              textAlign: 'center',
+              marginTop: '0.25rem',
+            }}>
+              {dailyError}
+            </div>
+          )}
+        </>
       )}
 
       {step === 'create' && (

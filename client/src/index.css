@@ -189,6 +189,7 @@ canvas {
   animation: minimised-pulse 1.2s ease-in-out infinite;
 }
 
+
 @keyframes minimised-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -1227,8 +1228,8 @@ textarea:-ms-input-placeholder {
 }
 
 .history-sidebar-expanded {
-  left: auto;
-  right: 20px;
+  left: 20px;
+  right: auto;
   z-index: 50;
 }
 

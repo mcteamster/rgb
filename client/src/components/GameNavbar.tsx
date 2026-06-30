@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
-import { CyclingText } from './CyclingText';
-import { useCyclingText } from '../hooks/useCyclingText';
+import { API_BASE_URL } from '../constants/regions';
 
 interface GameNavbarProps {
   dailyChallengeMode?: boolean;
@@ -15,39 +14,33 @@ interface GameNavbarProps {
 
 export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading, challengeDate }) => {
   const navigate = useNavigate();
-  const { gameState, playerName, getCurrentRound } = useGame();
+  const { gameState, playerName, getCurrentRound, currentRegion, error, clearError } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
-  const [dailyChallenge, setDailyChallenge] = useState<{ prompt: string; validUntil: string } | null>(null);
+  const [noticeText, setNoticeText] = useState<string | null>(null);
 
-  // Fetch daily challenge prompt when no game is active
+  // Stable reference so the error-clear timer doesn't re-register on every render
+  const stableClearError = useCallback(() => clearError(), [clearError]);
+
+  // Auto-clear errors after 3 seconds
   useEffect(() => {
-    if (!gameState) {
-      const baseUrl = import.meta.env.VITE_DAILY_CHALLENGE_API_URL || '';
-      const localDate = new Date().toLocaleDateString('en-CA');
-      fetch(`${baseUrl}/daily-challenge/current?userId=preview&localDate=${localDate}`)
-        .then(res => res.json())
-        .then(data => setDailyChallenge({ prompt: data.prompt, validUntil: data.validUntil }))
-        .catch(() => setDailyChallenge(null));
-    }
-  }, [gameState]);
+    if (error.length === 0) return;
+    const timer = setTimeout(() => stableClearError(), 3000);
+    return () => clearTimeout(timer);
+  }, [error, stableClearError]);
 
-  // Use the user's local date and count down to their local midnight
-  const shortDate = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  const timeLeft = dailyChallenge ? (() => {
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-    const diff = Math.max(0, endOfDay.getTime() - Date.now());
-    const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
-    const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
-    return `${h}h ${m}m`;
-  })() : null;
-  const texts = [
-    `"${dailyChallenge?.prompt || 'Loading...'}"`,
-    `🗓️ Color of the Day - ${shortDate}`,
-    timeLeft ? `${timeLeft} ⏳ Tap to Play` : 'Tap to Play Now!'
-  ];
-
-  const { displayIndex, exiting } = useCyclingText(texts, 3000, !gameState && !!dailyChallenge);
+  // Fetch notice for the home screen banner
+  useEffect(() => {
+    if (gameState) return;
+    const controller = new AbortController();
+    fetch(`${API_BASE_URL}/common/notices/rgb`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(data => {
+        const msg = data?.messages?.[currentRegion] ?? data?.messages?.ALL ?? null;
+        setNoticeText(msg || null);
+      })
+      .catch(err => { if (err.name !== 'AbortError') setNoticeText(null); });
+    return () => controller.abort();
+  }, [gameState, currentRegion]);
 
   // Close room menu when joining a new game
   useEffect(() => {
@@ -81,17 +74,17 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
       <div className="game-header">
         <div className="header-main">
           <div
-            onClick={() => navigate('/')}
-            style={{ cursor: 'pointer' }}
-          >
-            🏠
-          </div>
-          <div className="game-status">{isLoading ? 'Loading...' : `Color of the Day - ${dateString}`}</div>
-          <div
             onClick={onToggleHistory}
             style={{ cursor: onToggleHistory ? 'pointer' : 'default' }}
           >
             🗓️
+          </div>
+          <div className="game-status">{isLoading ? 'Loading...' : `Color of the Day - ${dateString}`}</div>
+          <div
+            onClick={() => navigate('/')}
+            style={{ cursor: 'pointer' }}
+          >
+            ❌
           </div>
         </div>
       </div>
@@ -99,17 +92,23 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   }
 
   if (!gameState) {
+    const bannerText = error.length > 0 ? error[0] : noticeText;
+    const isError = error.length > 0;
+    if (!bannerText) return null;
+
     return (
-      <div className="game-header"
-        onClick={() => navigate('/daily')}
-        style={{ cursor: 'pointer' }}
-      >
+      <div className="game-header">
         <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px' }}>
-          <CyclingText
-            text={texts[displayIndex]}
-            exiting={exiting}
-            style={{ color: displayIndex === 0 ? '#667eea' : '#333', fontStyle: displayIndex === 0 ? 'italic' : 'normal', fontSize: '1rem', fontWeight: '600' }}
-          />
+          <span style={{
+            fontSize: '1rem',
+            fontWeight: '600',
+            color: isError ? '#e53e3e' : '#333',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}>
+            {bannerText}
+          </span>
         </div>
       </div>
     );

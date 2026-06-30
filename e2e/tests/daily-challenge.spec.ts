@@ -1,11 +1,16 @@
 import { test, expect } from '../fixtures';
 
+const yesterday = (() => {
+  const d = new Date();
+  d.setDate(d.getDate() - 5);
+  return d.toLocaleDateString('en-CA');
+})();
+
 const CHALLENGE_STUB = {
-  challengeId: '2026-04-11',
+  challengeId: yesterday,
   prompt: 'Ocean Blue',
-  status: 'active',
-  validFrom: '2026-04-11T00:00:00Z',
-  validUntil: '2026-04-12T00:00:00Z',
+  validFrom: `${yesterday}T00:00:00Z`,
+  validUntil: `${yesterday}T23:59:59Z`,
   totalSubmissions: 42,
 };
 
@@ -58,31 +63,56 @@ test.describe('Daily challenge page', () => {
 });
 
 test.describe('Daily challenge global stats gate', () => {
-  test('does not show Global Stats button before submission', async ({ page }) => {
+  test('does not show Previous/Next buttons before submission', async ({ page }) => {
     await page.route('**/daily-challenge/current**', route =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 0, userSubmission: null }),
       })
     );
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
     await page.goto('/daily');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: /global stats/i })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: /previous/i })).not.toBeVisible();
+    await expect(page.getByRole('button', { name: /next/i })).not.toBeVisible();
   });
 
-  test('shows Global Stats button after submission', async ({ page }) => {
+  test('shows Previous and Next buttons after submission', async ({ page }) => {
     await page.route('**/daily-challenge/current**', route =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: SUBMISSION_STUB }),
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 42, userSubmission: SUBMISSION_STUB }),
       })
+    );
+    await page.route('**/daily-challenge/stats/**', route =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STATS_STUB) })
     );
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
     await page.goto('/daily');
-    await expect(page.getByRole('button', { name: /global stats/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /previous/i })).toBeVisible({ timeout: 10_000 });
+    // Not today's date so Next should also show
+    await expect(page.getByRole('button', { name: /next/i })).toBeVisible({ timeout: 10_000 });
+  });
+
+  test('shows combined reveal and stats in one element after submission', async ({ page }) => {
+    await page.route('**/daily-challenge/current**', route =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 42, userSubmission: SUBMISSION_STUB }),
+      })
+    );
+    await page.route('**/daily-challenge/stats/**', route =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STATS_STUB) })
+    );
+    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
+    await page.goto('/daily');
+    // Score visible
+    await expect(page.getByText('87')).toBeVisible({ timeout: 10_000 });
+    // Stats visible in same view
+    await expect(page.locator('.stats-grid')).toBeVisible({ timeout: 10_000 });
   });
 
   test('stats request includes userId query param', async ({ page }) => {
@@ -91,43 +121,17 @@ test.describe('Daily challenge global stats gate', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: SUBMISSION_STUB }),
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 42, userSubmission: SUBMISSION_STUB }),
       })
     );
     await page.route('**/daily-challenge/stats/**', route => {
       statsUrl = route.request().url();
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(STATS_STUB),
-      });
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STATS_STUB) });
     });
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
     await page.goto('/daily');
-    await page.getByRole('button', { name: /global stats/i }).click();
-    await page.waitForTimeout(500);
+    await page.locator('.stats-grid').waitFor({ timeout: 10_000 });
     expect(statsUrl).toContain('userId=');
-  });
-
-  test('shows error message when stats endpoint returns 403', async ({ page }) => {
-    await page.route('**/daily-challenge/current**', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: SUBMISSION_STUB }),
-      })
-    );
-    await page.route('**/daily-challenge/stats/**', route =>
-      route.fulfill({
-        status: 403,
-        contentType: 'application/json',
-        body: JSON.stringify({ error: 'Submit a guess before viewing stats' }),
-      })
-    );
-    await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
-    await page.goto('/daily');
-    await page.getByRole('button', { name: /global stats/i }).click();
-    await expect(page.getByText(/play this challenge to view its stats/i)).toBeVisible({ timeout: 10_000 });
   });
 });
 
@@ -139,11 +143,11 @@ test.describe('Daily challenge local timezone', () => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 0, userSubmission: null }),
       });
     });
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
-    await page.goto('/daily');
+    await page.goto('/');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
     expect(currentUrl).toContain('localDate=');
   });
@@ -156,56 +160,40 @@ test.describe('Daily challenge local timezone', () => {
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 0, userSubmission: null }),
       });
     });
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
-    await page.goto('/daily');
+    await page.goto('/');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
-    // Verify it's a valid YYYY-MM-DD string
     expect(capturedDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    // Verify it matches what the browser itself computes as local today
-    const browserLocalDate = await page.evaluate(() =>
-      new Date().toLocaleDateString('en-CA')
-    );
+    const browserLocalDate = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
     expect(capturedDate).toBe(browserLocalDate);
   });
 
-  test('navbar preview fetch includes localDate query param', async ({ page }) => {
-    const previewUrls: string[] = [];
-    await page.route('**/daily-challenge/current**', route => {
-      previewUrls.push(route.request().url());
-      return route.fulfill({
+  test('home screen shows Color of the Day button with prompt', async ({ page }) => {
+    await page.route('**/daily-challenge/current**', route =>
+      route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
-      });
-    });
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 0, userSubmission: null }),
+      })
+    );
     await page.goto('/');
-    // Wait for the navbar preview fetch to fire
-    await page.waitForFunction(() => document.querySelector('.game-header') !== null);
-    await page.waitForTimeout(1000);
-    expect(previewUrls.length).toBeGreaterThan(0);
-    expect(previewUrls[0]).toContain('localDate=');
+    await expect(page.getByRole('button', { name: /color of the day/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByText(/ocean blue/i)).toBeVisible({ timeout: 10_000 });
   });
 
-  test('navbar preview localDate matches browser local YYYY-MM-DD', async ({ page }) => {
-    let previewDate: string | undefined;
-    await page.route('**/daily-challenge/current**', route => {
-      const url = new URL(route.request().url());
-      previewDate ??= url.searchParams.get('localDate') ?? undefined;
-      return route.fulfill({
+  test('home screen shows result button after submission', async ({ page }) => {
+    await page.route('**/daily-challenge/current**', route =>
+      route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
-      });
-    });
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 42, userSubmission: SUBMISSION_STUB }),
+      })
+    );
     await page.goto('/');
-    await page.waitForFunction(() => document.querySelector('.game-header') !== null);
-    await page.waitForTimeout(1000);
-    expect(previewDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    const browserLocalDate = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
-    expect(previewDate).toBe(browserLocalDate);
+    await expect(page.getByRole('button', { name: /87.*details/i })).toBeVisible({ timeout: 10_000 });
   });
 
   test('history calendar today marker matches browser local date', async ({ page }) => {
@@ -213,7 +201,7 @@ test.describe('Daily challenge local timezone', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ challenge: CHALLENGE_STUB, userSubmission: null }),
+        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 0, userSubmission: null }),
       })
     );
     await page.route('**/daily-challenge/history/**', route =>
@@ -226,10 +214,9 @@ test.describe('Daily challenge local timezone', () => {
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
     await page.goto('/daily');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
-    // Open the history calendar
+    // Calendar emoji is now on the left of the banner
     await page.locator('.game-header').getByText('🗓️').click();
     await page.locator('.calendar-months').waitFor({ timeout: 5_000 });
-    // The "today" button's aria label / text should correspond to local today's day-of-month
     const todayButton = page.locator('.day-button.today');
     await expect(todayButton).toBeVisible();
     const dayNum = await todayButton.textContent();

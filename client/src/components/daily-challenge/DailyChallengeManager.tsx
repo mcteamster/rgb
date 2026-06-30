@@ -6,17 +6,14 @@ import { Button } from '../Button';
 import { PlayerGuesser } from '../PlayerGuesser';
 
 interface DailyChallengeManagerProps {
-  onShowAbout: () => void;
   onShowTips?: () => void;
-  onShowLeaderboard?: () => void;
 }
 
 export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({ 
   onShowTips, 
-  onShowLeaderboard
 }) => {
   const { selectedColor, isColorLocked, setIsColorLocked, showSliders, setShowSliders } = useColor();
-  const { currentChallenge, userSubmission, submitColor: submitDailyColor, error, isLoading } = useDailyChallenge();
+  const { currentChallenge, userSubmission, submitColor: submitDailyColor, loadChallengeByDate, error, isLoading } = useDailyChallenge();
   const [userName] = useState(getUserName());
 
   if (!currentChallenge) return null;
@@ -25,13 +22,30 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
     await submitDailyColor(color, userName);
   };
 
-  // Show results with leaderboard button
+  const today = new Date().toLocaleDateString('en-CA');
+  const isToday = currentChallenge.challengeId === today;
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() - 30);
+  const MIN_DATE = minDate.toLocaleDateString('en-CA');
+  const isFirst = currentChallenge.challengeId <= MIN_DATE;
+
+  const goToChallenge = (offset: number) => {
+    // Parse date parts directly to avoid UTC-midnight parse shifting the date
+    // in timezones east of UTC (e.g. AEST: new Date('2026-07-01') = Jun 30 locally)
+    const [y, m, d] = currentChallenge.challengeId.split('-').map(Number);
+    const date = new Date(y, m - 1, d + offset); // local date constructor, no UTC shift
+    setIsColorLocked(false);
+    loadChallengeByDate(date.toLocaleDateString('en-CA'));
+  };
+
+  // Show results — prev/next challenge navigation
   if (userSubmission) {
     return (
       <div className="game-controls results-actions">
-        <Button onClick={onShowLeaderboard} variant="primary">
-          Global Stats
-        </Button>
+        {!isFirst && <Button onClick={() => goToChallenge(-1)} variant="primary">Previous</Button>}
+        {!isToday && (
+          <Button onClick={() => goToChallenge(1)} variant="primary">Next</Button>
+        )}
       </div>
     );
   }
