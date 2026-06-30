@@ -42,9 +42,9 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
   if (userSubmission) {
     return (
       <div className="game-controls results-actions">
-        {!isFirst && <Button onClick={() => goToChallenge(-1)} variant="primary">← Previous</Button>}
+        {!isFirst && <Button onClick={() => goToChallenge(-1)} variant="primary">Previous</Button>}
         {!isToday && (
-          <Button onClick={() => goToChallenge(1)} variant="primary">Next →</Button>
+          <Button onClick={() => goToChallenge(1)} variant="primary">Next</Button>
         )}
       </div>
     );
@@ -67,12 +67,6 @@ export const DailyChallengeManager: React.FC<DailyChallengeManagerProps> = ({
         isSubmitting={isLoading}
       />
       {error && <div className="error-message">{error}</div>}
-      {(!isFirst || !isToday) && (
-        <div className="results-actions" style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-          {!isFirst && <Button onClick={() => goToChallenge(-1)} variant="primary">← Previous</Button>}
-          {!isToday && <Button onClick={() => goToChallenge(1)} variant="primary">Next →</Button>}
-        </div>
-      )}
     </div>
   );
 };

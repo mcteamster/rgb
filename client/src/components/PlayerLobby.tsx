@@ -163,12 +163,12 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 gap: '0.15rem',
               }}
             >
-              <span>{dailySubmission.score} / 100 · Details →</span>
               {dailyChallenge?.prompt && (
                 <span style={{ fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
                   "{dailyChallenge.prompt}"
                 </span>
               )}
+              <span>{dailySubmission.score} Points - See More</span>
             </button>
           )}
           <div className="lobby-actions">
