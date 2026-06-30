@@ -3,32 +3,34 @@ import { useNavigate } from 'react-router-dom';
 import { useGame } from '../contexts/GameContext';
 import { RoomMenu } from './RoomMenu';
 import { PlayerSidebar } from './PlayerSidebar';
-
-interface DailyChallengeInfo {
-  challengeId: string;
-  prompt: string;
-}
-
-interface UserSubmission {
-  score: number;
-  color: { h: number; s: number; l: number };
-  averageColor: { h: number; s: number; l: number } | null;
-}
+import { API_BASE_URL } from '../constants/regions';
 
 interface GameNavbarProps {
   dailyChallengeMode?: boolean;
   onToggleHistory?: () => void;
   isLoading?: boolean;
   challengeDate?: string;
-  dailyChallenge?: DailyChallengeInfo | null;
-  dailySubmission?: UserSubmission | null;
-  selectedColor?: { h: number; s: number; l: number };
 }
 
-export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading, challengeDate, dailyChallenge, dailySubmission, selectedColor }) => {
+export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onToggleHistory, isLoading, challengeDate }) => {
   const navigate = useNavigate();
-  const { gameState, playerName, getCurrentRound } = useGame();
+  const { gameState, playerName, getCurrentRound, currentRegion } = useGame();
   const [activeOverlay, setActiveOverlay] = useState<'room' | 'players' | null>(null);
+  const [noticeText, setNoticeText] = useState<string | null>(null);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
+
+  // Fetch notice for the home screen banner
+  useEffect(() => {
+    if (gameState) return;
+    fetch(`${API_BASE_URL}/common/notices/rgb`)
+      .then(r => r.json())
+      .then(data => {
+        const msg = data?.messages?.[currentRegion] ?? data?.messages?.ALL ?? null;
+        setNoticeText(msg || null);
+        setNoticeDismissed(false);
+      })
+      .catch(() => setNoticeText(null));
+  }, [gameState, currentRegion]);
 
   // Close room menu when joining a new game
   useEffect(() => {
@@ -80,50 +82,19 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
   }
 
   if (!gameState) {
-    // Don't render until we have challenge data — avoids a "Loading..." flash
-    // and the grey swatch on first paint.
-    if (!dailyChallenge) return null;
-
-    const swatchStyle: React.CSSProperties = dailySubmission?.averageColor
-      ? {
-          width: '16px',
-          height: '16px',
-          borderRadius: '50%',
-          backgroundColor: `hsl(${dailySubmission.color.h}, ${dailySubmission.color.s}%, ${dailySubmission.color.l}%)`,
-          border: `2px solid hsl(${dailySubmission.averageColor.h}, ${dailySubmission.averageColor.s}%, ${dailySubmission.averageColor.l}%)`,
-        }
-      : {
-          width: '16px',
-          height: '16px',
-          borderRadius: '50%',
-          backgroundColor: selectedColor ? `hsl(${selectedColor.h}, ${selectedColor.s}%, ${selectedColor.l}%)` : '#ccc',
-          border: 'none',
-        };
+    if (!noticeText || noticeDismissed) return null;
 
     return (
-      <div className="game-header"
-        onClick={() => navigate('/daily')}
+      <div
+        className="game-header"
+        onClick={() => setNoticeDismissed(true)}
         style={{ cursor: 'pointer' }}
       >
         <div className="header-main" style={{ justifyContent: 'center', overflow: 'hidden', height: '32px', gap: '8px' }}>
-          {dailySubmission ? (
-            <>
-              <div style={swatchStyle} />
-              <span style={{ color: '#333', fontSize: '1rem', fontWeight: '600' }}>
-                {dailySubmission.score} / 100 · See more →
-              </span>
-            </>
-          ) : (
-            <>
-              <span style={{ color: '#667eea', fontSize: '1rem', fontWeight: '600' }}>
-                🗓️{' '}
-              </span>
-              <span style={{ color: '#667eea', fontSize: '1rem', fontWeight: '600', fontStyle: 'italic' }}>
-                {dailyChallenge?.prompt}
-              </span>
-              <div style={swatchStyle} />
-            </>
-          )}
+          <span style={{ fontSize: '1rem', fontWeight: '600', color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {noticeText}
+          </span>
+          <span style={{ color: '#999', fontSize: '0.85rem', flexShrink: 0 }}>✕</span>
         </div>
       </div>
     );

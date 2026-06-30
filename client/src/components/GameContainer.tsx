@@ -222,11 +222,7 @@ export const GameContainer: React.FC = () => {
       <div className="app-container" style={{ visibility: isScreenTooSmall ? 'hidden' : 'visible' }}>
         <RainbowIcon onShowAbout={() => setShowAbout(true)} />
         <ConnectionStatus />
-        <GameNavbar
-          dailyChallenge={dailyChallenge}
-          dailySubmission={dailySubmission}
-          selectedColor={selectedColor}
-        />
+        <GameNavbar />
         <GameTitle />
         <ColorWheel size={size} />
         <PlayerLobby

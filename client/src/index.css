@@ -189,6 +189,7 @@ canvas {
   animation: minimised-pulse 1.2s ease-in-out infinite;
 }
 
+
 @keyframes minimised-pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }

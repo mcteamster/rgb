@@ -119,7 +119,7 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
               disabled={isDailySubmitting}
               style={{
                 width: '100%',
-                padding: '1rem 1.5rem',
+                padding: '0.75rem 1.5rem',
                 borderRadius: '16px',
                 border: 'none',
                 fontSize: '1.1rem',
@@ -132,9 +132,18 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
                 boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                 opacity: isDailySubmitting ? 0.7 : 1,
                 marginTop: '0.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.15rem',
               }}
             >
-              {isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}
+              <span>{isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}</span>
+              {dailyChallenge.prompt && (
+                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
+                  "{dailyChallenge.prompt}"
+                </span>
+              )}
             </button>
           )}
           {dailyError && !isDailySubmitting && (
