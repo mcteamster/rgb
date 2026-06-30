@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGame, loadSession } from '../contexts/GameContext';
 import { Button } from './Button';
 import { RegionSelector } from './RegionSelector';
@@ -27,6 +28,7 @@ interface PlayerLobbyProps {
 }
 
 export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallenge, dailySubmission, selectedColor, onDailySubmit, dailyError, isDailySubmitting = false }) => {
+  const navigate = useNavigate();
   const { createGame, joinGame, savedPlayerName, currentRegion, setRegion } = useGame();
   const [step, setStep] = useState<LobbyStep>(() => {
     // If there's a valid room code or stored session, go to join form
@@ -138,6 +140,39 @@ export const PlayerLobby: React.FC<PlayerLobbyProps> = ({ roomCode, dailyChallen
             >
               <span>{isDailySubmitting ? 'Submitting...' : 'Submit Daily Challenge'}</span>
               {dailyChallenge.prompt && (
+                <span style={{ fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
+                  "{dailyChallenge.prompt}"
+                </span>
+              )}
+            </button>
+          )}
+          {dailySubmission && selectedColor && (
+            <button
+              onClick={() => navigate('/daily')}
+              style={{
+                width: '100%',
+                padding: '0.75rem 1.5rem',
+                borderRadius: '16px',
+                border: dailySubmission.averageColor
+                  ? `2px solid hsl(${dailySubmission.averageColor.h}, ${dailySubmission.averageColor.s}%, ${dailySubmission.averageColor.l}%)`
+                  : '2px solid transparent',
+                fontSize: '1.1rem',
+                fontWeight: '600',
+                cursor: 'pointer',
+                backgroundColor: `hsl(${dailySubmission.color.h}, ${dailySubmission.color.s}%, ${dailySubmission.color.l}%)`,
+                color: dailySubmission.color.l > 50 ? '#000' : '#fff',
+                minHeight: '56px',
+                touchAction: 'manipulation',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                marginTop: '0.75rem',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '0.15rem',
+              }}
+            >
+              <span>{dailySubmission.score} / 100 · See more →</span>
+              {dailyChallenge?.prompt && (
                 <span style={{ fontSize: '0.8rem', fontStyle: 'italic', opacity: 0.85, fontWeight: '400' }}>
                   "{dailyChallenge.prompt}"
                 </span>
