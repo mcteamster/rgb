@@ -115,8 +115,11 @@ export const GameNavbar: React.FC<GameNavbarProps> = ({ dailyChallengeMode, onTo
             </>
           ) : (
             <>
+              <span style={{ color: '#667eea', fontSize: '1rem', fontWeight: '600' }}>
+                🗓️{' '}
+              </span>
               <span style={{ color: '#667eea', fontSize: '1rem', fontWeight: '600', fontStyle: 'italic' }}>
-                🗓️ {dailyChallenge?.prompt}
+                {dailyChallenge?.prompt}
               </span>
               <div style={swatchStyle} />
             </>
