@@ -56,8 +56,13 @@ export const GameContainer: React.FC = () => {
   const isScreenTooSmall = size.width < 320 || isDiscordPip;
 
   useEffect(() => {
+    let rafId: number | null = null;
     const handleResize = () => {
-      setSize({ width: window.innerWidth, height: window.innerHeight });
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        setSize({ width: window.innerWidth, height: window.innerHeight });
+        rafId = null;
+      });
     };
 
     window.addEventListener('resize', handleResize);
@@ -65,6 +70,7 @@ export const GameContainer: React.FC = () => {
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
 
