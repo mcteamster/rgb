@@ -16,7 +16,7 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
   const { gameState, startRound, playerId, submitDescription, updateDraftDescription, submitColor, getCurrentRound, finaliseGame, resetGame, closeRoom } = useGame();
   const [description, setDescription] = useState('');
   const [inputDisabled, setInputDisabled] = useState(false);
-  const [nextRoundDisabled, setNextRoundDisabled] = useState(false);
+  const [nextRoundCountdown, setNextRoundCountdown] = useState(0);
 
   const currentRound = getCurrentRound();
   const isDescriber = currentRound?.describerId === playerId;
@@ -25,14 +25,20 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
   const isReveal = currentRound?.phase === 'reveal';
   const isEndgame = currentRound?.phase === 'endgame';
 
-  // Disable Next Round button for 3 seconds when reveal phase starts
+  // Countdown for 3 seconds when reveal phase starts before enabling Next Round
   useEffect(() => {
     if (isReveal) {
-      setNextRoundDisabled(true);
-      const timer = setTimeout(() => {
-        setNextRoundDisabled(false);
-      }, 3000);
-      return () => clearTimeout(timer);
+      setNextRoundCountdown(3);
+      const interval = setInterval(() => {
+        setNextRoundCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
     }
   }, [isReveal]);
 
@@ -148,10 +154,12 @@ export const GameManager: React.FC<GameManagerProps> = ({ onShowAbout, onShowTip
             <Button 
               onClick={handleNextRound} 
               variant="primary"
-              disabled={nextRoundDisabled}
+              disabled={nextRoundCountdown > 0}
               fullWidth
             >
-              {isReadyForEndgame() ? 'Game Summary' : 'Next Round'}
+              {isReadyForEndgame()
+                ? (nextRoundCountdown > 0 ? `Game Summary: ${nextRoundCountdown}` : 'Game Summary')
+                : (nextRoundCountdown > 0 ? `Next Round: ${nextRoundCountdown}` : 'Next Round')}
             </Button>
           )}
 

@@ -619,6 +619,15 @@ canvas {
   box-shadow: 0 6px 16px rgba(78, 205, 196, 0.4);
 }
 
+.start-round-btn:disabled {
+  background: hsl(0, 0%, 45%);
+  color: #fff;
+  opacity: 1;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .submit-color-btn {
   width: 100%;
   flex: none;
