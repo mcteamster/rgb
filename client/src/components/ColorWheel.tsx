@@ -13,7 +13,7 @@ export const ColorWheel: React.FC<ColorWheelProps> = ({ size }) => {
   const overlayRef = useRef<HTMLCanvasElement>(null);
   const dragModeRef = useRef<'hue' | 'sl' | null>(null);
   const wheelCacheRef = useRef<{ hue: number; canvas: HTMLCanvasElement } | null>(null);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number>(undefined);
   
   const wheelSize = Math.min(size.height * 0.6, size.width * 0.8);
   const radius = Math.max(0, wheelSize / 2 - 10);

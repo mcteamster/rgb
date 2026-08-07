@@ -25,9 +25,9 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const descriptionRef = useRef(description);
-  const draftUpdateTimeoutRef = useRef<NodeJS.Timeout>();
+  const draftUpdateTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   const enterPressCountRef = useRef(0);
-  const enterTimeoutRef = useRef<NodeJS.Timeout>();
+  const enterTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   const [showEnterAgain, setShowEnterAgain] = React.useState(false);
 
   const timer = useTimer({
