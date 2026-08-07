@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { ColorWheel } from './ColorWheel';
 import { PlayerLobby } from './PlayerLobby';
 import { GameManager } from './GameManager';
