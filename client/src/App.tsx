@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ColorProvider } from './contexts/ColorContext';
 import { GameProvider } from './contexts/GameContext';
 import { DailyChallengeProvider } from './contexts/DailyChallengeContext';
