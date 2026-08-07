@@ -53,7 +53,7 @@ export const GameContainer: React.FC = () => {
   // prevent a second gesture that fires before the first re-render completes.
   const dailySubmittingRef = useRef(false);
 
-  const isScreenTooSmall = size.width < 480 || size.height < 320 || isDiscordPip;
+  const isScreenTooSmall = size.width < 320 || isDiscordPip;
 
   useEffect(() => {
     let rafId: number | null = null;
