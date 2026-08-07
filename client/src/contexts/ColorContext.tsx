@@ -92,7 +92,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
   }, []);
   
   const { updateDraftColor, getCurrentRound, playerId, gameState } = useGame();
-  const draftUpdateTimeoutRef = useRef<NodeJS.Timeout>();
+  const draftUpdateTimeoutRef = useRef<NodeJS.Timeout>(undefined);
   const lastSentDraftColorRef = useRef<HSLColor | null>(null);
   const lastDraftSentTimeRef = useRef<number>(0);
   const pendingSubmissionRef = useRef(false);
