@@ -17,6 +17,6 @@
     "test:e2e:ui": "npm run test:ui --workspace=e2e"
   },
   "dependencies": {
-    "aws-cdk-lib": "^2.263.0"
+    "aws-cdk-lib": "^2.265.0"
   }
 }
