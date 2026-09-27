@@ -22,8 +22,19 @@ import {
 
 export const handler = async (event: APIGatewayProxyWebsocketEventV2): Promise<APIGatewayProxyResultV2> => {
     const { connectionId } = event.requestContext;
-    const { action, gameId, playerId, playerName, config, data }: WebSocketMessage = JSON.parse(event.body!);
-    
+
+    let message: WebSocketMessage;
+    try {
+        if (!event.body) {
+            return { statusCode: 400 };
+        }
+        message = JSON.parse(event.body);
+    } catch (error) {
+        console.error('Malformed WebSocket body:', error);
+        return { statusCode: 400 };
+    }
+    const { action, gameId, playerId, playerName, config, data } = message;
+
     console.log('WebSocket message received:', { action, gameId, playerId, connectionId });
     
     try {
