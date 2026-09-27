@@ -3,6 +3,7 @@ import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { dynamodb, sendToConnection, broadcastToGame } from './aws-clients';
 import { generateGameId, generatePlayerId, getCurrentRound } from './utils';
 import { checkAndEnforceDeadlines } from './deadlines';
+import { resolveRoundScores } from './round-handlers';
 import { Player } from './types';
 
 export async function handleCreateGame(connectionId: string, playerName: string, config?: { maxPlayers?: number; descriptionTimeLimit?: number; guessingTimeLimit?: number; turnsPerPlayer?: number }): Promise<APIGatewayProxyResultV2> {
@@ -385,19 +386,77 @@ export async function handleKickPlayer(
     }
     
     const updatedPlayers = game.players.filter((p: Player) => p.playerId !== targetPlayerId);
-    
-    // Check if removing current describer - nullify round with zero points
+
+    // Helper: clear target connection and optionally notify
+    const cleanupTargetConnection = async () => {
+        const connectionsResult = await dynamodb.send(new QueryCommand({
+            TableName: process.env.CONNECTIONS_TABLE!,
+            IndexName: 'GameIdIndex',
+            KeyConditionExpression: 'gameId = :gameId',
+            FilterExpression: 'playerId = :playerId',
+            ExpressionAttributeValues: {
+                ':gameId': gameId,
+                ':playerId': targetPlayerId
+            }
+        }));
+
+        if (connectionsResult.Items && connectionsResult.Items.length > 0) {
+            const targetConnectionId = connectionsResult.Items[0].connectionId;
+            if (reason === 'kick') {
+                await sendToConnection(targetConnectionId, {
+                    type: 'kicked',
+                    message: 'You have been removed from the game by the host'
+                });
+            }
+            await dynamodb.send(new UpdateCommand({
+                TableName: process.env.CONNECTIONS_TABLE!,
+                Key: { connectionId: targetConnectionId },
+                UpdateExpression: 'REMOVE gameId, playerId'
+            }));
+        }
+    };
+
+    // Check current round phase to apply phase-specific logic
     const currentRound = getCurrentRound(game);
-    let updateExpression = 'SET players = :players';
-    let expressionAttributeValues: any = { ':players': updatedPlayers };
-    
+
+    // --- Task 4.1: Below-minimum player guard ---
+    // Must come before phase-specific logic
+    if (game.meta.status === 'playing' && updatedPlayers.length < 2) {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId },
+            UpdateExpression: 'SET players = :players, meta.#status = :status, meta.currentRound = :nullRound',
+            ExpressionAttributeNames: { '#status': 'status' },
+            ExpressionAttributeValues: {
+                ':players': updatedPlayers,
+                ':status': 'waiting',
+                ':nullRound': null
+            }
+        }));
+
+        await cleanupTargetConnection();
+
+        const updatedGame = await dynamodb.send(new GetCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId }
+        }));
+
+        await broadcastToGame(gameId, {
+            type: 'gameStateUpdated',
+            gameState: updatedGame.Item
+        });
+
+        return { statusCode: 200 };
+    }
+
+    // --- Describing-phase: describer was kicked ---
     if (currentRound && currentRound.describerId === targetPlayerId && currentRound.phase === 'describing') {
-        // Nullify current round - all players get 100 points
+        // Nullify current round - all remaining players get 100 points
         const roundScores: Record<string, number> = {};
         updatedPlayers.forEach((player: Player) => {
             roundScores[player.playerId] = 100;
         });
-        
+
         const updatedRounds = [...game.gameplay.rounds];
         updatedRounds[game.meta.currentRound] = {
             ...currentRound,
@@ -406,8 +465,7 @@ export async function handleKickPlayer(
             submissions: {},
             scores: roundScores
         };
-        
-        // Update player total scores
+
         const playersWithScores = updatedPlayers.map((player: Player) => {
             let totalScore = 0;
             updatedRounds.forEach(round => {
@@ -417,53 +475,74 @@ export async function handleKickPlayer(
             });
             return { ...player, score: totalScore };
         });
-        
-        updateExpression = 'SET players = :players, gameplay.rounds = :rounds';
-        expressionAttributeValues = {
-            ':players': playersWithScores,
-            ':rounds': updatedRounds
-        };
+
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId },
+            UpdateExpression: 'SET players = :players, gameplay.rounds = :rounds',
+            ExpressionAttributeValues: {
+                ':players': playersWithScores,
+                ':rounds': updatedRounds
+            }
+        }));
+
+        await cleanupTargetConnection();
+
+        await broadcastToGame(gameId, {
+            type: 'playersUpdated',
+            players: updatedPlayers
+        });
+
+        return { statusCode: 200 };
     }
 
-    // Update game state to remove player
+    // --- Guessing-phase: a guesser was removed ---
+    if (currentRound && currentRound.phase === 'guessing') {
+        // Remaining guessers are all players except the describer (from updatedPlayers)
+        const remainingGuessers = updatedPlayers.filter(
+            (p: Player) => p.playerId !== currentRound.describerId
+        );
+        const allRemainingSubmitted = remainingGuessers.length > 0 &&
+            remainingGuessers.every((p: Player) => currentRound.submissions?.[p.playerId]);
+
+        // Persist updated player list first
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId },
+            UpdateExpression: 'SET players = :players',
+            ExpressionAttributeValues: { ':players': updatedPlayers }
+        }));
+
+        await cleanupTargetConnection();
+
+        if (allRemainingSubmitted) {
+            // All remaining guessers have submitted — resolve scores
+            const updatedGame = await dynamodb.send(new GetCommand({
+                TableName: process.env.GAMES_TABLE!,
+                Key: { gameId }
+            }));
+            await resolveRoundScores(gameId, updatedGame.Item!, updatedGame.Item!.meta.currentRound);
+        } else {
+            // Still waiting on guesses — just broadcast player update
+            await broadcastToGame(gameId, {
+                type: 'playersUpdated',
+                players: updatedPlayers
+            });
+        }
+
+        return { statusCode: 200 };
+    }
+
+    // --- Default: waiting or reveal phase — remove player, broadcast ---
     await dynamodb.send(new UpdateCommand({
         TableName: process.env.GAMES_TABLE!,
         Key: { gameId },
-        UpdateExpression: updateExpression,
-        ExpressionAttributeValues: expressionAttributeValues
+        UpdateExpression: 'SET players = :players',
+        ExpressionAttributeValues: { ':players': updatedPlayers }
     }));
-    
-    // Find target player's connection to clear association
-    const connectionsResult = await dynamodb.send(new QueryCommand({
-        TableName: process.env.CONNECTIONS_TABLE!,
-        IndexName: 'GameIdIndex',
-        KeyConditionExpression: 'gameId = :gameId',
-        FilterExpression: 'playerId = :playerId',
-        ExpressionAttributeValues: {
-            ':gameId': gameId,
-            ':playerId': targetPlayerId
-        }
-    }));
-    
-    // Notify target player they were kicked/left and clear game association
-    if (connectionsResult.Items && connectionsResult.Items.length > 0) {
-        const targetConnectionId = connectionsResult.Items[0].connectionId;
-        
-        // Send notification to kicked player
-        if (reason === 'kick') {
-            await sendToConnection(targetConnectionId, {
-                type: 'kicked',
-                message: 'You have been removed from the game by the host'
-            });
-        }
-        
-        await dynamodb.send(new UpdateCommand({
-            TableName: process.env.CONNECTIONS_TABLE!,
-            Key: { connectionId: targetConnectionId },
-            UpdateExpression: 'REMOVE gameId, playerId'
-        }));
-    }
-    
+
+    await cleanupTargetConnection();
+
     // Broadcast updated player list to remaining players
     await broadcastToGame(gameId, {
         type: 'playersUpdated',
