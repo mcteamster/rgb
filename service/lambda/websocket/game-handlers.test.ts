@@ -318,6 +318,50 @@ describe('handleJoinGame', () => {
             error: 'Player name is already taken'
         }))
     })
+
+    // ----- Task 2.3 / retry exhaustion: 5 consecutive conflicts → 409 -----
+
+    it('returns 409 after exhausting all retry attempts', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        // Fresh re-read always has room for one more — so every re-check passes
+        // and the handler loops back to try again.
+        const freshGame = { ...game, players: [...game.players] }
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        // Pattern: (write fails, re-read succeeds) × 5, last iteration hits the
+        // exhaustion guard before the 6th write attempt.
+        mockSend
+            .mockResolvedValueOnce({ Item: game })       // GetCommand: initial read
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 0 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 0
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 1 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 1
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 2 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 2
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 3 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 3
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 4 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 4
+
+        const result = await handleJoinGame('conn1', 'game1', 'Bob')
+        expect(result.statusCode).toBe(409)
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn1', expect.objectContaining({
+            type: 'error',
+            error: 'Failed to join game due to concurrent activity; please try again'
+        }))
+
+        // Confirm all 5 write attempts were made
+        const writeCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression?.includes('list_append')
+        })
+        expect(writeCalls.length).toBe(5)
+    })
 })
 
 // ============================================================
