@@ -152,6 +152,172 @@ describe('handleJoinGame', () => {
         const result = await handleJoinGame('conn1', 'game1', 'Alice')
         expect(result.statusCode).toBe(200)
     })
+
+    // ----- Task 3.1: guarded write uses list_append and ConditionExpression -----
+
+    it('issues UpdateCommand with list_append and ConditionExpression for a valid join', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+        mockSend
+            .mockResolvedValueOnce({ Item: game })  // GetCommand: initial read
+            .mockResolvedValueOnce({})              // UpdateCommand: guarded write
+            .mockResolvedValueOnce({})              // UpdateCommand: connections table
+            .mockResolvedValue({ Items: [] })       // QueryCommand: other connections
+
+        await handleJoinGame('conn1', 'game1', 'Bob')
+
+        // Find the call that was an UpdateCommand against the games table
+        const updateCall = mockSend.mock.calls.find(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return (
+                input.UpdateExpression?.includes('list_append') &&
+                input.ConditionExpression !== undefined
+            )
+        })
+        expect(updateCall).toBeDefined()
+        const input = updateCall![0].input ?? updateCall![0]
+        expect(input.UpdateExpression).toContain('list_append(players, :newPlayer)')
+        expect(input.ConditionExpression).toContain('size(players) = :expectedCount')
+        expect(input.ConditionExpression).toContain('size(players) < :maxPlayers')
+        expect(input.ConditionExpression).toContain('meta.#status = :waiting')
+        expect(input.ExpressionAttributeNames?.['#status']).toBe('status')
+    })
+
+    // ----- Task 3.2: retry on ConditionalCheckFailedException -----
+
+    it('retries once when guarded write throws ConditionalCheckFailedException then succeeds', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        // Fresh game after first conflict — still only Alice, so Bob can still join
+        const freshGame = { ...game, players: [...game.players] }
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        mockSend
+            .mockResolvedValueOnce({ Item: game })        // GetCommand: initial read
+            .mockRejectedValueOnce(condError)             // UpdateCommand: first attempt fails
+            .mockResolvedValueOnce({ Item: freshGame })   // GetCommand: strong-consistent re-read
+            .mockResolvedValueOnce({})                    // UpdateCommand: second attempt succeeds
+            .mockResolvedValueOnce({})                    // UpdateCommand: connections table
+            .mockResolvedValue({ Items: [] })             // QueryCommand: other connections
+
+        const result = await handleJoinGame('conn1', 'game1', 'Bob')
+        expect(result.statusCode).toBe(200)
+
+        // Two guarded UpdateCommand attempts (both list_append)
+        const updateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression?.includes('list_append')
+        })
+        expect(updateCalls.length).toBe(2)
+    })
+
+    // ----- Task 3.3: two concurrent joins, room for both -----
+
+    it('persists both players when two concurrent joins have room for both', async () => {
+        // Simulate game with 1 player and maxPlayers=10 — room for both Bob and Carol
+        const baseGame = makeGame()
+        baseGame.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+        baseGame.config = { ...baseGame.config, maxPlayers: 10 }
+
+        // Each join gets its own mock setup — run them sequentially with non-overlapping mocks
+        // Bob joins first (no conflict)
+        mockSend
+            .mockResolvedValueOnce({ Item: baseGame })  // Bob: initial read
+            .mockResolvedValueOnce({})                  // Bob: guarded write
+            .mockResolvedValueOnce({})                  // Bob: connections table
+            .mockResolvedValue({ Items: [] })           // Bob: other connections query
+
+        const bobResult = await handleJoinGame('conn-bob', 'game1', 'Bob')
+        expect(bobResult.statusCode).toBe(200)
+
+        mockSend.mockReset()
+
+        // Carol joins next — game now has Bob too, still room
+        const gameWithBob = {
+            ...baseGame,
+            players: [
+                ...baseGame.players,
+                { playerId: 'p-bob', playerName: 'Bob', joinedAt: '2024-01-01T00:00:02Z' }
+            ]
+        }
+        mockSend
+            .mockResolvedValueOnce({ Item: gameWithBob })  // Carol: initial read
+            .mockResolvedValueOnce({})                     // Carol: guarded write
+            .mockResolvedValueOnce({})                     // Carol: connections table
+            .mockResolvedValue({ Items: [] })              // Carol: other connections
+
+        const carolResult = await handleJoinGame('conn-carol', 'game1', 'Carol')
+        expect(carolResult.statusCode).toBe(200)
+    })
+
+    // ----- Task 3.4: concurrent joins race for the last slot -----
+
+    it('admits exactly one and returns Game is full for the other when racing for the last slot', async () => {
+        // maxPlayers=2, one player already in — only one slot left
+        const fullishGame = makeGame({ config: { maxPlayers: 2 } })
+        fullishGame.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        // Second joiner: initial read sees room, then write conflicts, re-read shows full
+        const fullGame = {
+            ...fullishGame,
+            players: [
+                ...fullishGame.players,
+                { playerId: 'p-bob', playerName: 'Bob', joinedAt: '2024-01-01T00:00:02Z' }
+            ]
+        }
+
+        mockSend
+            .mockResolvedValueOnce({ Item: fullishGame }) // initial read: sees 1 player, room for 1 more
+            .mockRejectedValueOnce(condError)             // guarded write: another joiner won the slot
+            .mockResolvedValueOnce({ Item: fullGame })    // strong-consistent re-read: now full
+
+        const result = await handleJoinGame('conn-carol', 'game1', 'Carol')
+        expect(result.statusCode).toBe(400)
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn-carol', expect.objectContaining({
+            type: 'error',
+            error: 'Game is full'
+        }))
+    })
+
+    // ----- Task 3.5: concurrent same-name joins -----
+
+    it('admits at most one and returns Player name is already taken for the other on same-name race', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        // Second "Bob" attempt: initial read sees no Bob, write conflicts, re-read shows Bob already in
+        const gameWithBob = {
+            ...game,
+            players: [
+                ...game.players,
+                { playerId: 'p-bob', playerName: 'Bob', joinedAt: '2024-01-01T00:00:02Z' }
+            ]
+        }
+
+        mockSend
+            .mockResolvedValueOnce({ Item: game })         // initial read: no Bob yet
+            .mockRejectedValueOnce(condError)              // guarded write: concurrent Bob won
+            .mockResolvedValueOnce({ Item: gameWithBob })  // strong-consistent re-read: Bob now present
+
+        const result = await handleJoinGame('conn-bob2', 'game1', 'Bob')
+        expect(result.statusCode).toBe(400)
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn-bob2', expect.objectContaining({
+            type: 'error',
+            error: 'Player name is already taken'
+        }))
+    })
 })
 
 // ============================================================
