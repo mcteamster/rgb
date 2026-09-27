@@ -8,6 +8,8 @@ import {
     getCurrentRound,
     findLastSubmittedColor,
     shouldEndGame,
+    sanitiseGameStateForClient,
+    sanitiseGameplayForClient,
 } from './utils'
 
 describe('generateGameId', () => {
@@ -271,5 +273,95 @@ describe('shouldEndGame', () => {
             { describerId: 'p2' },
         ], players)
         expect(shouldEndGame(game)).toBe(true)
+    })
+})
+
+describe('sanitiseGameStateForClient', () => {
+    const target = { h: 180, s: 80, l: 50 }
+
+    it('strips targetColor from a describing-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'describing', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('strips targetColor from a guessing-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'guessing', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('retains targetColor in a reveal-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'reveal', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('retains targetColor in an endgame-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'endgame', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('does not throw when rounds array is missing', () => {
+        const gameState = { gameplay: {} }
+        expect(() => sanitiseGameStateForClient(gameState)).not.toThrow()
+        expect(sanitiseGameStateForClient(gameState).gameplay.rounds).toEqual([])
+    })
+
+    it('does not mutate the original game state', () => {
+        const round = { targetColor: target, phase: 'describing', submissions: {} }
+        const gameState = { gameplay: { rounds: [round] } }
+        sanitiseGameStateForClient(gameState)
+        expect(round).toHaveProperty('targetColor')
+    })
+})
+
+describe('sanitiseGameplayForClient', () => {
+    const target = { h: 200, s: 60, l: 40 }
+
+    it('strips targetColor from active round', () => {
+        const gameplay = {
+            rounds: [{ targetColor: target, phase: 'describing', submissions: {} }]
+        }
+        const sanitised = sanitiseGameplayForClient(gameplay)
+        expect(sanitised.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('retains targetColor in reveal-phase round', () => {
+        const gameplay = {
+            rounds: [{ targetColor: target, phase: 'reveal', submissions: {} }]
+        }
+        const sanitised = sanitiseGameplayForClient(gameplay)
+        expect(sanitised.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('retains targetColor in endgame-phase round', () => {
+        const gameplay = {
+            rounds: [{ targetColor: target, phase: 'endgame', submissions: {} }]
+        }
+        const sanitised = sanitiseGameplayForClient(gameplay)
+        expect(sanitised.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('does not throw when rounds array is missing', () => {
+        expect(() => sanitiseGameplayForClient({})).not.toThrow()
+        expect(sanitiseGameplayForClient({}).rounds).toEqual([])
     })
 })

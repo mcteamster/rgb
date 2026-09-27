@@ -59,7 +59,7 @@ export const RoundReveal: React.FC<RoundRevealProps> = ({ currentRound, players 
         </div>
         <div className="target-color" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <ColorBox 
-            color={currentRound.targetColor}
+            color={currentRound.targetColor ?? { h: 0, s: 0, l: 50 }}
             fontSize="12px"
             label={players.find(p => p.playerId === currentRound.describerId)?.playerName}
           />
