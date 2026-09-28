@@ -391,14 +391,16 @@ describe('handleFinaliseGame', () => {
     })
 
     it('returns 400 when not in reveal phase', async () => {
-        mockSend.mockResolvedValueOnce({ Item: makeGame() }) // phase is 'describing'
-        const result = await handleFinaliseGame('conn1', 'game1', 'host')
+        // host is authoritative so guard passes; phase check fires 400
+        mockSend.mockResolvedValueOnce({ Item: makeGame({ meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' } }) })
+        const result = await handleFinaliseGame('conn1', 'game1', 'describer')
         expect(result.statusCode).toBe(400)
     })
 
     it('returns 400 when game should not end yet', async () => {
         // Only 1 round each but turnsPerPlayer is 2
         const game = makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
             gameplay: {
                 rounds: [{
                     describerId: 'describer',
@@ -408,8 +410,86 @@ describe('handleFinaliseGame', () => {
             }
         })
         mockSend.mockResolvedValueOnce({ Item: game })
-        const result = await handleFinaliseGame('conn1', 'game1', 'host')
+        const result = await handleFinaliseGame('conn1', 'game1', 'describer')
         expect(result.statusCode).toBe(400)
+    })
+
+    it('returns 403 when non-host calls finaliseGame on a valid reveal-phase game', async () => {
+        // host is 'describer'; caller is 'guesser' (non-host)
+        // game is in reveal phase with shouldEndGame true (2 rounds, turnsPerPlayer=2, each player described once)
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 1, hostPlayerId: 'describer' },
+            config: { maxPlayers: 10, descriptionTimeLimit: 30, guessingTimeLimit: 15, turnsPerPlayer: 1 },
+            gameplay: {
+                rounds: [
+                    { describerId: 'describer', phase: 'reveal', scores: { describer: 80, guesser: 70 } },
+                    { describerId: 'guesser', phase: 'reveal', scores: { describer: 60, guesser: 90 } },
+                ]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        const result = await handleFinaliseGame('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(403)
+        // No mutating DynamoDB command — only the initial GetCommand was called
+        expect(mockSend).toHaveBeenCalledTimes(1)
+        expect(mockBroadcastToGame).not.toHaveBeenCalled()
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn1', expect.objectContaining({
+            type: 'error',
+            error: 'Only the host can end the game'
+        }))
+    })
+
+    it('returns 403 when non-host calls finaliseGame even if phase is NOT reveal (auth before phase check)', async () => {
+        // Guard must fire 403 before any 400 phase check
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
+            gameplay: {
+                rounds: [{ describerId: 'describer', phase: 'describing', submissions: {}, timers: {} }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        const result = await handleFinaliseGame('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(403)
+        expect(mockSend).toHaveBeenCalledTimes(1)
+        expect(mockBroadcastToGame).not.toHaveBeenCalled()
+    })
+
+    it('returns 403 for non-host on legacy game (no hostPlayerId) — read-repair still rejects non-host', async () => {
+        // No meta.hostPlayerId; 'describer' joined earliest → derived host
+        // Caller is 'guesser' → should be rejected
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            // no hostPlayerId — legacy record
+        })
+        // GetCommand(game) + UpdateCommand(read-repair persist)
+        mockSend.mockResolvedValueOnce({ Item: game })
+        mockSend.mockResolvedValueOnce({}) // UpdateCommand for read-repair
+        const result = await handleFinaliseGame('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(403)
+        expect(mockBroadcastToGame).not.toHaveBeenCalled()
+    })
+
+    it('host succeeds: finaliseGame in reveal phase transitions to endgame and broadcasts', async () => {
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 1, hostPlayerId: 'describer' },
+            config: { maxPlayers: 10, descriptionTimeLimit: 30, guessingTimeLimit: 15, turnsPerPlayer: 1 },
+            gameplay: {
+                rounds: [
+                    { describerId: 'describer', phase: 'reveal', scores: { describer: 80, guesser: 70 } },
+                    { describerId: 'guesser', phase: 'reveal', scores: { describer: 60, guesser: 90 } },
+                ]
+            }
+        })
+        // GetCommand(game), UpdateCommand(set phase), GetCommand(updated game)
+        mockSend.mockResolvedValueOnce({ Item: game })
+        mockSend.mockResolvedValueOnce({})   // UpdateCommand
+        mockSend.mockResolvedValueOnce({ Item: { ...game, gameplay: { rounds: [
+            ...game.gameplay.rounds.slice(0, 1),
+            { ...game.gameplay.rounds[1], phase: 'endgame' }
+        ]}}})
+        const result = await handleFinaliseGame('conn1', 'game1', 'describer')
+        expect(result.statusCode).toBe(200)
+        expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'gameplayUpdated' }))
     })
 })
 
