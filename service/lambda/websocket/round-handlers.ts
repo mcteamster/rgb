@@ -318,84 +318,7 @@ export async function handleSubmitColor(connectionId: string, gameId: string, pl
     
     // If all guesses are in, progress to reveal phase
     if (actualGuesses >= expectedGuessers) {
-        // Calculate scores for this round
-        const targetColor = currentRound.targetColor;
-        const roundScores: Record<string, number> = {};
-        
-        // Calculate scores for each guesser
-        const guesserScores: number[] = [];
-        Object.entries(updatedSubmissions).forEach(([playerId, guessedColor]: [string, any]) => {
-            const score = calculateColorScore(targetColor, guessedColor);
-            roundScores[playerId] = score;
-            guesserScores.push(score);
-        });
-        
-        // Calculate describer score (average of all guesser scores)
-        if (guesserScores.length > 0) {
-            const averageScore = Math.round(guesserScores.reduce((sum, score) => sum + score, 0) / guesserScores.length);
-            roundScores[currentRound.describerId] = averageScore;
-        }
-        
-        const finalRounds = [...updatedGame.Item!.gameplay.rounds];
-        finalRounds[updatedGame.Item!.meta.currentRound] = {
-            ...updatedCurrentRound,
-            phase: 'reveal',
-            scores: roundScores
-        };
-        
-        // Update player total scores
-        const updatedPlayers = updatedGame.Item!.players.map((player: any) => {
-            let totalScore = 0;
-            finalRounds.forEach(round => {
-                if (round.scores && round.scores[player.playerId]) {
-                    totalScore += round.scores[player.playerId];
-                }
-            });
-            return {
-                ...player,
-                score: totalScore
-            };
-        });
-
-        // Don't automatically transition to endgame - let client decide
-        // Check if game should end is available for client to query
-        // const shouldEnd = shouldEndGame(gameWithUpdatedRounds);
-
-        await dynamodb.send(new UpdateCommand({
-            TableName: process.env.GAMES_TABLE!,
-            Key: { gameId },
-            UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
-            ExpressionAttributeValues: {
-                ':rounds': finalRounds,
-                ':players': updatedPlayers
-            }
-        }));
-        
-        // Get final updated state
-        const finalGame = await dynamodb.send(new GetCommand({
-            TableName: process.env.GAMES_TABLE!,
-            Key: { gameId }
-        }));
-        
-        // Broadcast meta update
-        await broadcastToGame(gameId, {
-            type: 'metaUpdated',
-            meta: finalGame.Item!.meta
-        });
-
-        // Also broadcast gameplay update for reveal phase
-        await broadcastToGame(gameId, {
-            type: 'gameplayUpdated',
-            gameplay: sanitiseGameplayForClient(finalGame.Item!.gameplay)
-        });
-
-        // Broadcast updated players with new scores
-        await broadcastToGame(gameId, {
-            type: 'playersUpdated',
-            players: finalGame.Item!.players
-        });
-
-        await writeRoundToS3(finalGame.Item!, updatedGame.Item!.meta.currentRound);
+        await resolveRoundScores(gameId, updatedGame.Item!, updatedGame.Item!.meta.currentRound);
     } else {
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
@@ -404,6 +327,84 @@ export async function handleSubmitColor(connectionId: string, gameId: string, pl
     }
     
     return { statusCode: 200 };
+}
+
+export async function resolveRoundScores(gameId: string, game: any, currentRoundIndex: number): Promise<void> {
+    const currentRound = game.gameplay.rounds[currentRoundIndex];
+    const updatedSubmissions = currentRound?.submissions || {};
+    const targetColor = currentRound.targetColor;
+    const roundScores: Record<string, number> = {};
+
+    // Calculate scores for each guesser
+    const guesserScores: number[] = [];
+    Object.entries(updatedSubmissions).forEach(([pid, guessedColor]: [string, any]) => {
+        const score = calculateColorScore(targetColor, guessedColor);
+        roundScores[pid] = score;
+        guesserScores.push(score);
+    });
+
+    // Calculate describer score (average of all guesser scores)
+    if (guesserScores.length > 0) {
+        const averageScore = Math.round(guesserScores.reduce((sum, score) => sum + score, 0) / guesserScores.length);
+        roundScores[currentRound.describerId] = averageScore;
+    }
+
+    const finalRounds = [...game.gameplay.rounds];
+    finalRounds[currentRoundIndex] = {
+        ...currentRound,
+        phase: 'reveal',
+        scores: roundScores
+    };
+
+    // Update player total scores
+    const updatedPlayers = game.players.map((player: any) => {
+        let totalScore = 0;
+        finalRounds.forEach((round: any) => {
+            if (round.scores && round.scores[player.playerId]) {
+                totalScore += round.scores[player.playerId];
+            }
+        });
+        return {
+            ...player,
+            score: totalScore
+        };
+    });
+
+    await dynamodb.send(new UpdateCommand({
+        TableName: process.env.GAMES_TABLE!,
+        Key: { gameId },
+        UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
+        ExpressionAttributeValues: {
+            ':rounds': finalRounds,
+            ':players': updatedPlayers
+        }
+    }));
+
+    // Get final updated state
+    const finalGame = await dynamodb.send(new GetCommand({
+        TableName: process.env.GAMES_TABLE!,
+        Key: { gameId }
+    }));
+
+    // Broadcast meta update
+    await broadcastToGame(gameId, {
+        type: 'metaUpdated',
+        meta: finalGame.Item!.meta
+    });
+
+    // Broadcast gameplay update for reveal phase
+    await broadcastToGame(gameId, {
+        type: 'gameplayUpdated',
+        gameplay: sanitiseGameplayForClient(finalGame.Item!.gameplay)
+    });
+
+    // Broadcast updated players with new scores
+    await broadcastToGame(gameId, {
+        type: 'playersUpdated',
+        players: finalGame.Item!.players
+    });
+
+    await writeRoundToS3(finalGame.Item!, currentRoundIndex);
 }
 
 export async function handleStartRound(connectionId: string, gameId: string, playerId: string): Promise<APIGatewayProxyResultV2> {

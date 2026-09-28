@@ -90,8 +90,10 @@ describe('calculateColorScore', () => {
 })
 
 describe('generatePlayerId', () => {
-    it('returns a non-empty string', () => {
-        expect(generatePlayerId().length).toBeGreaterThan(0)
+    const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+    it('returns a UUID v4 formatted string', () => {
+        expect(UUID_V4_REGEX.test(generatePlayerId())).toBe(true)
     })
 
     it('generates different ids on successive calls', () => {
