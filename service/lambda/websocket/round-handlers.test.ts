@@ -484,6 +484,27 @@ describe('handleStartRound — non-host rejection (no DB mutation)', () => {
         })
         expect(mutateCalls.length).toBe(0)
     })
+
+    it('returns 403 and does not write to DB when non-host sends startRound from playing/reveal status', async () => {
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
+            gameplay: {
+                rounds: [{ describerId: 'describer', phase: 'reveal', scores: {} }],
+            },
+        })
+        mockSend.mockResolvedValueOnce({ Item: game }) // GetCommand
+        const result = await handleStartRound('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(403)
+        // read-repair UpdateCommand is allowed, but no round-starting mutation
+        const roundMutateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return (
+                input.UpdateExpression !== undefined &&
+                !input.UpdateExpression.includes('hostPlayerId')
+            )
+        })
+        expect(roundMutateCalls.length).toBe(0)
+    })
 })
 
 describe('handleResetGame — non-host rejection (no DB mutation)', () => {

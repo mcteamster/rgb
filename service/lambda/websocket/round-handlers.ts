@@ -438,8 +438,8 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
     // Resolve (and read-repair if needed) the authoritative host ID
     await resolveHostPlayerId(game, persistHostId);
 
-    // Only allow host to start/continue the game
-    if (game.meta.status === 'waiting' && !isHost(game, playerId)) {
+    // Only allow host to start/continue the game (applies to both initial start and inter-round continuation)
+    if (!isHost(game, playerId)) {
         await sendToConnection(connectionId, {
             type: 'error',
             error: 'Only the host can start the game'
