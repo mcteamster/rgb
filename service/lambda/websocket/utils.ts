@@ -176,3 +176,54 @@ export function shouldEndGame(game: any): boolean {
         describerCounts[player.playerId] >= turnsPerPlayer
     );
 }
+
+// ============================================================================
+// HOST AUTHORIZATION
+// ============================================================================
+
+/**
+ * Returns true if `playerId` is the authoritative host of the game.
+ * Reads from game.meta.hostPlayerId (populated at game creation or via read-repair).
+ */
+export function isHost(game: any, playerId: string): boolean {
+    return game.meta?.hostPlayerId === playerId;
+}
+
+/**
+ * Returns the authoritative host player ID for a game.
+ *
+ * - If `game.meta.hostPlayerId` is already stored, returns it verbatim.
+ * - Otherwise (legacy game created before hostPlayerId was introduced),
+ *   derives the host as the player with the earliest `joinedAt` timestamp,
+ *   persists the derived value back to DynamoDB (read-repair), and returns it.
+ *
+ * The caller is responsible for passing a `persistFn` that writes
+ * `meta.hostPlayerId` back to the database.  In production callers should
+ * pass the real UpdateCommand; in tests a stub can be used.
+ *
+ * Tie-break: for two players with identical `joinedAt` values the player
+ * whose `playerId` sorts lexicographically first is selected, giving
+ * deterministic results across Lambda invocations.
+ */
+export async function resolveHostPlayerId(
+    game: any,
+    persistFn: (gameId: string, hostPlayerId: string) => Promise<void>
+): Promise<string> {
+    if (game.meta?.hostPlayerId) {
+        return game.meta.hostPlayerId;
+    }
+
+    // Legacy derivation: earliest joinedAt, ties broken by playerId sort
+    const sorted = [...game.players].sort((a: Player, b: Player) => {
+        const timeDiff = new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return a.playerId < b.playerId ? -1 : 1;
+    });
+
+    const derivedHostId = sorted[0].playerId;
+
+    // Read-repair: persist back so future calls return early
+    await persistFn(game.gameId, derivedHostId);
+
+    return derivedHostId;
+}

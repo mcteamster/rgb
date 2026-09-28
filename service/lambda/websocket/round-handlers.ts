@@ -2,7 +2,7 @@ import { UpdateCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { HSLColor, Player } from './types';
 import { dynamodb, broadcastToGame, sendToConnection } from './aws-clients';
-import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame, sanitiseGameplayForClient, sanitiseGameStateForClient } from './utils';
+import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame, sanitiseGameplayForClient, sanitiseGameStateForClient, isHost, resolveHostPlayerId } from './utils';
 import { writeRoundToS3 } from './analytics';
 
 export async function handleUpdateDraftDescription(connectionId: string, gameId: string, playerId: string, description: string): Promise<APIGatewayProxyResultV2> {
@@ -424,13 +424,22 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
     const game = gameResult.Item;
     const players = game.players || [];
     
-    // Find the host (player who joined earliest)
-    const hostPlayer = players.reduce((earliest: any, player: any) => 
-        new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
-    );
-    
-    // Only allow host to start the game when in waiting status
-    if (game.meta.status === 'waiting' && playerId !== hostPlayer.playerId) {
+    // Build the persistFn for resolveHostPlayerId read-repair
+    const persistHostId = async (gId: string, hostPlayerId: string) => {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId: gId },
+            UpdateExpression: 'SET meta.hostPlayerId = :hostPlayerId',
+            ExpressionAttributeValues: { ':hostPlayerId': hostPlayerId }
+        }));
+        game.meta.hostPlayerId = hostPlayerId;
+    };
+
+    // Resolve (and read-repair if needed) the authoritative host ID
+    await resolveHostPlayerId(game, persistHostId);
+
+    // Only allow host to start/continue the game (applies to both initial start and inter-round continuation)
+    if (!isHost(game, playerId)) {
         await sendToConnection(connectionId, {
             type: 'error',
             error: 'Only the host can start the game'
@@ -633,13 +642,20 @@ export async function handleResetGame(connectionId: string, gameId: string, play
 
     const game = gameResult.Item;
 
-    // Find the host (player who joined earliest)
-    const hostPlayer = game.players.reduce((earliest: any, player: any) =>
-        new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
-    );
+    // Resolve (and read-repair if needed) the authoritative host ID
+    const persistHostIdReset = async (gId: string, hostPlayerId: string) => {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId: gId },
+            UpdateExpression: 'SET meta.hostPlayerId = :hostPlayerId',
+            ExpressionAttributeValues: { ':hostPlayerId': hostPlayerId }
+        }));
+        game.meta.hostPlayerId = hostPlayerId;
+    };
+    await resolveHostPlayerId(game, persistHostIdReset);
 
     // Only allow host to reset the game
-    if (playerId !== hostPlayer.playerId) {
+    if (!isHost(game, playerId)) {
         return { statusCode: 403 }; // Forbidden
     }
 
@@ -686,13 +702,20 @@ export async function handleCloseRoom(connectionId: string, gameId: string, play
 
     const game = gameResult.Item;
 
-    // Find the host (player who joined earliest)
-    const hostPlayer = game.players.reduce((earliest: any, player: any) =>
-        new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
-    );
+    // Resolve (and read-repair if needed) the authoritative host ID
+    const persistHostIdClose = async (gId: string, hostPlayerId: string) => {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId: gId },
+            UpdateExpression: 'SET meta.hostPlayerId = :hostPlayerId',
+            ExpressionAttributeValues: { ':hostPlayerId': hostPlayerId }
+        }));
+        game.meta.hostPlayerId = hostPlayerId;
+    };
+    await resolveHostPlayerId(game, persistHostIdClose);
 
     // Only allow host to close the room
-    if (playerId !== hostPlayer.playerId) {
+    if (!isHost(game, playerId)) {
         return { statusCode: 403 }; // Forbidden
     }
 
