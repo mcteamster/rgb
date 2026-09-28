@@ -130,6 +130,73 @@ describe('checkAndEnforceDeadlines', () => {
         expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'playersUpdated' }))
     })
 
+    it('description deadline: non-blank draft — gameplayUpdated strips targetColor from guessing round', async () => {
+        const game = makeGame()
+        game.players[0].draftDescription = 'Sky blue'
+        const updatedGame = {
+            ...makeGame(),
+            gameplay: {
+                rounds: [{
+                    targetColor: { h: 120, s: 60, l: 50 },
+                    describerId: 'describer',
+                    phase: 'guessing',
+                    submissions: {},
+                    timers: { descriptionDeadline: null, guessingDeadline: null },
+                }],
+            },
+        }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({ Item: updatedGame })
+        await checkAndEnforceDeadlines('game1')
+        const gameplayCall = mockBroadcastToGame.mock.calls.find(
+            (c: any[]) => c[1]?.type === 'gameplayUpdated'
+        )
+        expect(gameplayCall).toBeDefined()
+        expect(gameplayCall[1].gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('guessing deadline: gameplayUpdated retains targetColor on reveal round', async () => {
+        const targetColor = { h: 120, s: 60, l: 50 }
+        const game = makeGame({
+            gameplay: {
+                rounds: [{
+                    targetColor,
+                    describerId: 'describer',
+                    phase: 'guessing',
+                    submissions: {},
+                    timers: { descriptionDeadline: null, guessingDeadline: past },
+                }],
+            },
+        })
+        const updatedGame = {
+            ...makeGame(),
+            gameplay: {
+                rounds: [{
+                    targetColor,
+                    describerId: 'describer',
+                    phase: 'reveal',
+                    submissions: { guesser: { h: 120, s: 50, l: 50 } },
+                    scores: { describer: 90, guesser: 90 },
+                    timers: {},
+                }],
+            },
+        }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({ Item: updatedGame })
+        await checkAndEnforceDeadlines('game1')
+        const gameplayCall = mockBroadcastToGame.mock.calls.find(
+            (c: any[]) => c[1]?.type === 'gameplayUpdated'
+        )
+        expect(gameplayCall).toBeDefined()
+        expect(gameplayCall[1].gameplay.rounds[0].targetColor).toEqual(targetColor)
+    })
+
     it('skips guessing enforcement when phase changed away from guessing', async () => {
         const game = makeGame({
             gameplay: {
