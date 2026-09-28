@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand, PutCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { HSLColor, updateAverageColor, distanceFromAverageScoring } from './scoring';
+import { validateUserId } from './validation';
 
 const client = new DynamoDBClient({});
 const dynamodb = DynamoDBDocumentClient.from(client);
@@ -41,6 +42,19 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify({ error: 'Missing required fields' })
+            };
+        }
+
+        // Validate userId format
+        const userId = validateUserId(submission.userId);
+        if (userId === null) {
+            return {
+                statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ error: 'Invalid userId' })
             };
         }
 
@@ -143,7 +157,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             await dynamodb.send(new PutCommand({
                 TableName: SUBMISSIONS_TABLE,
                 Item: {
-                    userId: submission.userId,
+                    userId: userId,
                     challengeId: submission.challengeId,
                     userName: submission.userName || 'Anonymous',
                     submittedColor: submission.color,

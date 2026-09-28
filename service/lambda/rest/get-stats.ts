@@ -1,6 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { validateUserId } from './validation';
 
 const client = new DynamoDBClient({});
 const dynamodb = DynamoDBDocumentClient.from(client);
@@ -11,7 +12,7 @@ const SUBMISSIONS_TABLE = process.env.SUBMISSIONS_TABLE || '';
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
     try {
         const challengeId = event.pathParameters?.challengeId;
-        const userId = event.queryStringParameters?.userId;
+        const rawUserId = event.queryStringParameters?.userId;
 
         if (!challengeId) {
             return {
@@ -24,7 +25,7 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
             };
         }
 
-        if (!userId) {
+        if (!rawUserId) {
             return {
                 statusCode: 400,
                 headers: {
@@ -32,6 +33,18 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
                     'Access-Control-Allow-Origin': '*'
                 },
                 body: JSON.stringify({ error: 'Missing userId' })
+            };
+        }
+
+        const userId = validateUserId(rawUserId);
+        if (userId === null) {
+            return {
+                statusCode: 400,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                body: JSON.stringify({ error: 'Invalid userId' })
             };
         }
 
