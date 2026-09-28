@@ -25,7 +25,7 @@ import {
 
 const makeGame = (overrides: any = {}) => ({
     gameId: 'game1',
-    meta: { status: 'playing', currentRound: 0 },
+    meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
     config: { maxPlayers: 10, descriptionTimeLimit: 30, guessingTimeLimit: 15, turnsPerPlayer: 2 },
     players: [
         { playerId: 'describer', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
@@ -302,7 +302,7 @@ describe('handleStartRound', () => {
 
     it('returns 403 when non-host tries to start from waiting status', async () => {
         mockSend.mockResolvedValueOnce({
-            Item: makeGame({ meta: { status: 'waiting', currentRound: null }, gameplay: { rounds: [] } })
+            Item: makeGame({ meta: { status: 'waiting', currentRound: null, hostPlayerId: 'describer' }, gameplay: { rounds: [] } })
         })
         const result = await handleStartRound('conn1', 'game1', 'guesser')
         expect(result.statusCode).toBe(403)
@@ -311,7 +311,7 @@ describe('handleStartRound', () => {
     it('returns 400 when fewer than 2 players', async () => {
         mockSend.mockResolvedValueOnce({
             Item: makeGame({
-                meta: { status: 'waiting', currentRound: null },
+                meta: { status: 'waiting', currentRound: null, hostPlayerId: 'describer' },
                 gameplay: { rounds: [] },
                 players: [{ playerId: 'describer', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 }],
             })
@@ -328,7 +328,7 @@ describe('handleStartRound', () => {
     })
 
     it('returns 200 when host starts game from waiting status', async () => {
-        const game = makeGame({ meta: { status: 'waiting', currentRound: null }, gameplay: { rounds: [] } })
+        const game = makeGame({ meta: { status: 'waiting', currentRound: null, hostPlayerId: 'describer' }, gameplay: { rounds: [] } })
         mockSend
             .mockResolvedValueOnce({ Item: game }) // GetCommand
             .mockResolvedValueOnce({})             // UpdateCommand
@@ -340,7 +340,7 @@ describe('handleStartRound', () => {
 
     it('returns 200 when starting next round from reveal phase', async () => {
         const game = makeGame({
-            meta: { status: 'playing', currentRound: 0 },
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
             gameplay: {
                 rounds: [{ describerId: 'describer', phase: 'reveal', scores: {} }],
             },
@@ -354,9 +354,9 @@ describe('handleStartRound', () => {
     })
 
     it('strips targetColor from gameplayUpdated broadcast on startRound', async () => {
-        const game = makeGame({ meta: { status: 'waiting', currentRound: null }, gameplay: { rounds: [] } })
+        const game = makeGame({ meta: { status: 'waiting', currentRound: null, hostPlayerId: 'describer' }, gameplay: { rounds: [] } })
         const gameAfterStart = makeGame({
-            meta: { status: 'playing', currentRound: 0 },
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
             gameplay: {
                 rounds: [{
                     targetColor: { h: 120, s: 60, l: 45 },
@@ -464,5 +464,50 @@ describe('handleResetGame', () => {
         mockSend.mockResolvedValue({ Item: game })
         const result = await handleResetGame('conn1', 'game1', hostId)
         expect(result.statusCode).toBe(200)
+    })
+})
+
+// ============================================================
+// Task 6.1: Non-host rejection + no DB mutation
+// ============================================================
+
+describe('handleStartRound — non-host rejection (no DB mutation)', () => {
+    it('returns 403 and does not write to DB when non-host sends startRound from waiting status', async () => {
+        const game = makeGame({ meta: { status: 'waiting', currentRound: null, hostPlayerId: 'describer' }, gameplay: { rounds: [] } })
+        mockSend.mockResolvedValueOnce({ Item: game }) // GetCommand
+        const result = await handleStartRound('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(403)
+        // Only the initial GetCommand should have been called (no mutating UpdateCommand)
+        const mutateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression !== undefined
+        })
+        expect(mutateCalls.length).toBe(0)
+    })
+})
+
+describe('handleResetGame — non-host rejection (no DB mutation)', () => {
+    it('returns 403 and does not write to DB when non-host sends resetGame', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() }) // GetCommand
+        const result = await handleResetGame('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(403)
+        const mutateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression !== undefined && !input.UpdateExpression.includes('hostPlayerId')
+        })
+        expect(mutateCalls.length).toBe(0)
+    })
+})
+
+describe('handleCloseRoom — non-host rejection (no DB mutation)', () => {
+    it('returns 403 and does not write to DB when non-host sends closeRoom', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() }) // GetCommand
+        const result = await handleCloseRoom('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(403)
+        const mutateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression !== undefined && !input.UpdateExpression.includes('hostPlayerId')
+        })
+        expect(mutateCalls.length).toBe(0)
     })
 })

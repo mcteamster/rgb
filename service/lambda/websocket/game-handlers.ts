@@ -1,7 +1,7 @@
 import { UpdateCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { dynamodb, sendToConnection, broadcastToGame } from './aws-clients';
-import { generateGameId, generatePlayerId, getCurrentRound, sanitiseGameStateForClient } from './utils';
+import { generateGameId, generatePlayerId, getCurrentRound, sanitiseGameStateForClient, isHost, resolveHostPlayerId } from './utils';
 import { checkAndEnforceDeadlines } from './deadlines';
 import { resolveRoundScores } from './round-handlers';
 import { Player } from './types';
@@ -36,7 +36,8 @@ export async function handleCreateGame(connectionId: string, playerName: string,
         meta: {
             status: 'waiting',
             currentRound: null,
-            createdAt: createTime.toISOString()
+            createdAt: createTime.toISOString(),
+            hostPlayerId: playerId
         },
         players: [{ playerId, playerName, joinedAt: createTime.toISOString(), draftColor: { h: 0, s: 0, l: 0 } }],
         gameplay: {
@@ -442,14 +443,28 @@ export async function handleKickPlayer(
     }
     
     const game = gameResult.Item;
-    
-    // Find the host (player who joined earliest)
-    const hostPlayer = game.players.reduce((earliest: Player, player: Player) => 
-        new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
-    );
-    
-    // Only allow host to kick others (or anyone to leave themselves)
-    if (reason === 'kick' && initiatorPlayerId !== hostPlayer.playerId) {
+
+    // Build the persistFn for resolveHostPlayerId read-repair
+    const persistHostId = async (gId: string, hostPlayerId: string) => {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId: gId },
+            UpdateExpression: 'SET meta.hostPlayerId = :hostPlayerId',
+            ExpressionAttributeValues: { ':hostPlayerId': hostPlayerId }
+        }));
+        // Patch the in-memory game object so subsequent isHost calls use the resolved value
+        game.meta.hostPlayerId = hostPlayerId;
+    };
+
+    // Resolve and (if needed) read-repair the authoritative host ID
+    const resolvedHostId = await resolveHostPlayerId(game, persistHostId);
+    // Ensure in-memory meta reflects the resolved value for isHost()
+    if (!game.meta.hostPlayerId) {
+        game.meta.hostPlayerId = resolvedHostId;
+    }
+
+    // Only allow host to kick others (or anyone to leave themselves, or internal disconnect)
+    if (reason === 'kick' && !isHost(game, initiatorPlayerId)) {
         await sendToConnection(initiatorConnectionId, {
             type: 'error',
             error: 'Only the host can kick players'
@@ -464,6 +479,19 @@ export async function handleKickPlayer(
     }
     
     const updatedPlayers = game.players.filter((p: Player) => p.playerId !== targetPlayerId);
+
+    // Determine new host if the host is being removed and there are remaining players
+    const hostIsLeaving = targetPlayerId === resolvedHostId;
+    let newHostId: string | null = null;
+    if (hostIsLeaving && updatedPlayers.length >= 1) {
+        // Promote earliest-joinedAt remaining player; tie-break by playerId lex order
+        const sorted = [...updatedPlayers].sort((a: Player, b: Player) => {
+            const timeDiff = new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+            if (timeDiff !== 0) return timeDiff;
+            return a.playerId < b.playerId ? -1 : 1;
+        });
+        newHostId = sorted[0].playerId;
+    }
 
     // Helper: clear target connection and optionally notify
     const cleanupTargetConnection = async () => {
@@ -497,19 +525,26 @@ export async function handleKickPlayer(
     // Check current round phase to apply phase-specific logic
     const currentRound = getCurrentRound(game);
 
-    // --- Task 4.1: Below-minimum player guard ---
+    // --- Below-minimum player guard ---
     // Must come before phase-specific logic
     if (game.meta.status === 'playing' && updatedPlayers.length < 2) {
+        const belowMinExprValues: any = {
+            ':players': updatedPlayers,
+            ':status': 'waiting',
+            ':nullRound': null
+        };
+        let belowMinUpdateExpr = 'SET players = :players, meta.#status = :status, meta.currentRound = :nullRound';
+        if (newHostId) {
+            belowMinUpdateExpr += ', meta.hostPlayerId = :newHostId';
+            belowMinExprValues[':newHostId'] = newHostId;
+        }
+
         await dynamodb.send(new UpdateCommand({
             TableName: process.env.GAMES_TABLE!,
             Key: { gameId },
-            UpdateExpression: 'SET players = :players, meta.#status = :status, meta.currentRound = :nullRound',
+            UpdateExpression: belowMinUpdateExpr,
             ExpressionAttributeNames: { '#status': 'status' },
-            ExpressionAttributeValues: {
-                ':players': updatedPlayers,
-                ':status': 'waiting',
-                ':nullRound': null
-            }
+            ExpressionAttributeValues: belowMinExprValues
         }));
 
         await cleanupTargetConnection();
@@ -554,21 +589,29 @@ export async function handleKickPlayer(
             return { ...player, score: totalScore };
         });
 
+        const descExprValues: any = {
+            ':players': playersWithScores,
+            ':rounds': updatedRounds
+        };
+        let descUpdateExpr = 'SET players = :players, gameplay.rounds = :rounds';
+        if (newHostId) {
+            descUpdateExpr += ', meta.hostPlayerId = :newHostId';
+            descExprValues[':newHostId'] = newHostId;
+        }
+
         await dynamodb.send(new UpdateCommand({
             TableName: process.env.GAMES_TABLE!,
             Key: { gameId },
-            UpdateExpression: 'SET players = :players, gameplay.rounds = :rounds',
-            ExpressionAttributeValues: {
-                ':players': playersWithScores,
-                ':rounds': updatedRounds
-            }
+            UpdateExpression: descUpdateExpr,
+            ExpressionAttributeValues: descExprValues
         }));
 
         await cleanupTargetConnection();
 
         await broadcastToGame(gameId, {
             type: 'playersUpdated',
-            players: updatedPlayers
+            players: updatedPlayers,
+            ...(newHostId ? { hostPlayerId: newHostId } : {})
         });
 
         return { statusCode: 200 };
@@ -583,12 +626,19 @@ export async function handleKickPlayer(
         const allRemainingSubmitted = remainingGuessers.length > 0 &&
             remainingGuessers.every((p: Player) => currentRound.submissions?.[p.playerId]);
 
+        const guessExprValues: any = { ':players': updatedPlayers };
+        let guessUpdateExpr = 'SET players = :players';
+        if (newHostId) {
+            guessUpdateExpr += ', meta.hostPlayerId = :newHostId';
+            guessExprValues[':newHostId'] = newHostId;
+        }
+
         // Persist updated player list first
         await dynamodb.send(new UpdateCommand({
             TableName: process.env.GAMES_TABLE!,
             Key: { gameId },
-            UpdateExpression: 'SET players = :players',
-            ExpressionAttributeValues: { ':players': updatedPlayers }
+            UpdateExpression: guessUpdateExpr,
+            ExpressionAttributeValues: guessExprValues
         }));
 
         await cleanupTargetConnection();
@@ -604,7 +654,8 @@ export async function handleKickPlayer(
             // Still waiting on guesses — just broadcast player update
             await broadcastToGame(gameId, {
                 type: 'playersUpdated',
-                players: updatedPlayers
+                players: updatedPlayers,
+                ...(newHostId ? { hostPlayerId: newHostId } : {})
             });
         }
 
@@ -612,11 +663,18 @@ export async function handleKickPlayer(
     }
 
     // --- Default: waiting or reveal phase — remove player, broadcast ---
+    const defExprValues: any = { ':players': updatedPlayers };
+    let defUpdateExpr = 'SET players = :players';
+    if (newHostId) {
+        defUpdateExpr += ', meta.hostPlayerId = :newHostId';
+        defExprValues[':newHostId'] = newHostId;
+    }
+
     await dynamodb.send(new UpdateCommand({
         TableName: process.env.GAMES_TABLE!,
         Key: { gameId },
-        UpdateExpression: 'SET players = :players',
-        ExpressionAttributeValues: { ':players': updatedPlayers }
+        UpdateExpression: defUpdateExpr,
+        ExpressionAttributeValues: defExprValues
     }));
 
     await cleanupTargetConnection();
@@ -624,7 +682,8 @@ export async function handleKickPlayer(
     // Broadcast updated player list to remaining players
     await broadcastToGame(gameId, {
         type: 'playersUpdated',
-        players: updatedPlayers
+        players: updatedPlayers,
+        ...(newHostId ? { hostPlayerId: newHostId } : {})
     });
     
     return { statusCode: 200 };

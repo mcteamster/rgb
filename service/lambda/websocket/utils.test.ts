@@ -10,6 +10,8 @@ import {
     shouldEndGame,
     sanitiseGameStateForClient,
     sanitiseGameplayForClient,
+    isHost,
+    resolveHostPlayerId,
 } from './utils'
 
 describe('generateGameId', () => {
@@ -365,5 +367,65 @@ describe('sanitiseGameplayForClient', () => {
     it('does not throw when rounds array is missing', () => {
         expect(() => sanitiseGameplayForClient({})).not.toThrow()
         expect(sanitiseGameplayForClient({}).rounds).toEqual([])
+    })
+})
+
+describe('isHost', () => {
+    const makeGame = (hostPlayerId?: string) => ({
+        meta: hostPlayerId !== undefined ? { hostPlayerId } : {},
+        players: [],
+    })
+
+    it('returns true when playerId matches meta.hostPlayerId', () => {
+        expect(isHost(makeGame('host-123'), 'host-123')).toBe(true)
+    })
+
+    it('returns false when playerId does not match meta.hostPlayerId', () => {
+        expect(isHost(makeGame('host-123'), 'other-player')).toBe(false)
+    })
+
+    it('returns false when meta.hostPlayerId is missing', () => {
+        expect(isHost(makeGame(), 'anyone')).toBe(false)
+    })
+})
+
+describe('resolveHostPlayerId', () => {
+    const makePersist = () => vi.fn().mockResolvedValue(undefined)
+
+    const makeGame = (hostPlayerId: string | undefined, players: any[]) => ({
+        gameId: 'game1',
+        meta: hostPlayerId !== undefined ? { hostPlayerId } : {},
+        players,
+    })
+
+    it('returns stored hostPlayerId verbatim without calling persistFn', async () => {
+        const persistFn = makePersist()
+        const game = makeGame('stored-host', [
+            { playerId: 'p1', joinedAt: '2024-01-01T00:00:00Z' },
+        ])
+        const result = await resolveHostPlayerId(game, persistFn)
+        expect(result).toBe('stored-host')
+        expect(persistFn).not.toHaveBeenCalled()
+    })
+
+    it('derives host from earliest joinedAt when hostPlayerId absent, calls persistFn', async () => {
+        const persistFn = makePersist()
+        const game = makeGame(undefined, [
+            { playerId: 'p2', joinedAt: '2024-01-01T00:00:02Z' },
+            { playerId: 'p1', joinedAt: '2024-01-01T00:00:00Z' },
+        ])
+        const result = await resolveHostPlayerId(game, persistFn)
+        expect(result).toBe('p1')
+        expect(persistFn).toHaveBeenCalledWith('game1', 'p1')
+    })
+
+    it('breaks joinedAt ties deterministically by playerId lexicographic order', async () => {
+        const persistFn = makePersist()
+        const game = makeGame(undefined, [
+            { playerId: 'z-player', joinedAt: '2024-01-01T00:00:00Z' },
+            { playerId: 'a-player', joinedAt: '2024-01-01T00:00:00Z' },
+        ])
+        const result = await resolveHostPlayerId(game, persistFn)
+        expect(result).toBe('a-player')
     })
 })

@@ -182,3 +182,28 @@ describe('message handler body guard', () => {
         expect(result.statusCode).toBe(500)
     })
 })
+
+// ============================================================
+// Task 6.5: End-to-end router — non-host 403 pass-through
+// ============================================================
+
+describe('message handler — non-host 403 forwarded from handler (task 6.5)', () => {
+    const actions403 = ['startRound', 'resetGame', 'closeRoom', 'finaliseGame']
+
+    for (const action of actions403) {
+        it(`forwards 403 from ${action} handler when validation passes but handler rejects non-host`, async () => {
+            // Override the specific handler to return 403
+            const handlers: Record<string, any> = {
+                startRound: handleStartRound,
+                resetGame: handleResetGame,
+                closeRoom: handleCloseRoom,
+                finaliseGame: handleFinaliseGame,
+            }
+            vi.mocked(handlers[action]).mockResolvedValueOnce({ statusCode: 403 })
+            mockValidatePlayerAction.mockResolvedValue({ statusCode: 200 })
+
+            const result = await handler(makeEvent({ action, gameId: 'game1', playerId: 'non-host-id' }))
+            expect(result.statusCode).toBe(403)
+        })
+    }
+})

@@ -19,7 +19,7 @@ import { handleCreateGame, handleJoinGame, handleRejoinGame, handleKickPlayer, h
 
 const makeGame = (overrides: any = {}) => ({
     gameId: 'game1',
-    meta: { status: 'waiting', currentRound: null },
+    meta: { status: 'waiting', currentRound: null, hostPlayerId: 'host' },
     config: { maxPlayers: 10, descriptionTimeLimit: 30, guessingTimeLimit: 15, turnsPerPlayer: 2 },
     players: [
         { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
@@ -505,7 +505,7 @@ describe('handleKickPlayer', () => {
 describe('handleKickPlayer — guessing phase', () => {
     const makeGuessingGame = (submissions: Record<string, any> = {}) =>
         makeGame({
-            meta: { status: 'playing', currentRound: 0 },
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'host' },
             players: [
                 { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
                 { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
@@ -561,7 +561,7 @@ describe('handleKickPlayer — guessing phase', () => {
     it('removes the only guesser in 2-player game during guessing — falls through to below-minimum guard', async () => {
         // 2-player game: host is describer, p2 is the only guesser
         const game = makeGame({
-            meta: { status: 'playing', currentRound: 0 },
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'host' },
             players: [
                 { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
                 { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
@@ -595,7 +595,7 @@ describe('handleKickPlayer — guessing phase', () => {
 describe('handleKickPlayer — below-minimum guard', () => {
     const makePlayingGame = (phase: string, players: any[]) =>
         makeGame({
-            meta: { status: 'playing', currentRound: 0 },
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: players[0].playerId },
             players,
             gameplay: {
                 rounds: [{
@@ -662,5 +662,102 @@ describe('handleKickPlayer — below-minimum guard', () => {
         )
         expect(gameStateUpdatedCall).toBeUndefined()
         expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'playersUpdated' }))
+    })
+})
+
+// ============================================================
+// Task 6.2 / 6.3 / 6.4: host authorization, succession, legacy read-repair
+// ============================================================
+
+describe('handleKickPlayer — host authorization (task 6.2)', () => {
+    it('host successfully kicks a member', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() })
+        mockSend.mockResolvedValue({ Items: [] })
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+    })
+
+    it('non-host attempting to kick a member gets 403 and no player removal', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() }) // GetCommand
+        const result = await handleKickPlayer('conn1', 'game1', 'p2', 'host', 'kick')
+        expect(result.statusCode).toBe(403)
+        // No mutating UpdateCommand should have been issued
+        const mutateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression !== undefined && !input.UpdateExpression.includes('hostPlayerId')
+        })
+        expect(mutateCalls.length).toBe(0)
+    })
+
+    it('a member removing themselves (leave) succeeds regardless of host status', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() })
+        mockSend.mockResolvedValue({ Items: [] })
+        const result = await handleKickPlayer('conn1', 'game1', 'p2', 'p2', 'leave')
+        expect(result.statusCode).toBe(200)
+    })
+})
+
+describe('handleKickPlayer — host succession (task 6.3)', () => {
+    it('removing the host promotes the earliest-joined remaining player and broadcasts hostPlayerId', async () => {
+        const game = makeGame({
+            meta: { status: 'waiting', currentRound: null, hostPlayerId: 'host' },
+            players: [
+                { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
+                { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
+                { playerId: 'p3',   playerName: 'Carol', joinedAt: '2024-01-01T00:00:02Z', score: 0 },
+            ]
+        })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })   // GetCommand: game
+            .mockResolvedValueOnce({})               // UpdateCommand: persist players + new hostPlayerId
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: find target connection
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'host', 'leave')
+        expect(result.statusCode).toBe(200)
+
+        // Verify the broadcast includes the new hostPlayerId (p2 is earliest remaining)
+        const playersBroadcast = mockBroadcastToGame.mock.calls.find(
+            (c: any[]) => c[1]?.type === 'playersUpdated'
+        )
+        expect(playersBroadcast).toBeDefined()
+        expect(playersBroadcast[1].hostPlayerId).toBe('p2')
+
+        // Verify the DynamoDB update included the new hostPlayerId
+        const updateCall = mockSend.mock.calls.find(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression?.includes('hostPlayerId') && input.UpdateExpression?.includes('players')
+        })
+        expect(updateCall).toBeDefined()
+        const input = updateCall![0].input ?? updateCall![0]
+        expect(input.ExpressionAttributeValues[':newHostId']).toBe('p2')
+    })
+})
+
+describe('handleKickPlayer — legacy read-repair (task 6.4)', () => {
+    it('a game with no meta.hostPlayerId is read-repaired from earliest joinedAt on first privileged action', async () => {
+        const legacyGame = makeGame({
+            meta: { status: 'waiting', currentRound: null }, // no hostPlayerId
+            players: [
+                { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
+                { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
+            ]
+        })
+        mockSend
+            .mockResolvedValueOnce({ Item: legacyGame })   // GetCommand: game
+            .mockResolvedValueOnce({})                     // UpdateCommand: read-repair hostPlayerId
+            .mockResolvedValueOnce({})                     // UpdateCommand: persist players
+            .mockResolvedValueOnce({ Items: [] })          // QueryCommand: find target connection
+
+        // Host (earliest joinedAt) kicks p2
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+
+        // Verify read-repair UpdateCommand was issued
+        const repairCall = mockSend.mock.calls.find(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression === 'SET meta.hostPlayerId = :hostPlayerId'
+        })
+        expect(repairCall).toBeDefined()
+        const repairInput = repairCall![0].input ?? repairCall![0]
+        expect(repairInput.ExpressionAttributeValues[':hostPlayerId']).toBe('host')
     })
 })
