@@ -219,21 +219,99 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
     }
     
     const playerId = generatePlayerId();
-    game.players.push({ playerId, playerName, joinedAt: new Date().toISOString(), draftColor: { h: 0, s: 0, l: 0 } });
-    
-    // Update the game state first
-    try {
-        await dynamodb.send(new UpdateCommand({
-            TableName: process.env.GAMES_TABLE!,
-            Key: { gameId },
-            UpdateExpression: 'SET players = :players',
-            ExpressionAttributeValues: {
-                ':players': game.players
+    const newPlayer: Player = { playerId, playerName, joinedAt: new Date().toISOString(), draftColor: { h: 0, s: 0, l: 0 } };
+
+    // Guarded write: append with list_append and a ConditionExpression that
+    // enforces the observed player count, capacity, and status at write time.
+    // On ConditionalCheckFailedException, re-read with a strongly-consistent
+    // GetCommand and re-run the duplicate-name / status / capacity checks
+    // before retrying. Cap retries to avoid unbounded contention.
+    const MAX_JOIN_ATTEMPTS = 5;
+    let expectedCount = game.players.length;
+    let currentGame = game;
+
+    for (let attempt = 0; attempt < MAX_JOIN_ATTEMPTS; attempt++) {
+        try {
+            await dynamodb.send(new UpdateCommand({
+                TableName: process.env.GAMES_TABLE!,
+                Key: { gameId },
+                UpdateExpression: 'SET players = list_append(players, :newPlayer)',
+                ConditionExpression:
+                    'size(players) = :expectedCount AND size(players) < :maxPlayers AND meta.#status = :waiting',
+                ExpressionAttributeNames: {
+                    '#status': 'status'
+                },
+                ExpressionAttributeValues: {
+                    ':newPlayer': [newPlayer],
+                    ':expectedCount': expectedCount,
+                    ':maxPlayers': currentGame.config.maxPlayers,
+                    ':waiting': 'waiting'
+                }
+            }));
+            // Write succeeded — build the updated players list for subsequent messaging.
+            currentGame = { ...currentGame, players: [...currentGame.players, newPlayer] };
+            break;
+        } catch (error: any) {
+            if (error.name !== 'ConditionalCheckFailedException') {
+                console.error('Error updating game state in joinGame:', error);
+                throw error;
             }
-        }));
-    } catch (error) {
-        console.error('Error updating game state in joinGame:', error);
-        throw error;
+
+            // Concurrent modification — re-read with strong consistency.
+            const freshResult = await dynamodb.send(new GetCommand({
+                TableName: process.env.GAMES_TABLE!,
+                Key: { gameId },
+                ConsistentRead: true
+            }));
+
+            if (!freshResult.Item) {
+                await sendToConnection(connectionId, {
+                    type: 'error',
+                    error: 'Game not found'
+                });
+                return { statusCode: 404 };
+            }
+
+            currentGame = freshResult.Item as typeof game;
+
+            // Re-run guards against fresh state.
+            const freshDuplicate = currentGame.players.find((p: Player) => p.playerName === playerName);
+            if (freshDuplicate) {
+                await sendToConnection(connectionId, {
+                    type: 'error',
+                    error: 'Player name is already taken'
+                });
+                return { statusCode: 400 };
+            }
+
+            if (currentGame.meta.status !== 'waiting') {
+                await sendToConnection(connectionId, {
+                    type: 'error',
+                    error: 'Game is already in progress'
+                });
+                return { statusCode: 400 };
+            }
+
+            if (currentGame.players.length >= currentGame.config.maxPlayers) {
+                await sendToConnection(connectionId, {
+                    type: 'error',
+                    error: 'Game is full'
+                });
+                return { statusCode: 400 };
+            }
+
+            // State still allows the join — update expected count and retry.
+            expectedCount = currentGame.players.length;
+
+            if (attempt === MAX_JOIN_ATTEMPTS - 1) {
+                console.error('joinGame exhausted retries for gameId:', gameId);
+                await sendToConnection(connectionId, {
+                    type: 'error',
+                    error: 'Failed to join game due to concurrent activity; please try again'
+                });
+                return { statusCode: 409 };
+            }
+        }
     }
 
     // Then update the connection table to associate this WebSocket with the game
@@ -257,11 +335,11 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
     // Send full game state to the joining player
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: sanitiseGameStateForClient(game),
+        gameState: sanitiseGameStateForClient(currentGame),
         playerId: playerId
     });
     
-    console.log('About to broadcast playersUpdated for game:', gameId, 'with players:', game.players);
+    console.log('About to broadcast playersUpdated for game:', gameId, 'with players:', currentGame.players);
     
     // Small delay to ensure GSI is updated
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -280,7 +358,7 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
         try {
             await sendToConnection(connection.connectionId, {
                 type: 'playersUpdated',
-                players: game.players
+                players: currentGame.players
             });
         } catch (error: any) {
             console.error('Error sending to connection:', connection.connectionId, error);
