@@ -30,6 +30,29 @@ describe('get-stats handler', () => {
         expect(JSON.parse(result.body).error).toMatch(/userId/)
     })
 
+    it('returns 400 for a malformed userId and does not access any table', async () => {
+        const result = await handler(makeEvent('2026-03-15', 'bad!id'))
+        expect(result.statusCode).toBe(400)
+        expect(JSON.parse(result.body).error).toBe('Invalid userId')
+        expect(mockSend).not.toHaveBeenCalled()
+    })
+
+    it('returns 400 for a userId that is too short and does not access any table', async () => {
+        const result = await handler(makeEvent('2026-03-15', 'short'))
+        expect(result.statusCode).toBe(400)
+        expect(JSON.parse(result.body).error).toBe('Invalid userId')
+        expect(mockSend).not.toHaveBeenCalled()
+    })
+
+    it('valid userId still enforces the submit-before-stats gate (403)', async () => {
+        // challenge found, but no submission from user → 403
+        mockSend.mockResolvedValueOnce({ Item: { challengeId: '2026-03-15', totalSubmissions: 5 } })
+        mockSend.mockResolvedValueOnce({ Item: undefined })
+        const result = await handler(makeEvent('2026-03-15', 'user-123'))
+        expect(result.statusCode).toBe(403)
+        expect(mockSend).toHaveBeenCalledTimes(2)
+    })
+
     it('returns 404 when challenge is not found', async () => {
         mockSend.mockResolvedValueOnce({ Item: undefined })
         const result = await handler(makeEvent('2026-03-15', 'user-123'))

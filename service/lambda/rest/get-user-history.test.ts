@@ -32,9 +32,30 @@ describe('get-user-history handler', () => {
         expect(result.statusCode).toBe(400)
     })
 
+    it('returns 400 for a malformed userId and does not issue a DynamoDB query', async () => {
+        const result = await handler(makeEvent('bad!id'))
+        expect(result.statusCode).toBe(400)
+        expect(JSON.parse(result.body).error).toBe('Invalid userId')
+        expect(mockSend).not.toHaveBeenCalled()
+    })
+
+    it('returns 400 for a userId that is too short and does not issue a DynamoDB query', async () => {
+        const result = await handler(makeEvent('short'))
+        expect(result.statusCode).toBe(400)
+        expect(JSON.parse(result.body).error).toBe('Invalid userId')
+        expect(mockSend).not.toHaveBeenCalled()
+    })
+
+    it('returns 200 for a valid userId (integration smoke)', async () => {
+        mockSend.mockResolvedValueOnce({ Items: [] })
+        const result = await handler(makeEvent('user-12345'))
+        expect(result.statusCode).toBe(200)
+        expect(mockSend).toHaveBeenCalledTimes(1)
+    })
+
     it('returns 200 with empty stats when user has no submissions', async () => {
         mockSend.mockResolvedValueOnce({ Items: [] })
-        const result = await handler(makeEvent('user123'))
+        const result = await handler(makeEvent('user-12345'))
         expect(result.statusCode).toBe(200)
         const body = JSON.parse(result.body)
         expect(body.submissions).toHaveLength(0)
@@ -56,7 +77,7 @@ describe('get-user-history handler', () => {
                 ]
             }
         })
-        const result = await handler(makeEvent('user123'))
+        const result = await handler(makeEvent('user-12345'))
         expect(result.statusCode).toBe(200)
         const body = JSON.parse(result.body)
         expect(body.stats.totalPlayed).toBe(2)
@@ -71,7 +92,7 @@ describe('get-user-history handler', () => {
         ]
         mockSend.mockResolvedValueOnce({ Items: submissions })
         mockSend.mockResolvedValueOnce({ Responses: { '': [] } })
-        const result = await handler(makeEvent('user123'))
+        const result = await handler(makeEvent('user-12345'))
         const body = JSON.parse(result.body)
         expect(body.stats.currentStreak).toBe(2)
     })
@@ -83,7 +104,7 @@ describe('get-user-history handler', () => {
         ]
         mockSend.mockResolvedValueOnce({ Items: submissions })
         mockSend.mockResolvedValueOnce({ Responses: { '': [] } })
-        const result = await handler(makeEvent('user123'))
+        const result = await handler(makeEvent('user-12345'))
         const body = JSON.parse(result.body)
         expect(body.stats.currentStreak).toBe(0)
     })
@@ -96,14 +117,14 @@ describe('get-user-history handler', () => {
         ]
         mockSend.mockResolvedValueOnce({ Items: submissions })
         mockSend.mockResolvedValueOnce({ Responses: { '': [] } })
-        const result = await handler(makeEvent('user123'))
+        const result = await handler(makeEvent('user-12345'))
         const body = JSON.parse(result.body)
         expect(body.stats.currentStreak).toBe(1)
     })
 
     it('returns 500 on unexpected error', async () => {
         mockSend.mockRejectedValueOnce(new Error('DynamoDB error'))
-        const result = await handler(makeEvent('user123'))
+        const result = await handler(makeEvent('user-12345'))
         expect(result.statusCode).toBe(500)
     })
 })
