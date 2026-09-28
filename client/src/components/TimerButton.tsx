@@ -8,7 +8,7 @@ interface TimerButtonProps {
   timerActive: boolean;
   timerProgress: number;
   countdown: number;
-  targetColor: {
+  targetColor?: {
     h: number;
     s: number;
     l: number;
@@ -31,12 +31,14 @@ export const TimerButton: React.FC<TimerButtonProps> = ({
       onClick={onClick} 
       disabled={disabled}
       style={{ 
-        background: timerUp
-          ? `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`
-          : timerActive 
-          ? `linear-gradient(to right, hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%) ${timerProgress}%, hsl(${targetColor.h}, 0%, ${Math.max(0, targetColor.l - 15)}%) ${timerProgress}%)`
-          : `hsl(${targetColor.h}, 0%, ${Math.max(0, targetColor.l - 15)}%)`,
-        color: targetColor.l > 50 ? '#000' : '#fff',
+        background: targetColor
+          ? (timerUp
+            ? `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`
+            : timerActive 
+            ? `linear-gradient(to right, hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%) ${timerProgress}%, hsl(${targetColor.h}, 0%, ${Math.max(0, targetColor.l - 15)}%) ${timerProgress}%)`
+            : `hsl(${targetColor.h}, 0%, ${Math.max(0, targetColor.l - 15)}%)`)
+          : undefined,
+        color: targetColor ? (targetColor.l > 50 ? '#000' : '#fff') : undefined,
         fontWeight: 'bold',
         border: '2px solid #888',
         width: '100%'

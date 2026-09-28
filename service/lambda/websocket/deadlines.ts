@@ -1,7 +1,7 @@
 import { UpdateCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { dynamodb, broadcastToGame } from './aws-clients';
-import { getCurrentRound, findLastSubmittedColor, calculateColorScore, shouldEndGame } from './utils';
+import { getCurrentRound, findLastSubmittedColor, calculateColorScore, shouldEndGame, sanitiseGameplayForClient } from './utils';
 import { writeRoundToS3 } from './analytics';
 
 export async function checkAndEnforceDeadlines(gameId: string): Promise<void> {
@@ -114,7 +114,7 @@ async function enforceDescriptionDeadline(gameId: string): Promise<void> {
 
             await broadcastToGame(gameId, {
                 type: 'gameplayUpdated',
-                gameplay: updatedGame.Item!.gameplay
+                gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
             });
 
             // Broadcast updated players with new scores
@@ -171,7 +171,7 @@ async function enforceDescriptionDeadline(gameId: string): Promise<void> {
 
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
-            gameplay: updatedGame.Item!.gameplay
+            gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
         });
     }
 }
@@ -268,7 +268,7 @@ async function enforceGuessingDeadline(gameId: string): Promise<void> {
 
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
-            gameplay: updatedGame.Item!.gameplay
+            gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
         });
         // Broadcast updated players with new scores
         await broadcastToGame(gameId, {

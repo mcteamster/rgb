@@ -232,6 +232,61 @@ describe('handleSubmitColor', () => {
         const result = await handleSubmitColor('conn1', 'game1', 'guesser', { h: 180, s: 50, l: 50 })
         expect(result.statusCode).toBe(409)
     })
+
+    it('retains targetColor in gameplayUpdated when all guesses in (reveal transition)', async () => {
+        const target = { h: 180, s: 80, l: 50 }
+        const game = makeGame({
+            gameplay: {
+                rounds: [{
+                    targetColor: target,
+                    describerId: 'describer',
+                    phase: 'guessing',
+                    submissions: {},
+                    timers: {},
+                }],
+            },
+        })
+        // gameAfterSubmission: all guesses are in, handler will transition round to reveal phase
+        const gameAfterSubmission = {
+            ...game,
+            gameplay: {
+                rounds: [{
+                    targetColor: target,
+                    describerId: 'describer',
+                    phase: 'guessing',
+                    submissions: { guesser: { h: 180, s: 50, l: 50 } },
+                    timers: {},
+                }],
+            },
+        }
+        // finalGame: handler writes reveal phase with scores; this is what gets broadcast
+        const finalGame = {
+            ...game,
+            gameplay: {
+                rounds: [{
+                    targetColor: target,
+                    describerId: 'describer',
+                    phase: 'reveal',
+                    submissions: { guesser: { h: 180, s: 50, l: 50 } },
+                    scores: { guesser: 95, describer: 95 },
+                    timers: {},
+                }],
+            },
+        }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })               // GetCommand: initial
+            .mockResolvedValueOnce({})                           // UpdateCommand: save submission
+            .mockResolvedValueOnce({ Item: gameAfterSubmission }) // GetCommand: get updated
+            .mockResolvedValueOnce({})                           // UpdateCommand: save scores/reveal
+            .mockResolvedValueOnce({ Item: finalGame })          // GetCommand: final broadcast
+        await handleSubmitColor('conn1', 'game1', 'guesser', { h: 180, s: 50, l: 50 })
+        const gameplayCall = mockBroadcastToGame.mock.calls.find(
+            (c: any[]) => c[1]?.type === 'gameplayUpdated'
+        )
+        expect(gameplayCall).toBeDefined()
+        // reveal phase — targetColor should be retained by sanitiser
+        expect(gameplayCall[1].gameplay.rounds[0].targetColor).toEqual(target)
+    })
 })
 
 // ============================================================
@@ -296,6 +351,31 @@ describe('handleStartRound', () => {
             .mockResolvedValueOnce({ Item: game })
         const result = await handleStartRound('conn1', 'game1', 'describer')
         expect(result.statusCode).toBe(200)
+    })
+
+    it('strips targetColor from gameplayUpdated broadcast on startRound', async () => {
+        const game = makeGame({ meta: { status: 'waiting', currentRound: null }, gameplay: { rounds: [] } })
+        const gameAfterStart = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: { h: 120, s: 60, l: 45 },
+                    describerId: 'describer',
+                    phase: 'describing',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({ Item: gameAfterStart })
+        await handleStartRound('conn1', 'game1', 'describer')
+        const gameplayCall = mockBroadcastToGame.mock.calls.find(
+            (c: any[]) => c[1]?.type === 'gameplayUpdated'
+        )
+        expect(gameplayCall).toBeDefined()
+        expect(gameplayCall[1].gameplay.rounds[0]).not.toHaveProperty('targetColor')
     })
 })
 

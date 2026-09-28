@@ -110,6 +110,50 @@ export function findLastSubmittedColor(game: any, playerId: string): HSLColor | 
     return null;
 }
 
+// ============================================================================
+// SANITISATION — outbound payload helpers
+// ============================================================================
+
+/**
+ * Strip targetColor from rounds that are not yet in reveal/endgame phase.
+ * Returns a new array; does not mutate the input.
+ */
+function sanitiseRoundsForClient(rounds: any[]): any[] {
+    return rounds.map(round => {
+        if (round.phase === 'reveal' || round.phase === 'endgame') {
+            return round; // pass through with targetColor
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { targetColor, ...rest } = round;
+        return rest; // omit targetColor
+    });
+}
+
+/**
+ * Return a shallow-cloned game state with gameplay.rounds sanitised for
+ * client delivery (targetColor stripped from non-reveal/non-endgame rounds).
+ */
+export function sanitiseGameStateForClient(gameState: any): any {
+    return {
+        ...gameState,
+        gameplay: {
+            ...gameState.gameplay,
+            rounds: sanitiseRoundsForClient(gameState.gameplay?.rounds ?? [])
+        }
+    };
+}
+
+/**
+ * Return a shallow-cloned gameplay object with rounds sanitised for
+ * client delivery.
+ */
+export function sanitiseGameplayForClient(gameplay: any): any {
+    return {
+        ...gameplay,
+        rounds: sanitiseRoundsForClient(gameplay?.rounds ?? [])
+    };
+}
+
 export function shouldEndGame(game: any): boolean {
     const turnsPerPlayer = game.config.turnsPerPlayer;
     const players = game.players;

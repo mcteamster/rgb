@@ -1,7 +1,7 @@
 import { UpdateCommand, GetCommand, DeleteCommand, ScanCommand, QueryCommand, PutCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { dynamodb, sendToConnection, broadcastToGame } from './aws-clients';
-import { generateGameId, generatePlayerId, getCurrentRound } from './utils';
+import { generateGameId, generatePlayerId, getCurrentRound, sanitiseGameStateForClient } from './utils';
 import { checkAndEnforceDeadlines } from './deadlines';
 import { Player } from './types';
 
@@ -76,7 +76,7 @@ export async function handleCreateGame(connectionId: string, playerName: string,
     
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: gameItem,
+        gameState: sanitiseGameStateForClient(gameItem),
         playerId: playerId
     });
     
@@ -102,7 +102,7 @@ export async function handleGetGame(connectionId: string, gameId: string): Promi
     
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: result.Item
+        gameState: sanitiseGameStateForClient(result.Item)
     });
     
     return { statusCode: 200 };
@@ -180,7 +180,7 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
             // Send game state to reconnecting player
             await sendToConnection(connectionId, {
                 type: 'gameStateUpdated',
-                gameState: game,
+                gameState: sanitiseGameStateForClient(game),
                 playerId
             });
 
@@ -257,7 +257,7 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
     // Send full game state to the joining player
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: game,
+        gameState: sanitiseGameStateForClient(game),
         playerId: playerId
     });
     
@@ -338,7 +338,7 @@ export async function handleRejoinGame(connectionId: string, gameId: string, pla
     // Send full game state with player ID
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: game,
+        gameState: sanitiseGameStateForClient(game),
         playerId: playerId
     });
     

@@ -14,7 +14,7 @@ export interface Player {
 }
 
 export interface GameRound {
-  targetColor: HSLColor;
+  targetColor?: HSLColor;
   startedAt: string;
   describerId?: string;
   description?: string;

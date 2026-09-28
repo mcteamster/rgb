@@ -2,7 +2,7 @@ import { UpdateCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { HSLColor, Player } from './types';
 import { dynamodb, broadcastToGame, sendToConnection } from './aws-clients';
-import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame } from './utils';
+import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame, sanitiseGameplayForClient, sanitiseGameStateForClient } from './utils';
 import { writeRoundToS3 } from './analytics';
 
 export async function handleUpdateDraftDescription(connectionId: string, gameId: string, playerId: string, description: string): Promise<APIGatewayProxyResultV2> {
@@ -43,6 +43,8 @@ export async function handleUpdateDraftDescription(connectionId: string, gameId:
         }
     }));
     
+    // No gameplayUpdated broadcast here — only players are updated (draftDescription lives on the player object).
+    // If a gameplayUpdated broadcast is added in future, wrap gameplay with sanitiseGameplayForClient.
     return { statusCode: 200 };
 }
 
@@ -136,7 +138,7 @@ export async function handleSubmitDescription(connectionId: string, gameId: stri
 
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
-            gameplay: updatedGame.Item!.gameplay
+            gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
         });
 
         // Broadcast updated players with new scores
@@ -190,7 +192,7 @@ export async function handleSubmitDescription(connectionId: string, gameId: stri
 
     await broadcastToGame(gameId, {
         type: 'gameplayUpdated',
-        gameplay: updatedGame.Item!.gameplay
+        gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
     });
     
     return { statusCode: 200 };
@@ -241,6 +243,8 @@ export async function handleUpdateDraftColor(connectionId: string, gameId: strin
         players: updatedGameResult.Item?.players
     });
     
+    // No gameplayUpdated broadcast here — only playersUpdated is sent (draftColor lives on the player object).
+    // If a gameplayUpdated broadcast is added in future, wrap gameplay with sanitiseGameplayForClient.
     return { statusCode: 200 };
 }
 
@@ -382,7 +386,7 @@ export async function handleSubmitColor(connectionId: string, gameId: string, pl
         // Also broadcast gameplay update for reveal phase
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
-            gameplay: finalGame.Item!.gameplay
+            gameplay: sanitiseGameplayForClient(finalGame.Item!.gameplay)
         });
 
         // Broadcast updated players with new scores
@@ -395,7 +399,7 @@ export async function handleSubmitColor(connectionId: string, gameId: string, pl
     } else {
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
-            gameplay: updatedGame.Item!.gameplay
+            gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
         });
     }
     
@@ -555,7 +559,7 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
 
     await broadcastToGame(gameId, {
         type: 'gameplayUpdated',
-        gameplay: updatedGame.Item!.gameplay
+        gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
     });
     
     return { statusCode: 200 };
@@ -609,7 +613,7 @@ export async function handleFinaliseGame(connectionId: string, gameId: string, p
     // Broadcast gameplay update
     await broadcastToGame(gameId, {
         type: 'gameplayUpdated',
-        gameplay: updatedGame.Item!.gameplay
+        gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
     });
 
     return { statusCode: 200 };
@@ -662,7 +666,7 @@ export async function handleResetGame(connectionId: string, gameId: string, play
     // Broadcast full game state update
     await broadcastToGame(gameId, {
         type: 'gameStateUpdated',
-        gameState: updatedGame.Item
+        gameState: sanitiseGameStateForClient(updatedGame.Item)
     });
 
     return { statusCode: 200 };

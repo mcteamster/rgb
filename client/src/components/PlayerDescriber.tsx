@@ -6,7 +6,7 @@ interface PlayerDescriberProps {
   description: string;
   setDescription: (desc: string) => void;
   onSubmit: () => void;
-  targetColor: { h: number; s: number; l: number };
+  targetColor?: { h: number; s: number; l: number };
   deadline?: string;
   timeLimit: number;
   updateDraftDescription: (desc: string) => void;
@@ -80,7 +80,9 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
+              backgroundColor: targetColor
+                ? `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`
+                : 'var(--color-surface-secondary, #888)',
               border: '2px solid #ccc',
               borderRadius: 'var(--border-radius-medium)',
               zIndex: 1
@@ -141,13 +143,13 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
               padding: `${topPadding}ch 10px 10px 10px`,
               textAlign: 'center',
               fontSize: '16px',
-              color: targetColor.l > 50 ? '#000' : '#fff',
+              color: targetColor ? (targetColor.l > 50 ? '#000' : '#fff') : 'inherit',
               backgroundColor: 'transparent',
-              border: `2px dashed ${targetColor.l > 50 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)'}`,
+              border: `2px dashed ${targetColor ? (targetColor.l > 50 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.5)') : 'rgba(128, 128, 128, 0.5)'}`,
               borderRadius: 'var(--border-radius-medium)',
               outline: 'none',
               width: '100%',
-              '--placeholder-color': targetColor.l > 50 ? '#666' : '#ccc'
+              '--placeholder-color': targetColor ? (targetColor.l > 50 ? '#666' : '#ccc') : '#999'
             } as React.CSSProperties & { '--placeholder-color': string }}
           />
           <div 
@@ -156,7 +158,7 @@ export const PlayerDescriber: React.FC<PlayerDescriberProps> = ({
               bottom: '5px',
               right: '10px',
               fontSize: '12px',
-              color: targetColor.l > 50 ? '#666' : '#ccc',
+              color: targetColor ? (targetColor.l > 50 ? '#666' : '#ccc') : '#999',
               zIndex: 3,
               pointerEvents: 'none'
             }}

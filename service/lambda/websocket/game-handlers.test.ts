@@ -51,6 +51,43 @@ describe('handleGetGame', () => {
         expect(result.statusCode).toBe(200)
         expect(mockSendToConnection).toHaveBeenCalledWith('conn1', expect.objectContaining({ type: 'gameStateUpdated' }))
     })
+
+    it('strips targetColor from describing-phase round in gameStateUpdated payload', async () => {
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: { h: 180, s: 80, l: 50 },
+                    describerId: 'host',
+                    phase: 'describing',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        await handleGetGame('conn1', 'game1')
+        const call = mockSendToConnection.mock.calls[0][1]
+        expect(call.gameState.gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('retains targetColor in reveal-phase round in gameStateUpdated payload', async () => {
+        const target = { h: 180, s: 80, l: 50 }
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: target,
+                    describerId: 'host',
+                    phase: 'reveal',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        await handleGetGame('conn1', 'game1')
+        const call = mockSendToConnection.mock.calls[0][1]
+        expect(call.gameState.gameplay.rounds[0].targetColor).toEqual(target)
+    })
 })
 
 // ============================================================
@@ -176,6 +213,25 @@ describe('handleRejoinGame', () => {
         mockSend.mockResolvedValue({})
         const result = await handleRejoinGame('conn1', 'game1', 'host')
         expect(result.statusCode).toBe(200)
+    })
+
+    it('strips targetColor from active round when rejoining', async () => {
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: { h: 200, s: 70, l: 40 },
+                    describerId: 'host',
+                    phase: 'describing',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        mockSend.mockResolvedValue({})
+        await handleRejoinGame('conn1', 'game1', 'host')
+        const call = mockSendToConnection.mock.calls[0][1]
+        expect(call.gameState.gameplay.rounds[0]).not.toHaveProperty('targetColor')
     })
 })
 
