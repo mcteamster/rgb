@@ -586,6 +586,33 @@ export async function handleFinaliseGame(connectionId: string, gameId: string, p
     }
 
     const game = gameResult.Item;
+
+    // Host guard — must precede all phase checks and mutations.
+    // Authorization (403) takes precedence over phase/readiness (400).
+    if (!isHost(game, playerId)) {
+        // Legacy read-repair: if game has no meta.hostPlayerId, derive and persist it first,
+        // then re-check.  resolveHostPlayerId writes meta.hostPlayerId back to DynamoDB.
+        const persistHostId = async (gId: string, hostId: string): Promise<void> => {
+            await dynamodb.send(new UpdateCommand({
+                TableName: process.env.GAMES_TABLE!,
+                Key: { gameId: gId },
+                UpdateExpression: 'SET meta.hostPlayerId = :hostId',
+                ExpressionAttributeValues: { ':hostId': hostId }
+            }));
+            // Patch in-memory so subsequent isHost calls use the resolved value
+            game.meta = { ...game.meta, hostPlayerId: hostId };
+        };
+        await resolveHostPlayerId(game, persistHostId);
+
+        if (!isHost(game, playerId)) {
+            await sendToConnection(connectionId, {
+                type: 'error',
+                error: 'Only the host can end the game'
+            });
+            return { statusCode: 403 };
+        }
+    }
+
     const currentRound = getCurrentRound(game);
 
     if (!currentRound || currentRound.phase !== 'reveal') {
