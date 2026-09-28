@@ -466,6 +466,9 @@ describe('handleFinaliseGame', () => {
         mockSend.mockResolvedValueOnce({}) // UpdateCommand for read-repair
         const result = await handleFinaliseGame('conn1', 'game1', 'guesser')
         expect(result.statusCode).toBe(403)
+        // Exactly 2 DynamoDB calls: GetCommand (load) + UpdateCommand (read-repair persist).
+        // No further writes or reads — the 403 path must not issue any game-state mutation.
+        expect(mockSend).toHaveBeenCalledTimes(2)
         expect(mockBroadcastToGame).not.toHaveBeenCalled()
     })
 
