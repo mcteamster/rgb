@@ -92,15 +92,27 @@ async function enforceDescriptionDeadline(gameId: string): Promise<void> {
                 scores: roundScores
             };
 
-            await dynamodb.send(new UpdateCommand({
-                TableName: process.env.GAMES_TABLE!,
-                Key: { gameId },
-                UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
-                ExpressionAttributeValues: {
-                    ':rounds': updatedRounds,
-                    ':players': updatedPlayers
+            let conditionMet = true;
+            try {
+                await dynamodb.send(new UpdateCommand({
+                    TableName: process.env.GAMES_TABLE!,
+                    Key: { gameId },
+                    UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
+                    ConditionExpression: `gameplay.rounds[${game.meta.currentRound}].phase = :describing`,
+                    ExpressionAttributeValues: {
+                        ':rounds': updatedRounds,
+                        ':players': updatedPlayers,
+                        ':describing': 'describing'
+                    }
+                }));
+            } catch (error: any) {
+                if (error.name === 'ConditionalCheckFailedException') {
+                    conditionMet = false;
+                } else {
+                    throw error;
                 }
-            }));
+            }
+            if (!conditionMet) return;
 
             const updatedGame = await dynamodb.send(new GetCommand({
                 TableName: process.env.GAMES_TABLE!,
@@ -149,21 +161,33 @@ async function enforceDescriptionDeadline(gameId: string): Promise<void> {
         
         console.log('Setting guessing deadline - guessingTimeLimit:', game.config.guessingTimeLimit, 'type:', typeof game.config.guessingTimeLimit, 'deadline:', game.config.guessingTimeLimit === 0 ? null : new Date(Date.now() + game.config.guessingTimeLimit * 1000).toISOString());
         
-        await dynamodb.send(new UpdateCommand({
-            TableName: process.env.GAMES_TABLE!,
-            Key: { gameId },
-            UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
-            ExpressionAttributeValues: {
-                ':rounds': updatedRounds,
-                ':players': updatedPlayers
+        let conditionMet = true;
+        try {
+            await dynamodb.send(new UpdateCommand({
+                TableName: process.env.GAMES_TABLE!,
+                Key: { gameId },
+                UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
+                ConditionExpression: `gameplay.rounds[${game.meta.currentRound}].phase = :describing`,
+                ExpressionAttributeValues: {
+                    ':rounds': updatedRounds,
+                    ':players': updatedPlayers,
+                    ':describing': 'describing'
+                }
+            }));
+        } catch (error: any) {
+            if (error.name === 'ConditionalCheckFailedException') {
+                conditionMet = false;
+            } else {
+                throw error;
             }
-        }));
+        }
+        if (!conditionMet) return;
         
         const updatedGame = await dynamodb.send(new GetCommand({
             TableName: process.env.GAMES_TABLE!,
             Key: { gameId }
         }));
-        
+
         await broadcastToGame(gameId, {
             type: 'metaUpdated',
             meta: updatedGame.Item!.meta

@@ -370,15 +370,25 @@ export async function resolveRoundScores(gameId: string, game: any, currentRound
         };
     });
 
-    await dynamodb.send(new UpdateCommand({
-        TableName: process.env.GAMES_TABLE!,
-        Key: { gameId },
-        UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
-        ExpressionAttributeValues: {
-            ':rounds': finalRounds,
-            ':players': updatedPlayers
+    try {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId },
+            UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
+            ConditionExpression: `gameplay.rounds[${currentRoundIndex}].phase = :guessing`,
+            ExpressionAttributeValues: {
+                ':rounds': finalRounds,
+                ':players': updatedPlayers,
+                ':guessing': 'guessing'
+            }
+        }));
+    } catch (error: any) {
+        if (error.name === 'ConditionalCheckFailedException') {
+            // Another invocation already resolved this round — abort silently
+            return;
         }
-    }));
+        throw error;
+    }
 
     // Get final updated state
     const finalGame = await dynamodb.send(new GetCommand({
