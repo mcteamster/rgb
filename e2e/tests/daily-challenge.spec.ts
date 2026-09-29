@@ -193,7 +193,7 @@ test.describe('Daily challenge local timezone', () => {
       })
     );
     await page.goto('/');
-    await expect(page.getByRole('button', { name: /87.*details/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /87.*see more/i })).toBeVisible({ timeout: 10_000 });
   });
 
   test('history calendar today marker matches browser local date', async ({ page }) => {

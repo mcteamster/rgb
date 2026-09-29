@@ -85,7 +85,7 @@ test.describe('Home screen Color of the Day button', () => {
     );
     await page.goto('/');
     await expect(page.getByRole('button', { name: /87/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByRole('button', { name: /details/i })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole('button', { name: /see more/i })).toBeVisible({ timeout: 10_000 });
   });
 
   test('result button navigates to /daily', async ({ page }) => {
@@ -97,7 +97,7 @@ test.describe('Home screen Color of the Day button', () => {
       })
     );
     await page.goto('/');
-    await page.getByRole('button', { name: /details/i }).click();
+    await page.getByRole('button', { name: /see more/i }).click();
     await expect(page).toHaveURL(/\/daily/, { timeout: 10_000 });
   });
 
