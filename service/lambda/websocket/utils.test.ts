@@ -8,6 +8,10 @@ import {
     getCurrentRound,
     findLastSubmittedColor,
     shouldEndGame,
+    sanitiseGameStateForClient,
+    sanitiseGameplayForClient,
+    isHost,
+    resolveHostPlayerId,
 } from './utils'
 
 describe('generateGameId', () => {
@@ -88,8 +92,10 @@ describe('calculateColorScore', () => {
 })
 
 describe('generatePlayerId', () => {
-    it('returns a non-empty string', () => {
-        expect(generatePlayerId().length).toBeGreaterThan(0)
+    const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+    it('returns a UUID v4 formatted string', () => {
+        expect(UUID_V4_REGEX.test(generatePlayerId())).toBe(true)
     })
 
     it('generates different ids on successive calls', () => {
@@ -271,5 +277,155 @@ describe('shouldEndGame', () => {
             { describerId: 'p2' },
         ], players)
         expect(shouldEndGame(game)).toBe(true)
+    })
+})
+
+describe('sanitiseGameStateForClient', () => {
+    const target = { h: 180, s: 80, l: 50 }
+
+    it('strips targetColor from a describing-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'describing', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('strips targetColor from a guessing-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'guessing', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('retains targetColor in a reveal-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'reveal', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('retains targetColor in an endgame-phase round', () => {
+        const gameState = {
+            gameplay: {
+                rounds: [{ targetColor: target, phase: 'endgame', submissions: {} }]
+            }
+        }
+        const sanitised = sanitiseGameStateForClient(gameState)
+        expect(sanitised.gameplay.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('does not throw when rounds array is missing', () => {
+        const gameState = { gameplay: {} }
+        expect(() => sanitiseGameStateForClient(gameState)).not.toThrow()
+        expect(sanitiseGameStateForClient(gameState).gameplay.rounds).toEqual([])
+    })
+
+    it('does not mutate the original game state', () => {
+        const round = { targetColor: target, phase: 'describing', submissions: {} }
+        const gameState = { gameplay: { rounds: [round] } }
+        sanitiseGameStateForClient(gameState)
+        expect(round).toHaveProperty('targetColor')
+    })
+})
+
+describe('sanitiseGameplayForClient', () => {
+    const target = { h: 200, s: 60, l: 40 }
+
+    it('strips targetColor from active round', () => {
+        const gameplay = {
+            rounds: [{ targetColor: target, phase: 'describing', submissions: {} }]
+        }
+        const sanitised = sanitiseGameplayForClient(gameplay)
+        expect(sanitised.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('retains targetColor in reveal-phase round', () => {
+        const gameplay = {
+            rounds: [{ targetColor: target, phase: 'reveal', submissions: {} }]
+        }
+        const sanitised = sanitiseGameplayForClient(gameplay)
+        expect(sanitised.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('retains targetColor in endgame-phase round', () => {
+        const gameplay = {
+            rounds: [{ targetColor: target, phase: 'endgame', submissions: {} }]
+        }
+        const sanitised = sanitiseGameplayForClient(gameplay)
+        expect(sanitised.rounds[0].targetColor).toEqual(target)
+    })
+
+    it('does not throw when rounds array is missing', () => {
+        expect(() => sanitiseGameplayForClient({})).not.toThrow()
+        expect(sanitiseGameplayForClient({}).rounds).toEqual([])
+    })
+})
+
+describe('isHost', () => {
+    const makeGame = (hostPlayerId?: string) => ({
+        meta: hostPlayerId !== undefined ? { hostPlayerId } : {},
+        players: [],
+    })
+
+    it('returns true when playerId matches meta.hostPlayerId', () => {
+        expect(isHost(makeGame('host-123'), 'host-123')).toBe(true)
+    })
+
+    it('returns false when playerId does not match meta.hostPlayerId', () => {
+        expect(isHost(makeGame('host-123'), 'other-player')).toBe(false)
+    })
+
+    it('returns false when meta.hostPlayerId is missing', () => {
+        expect(isHost(makeGame(), 'anyone')).toBe(false)
+    })
+})
+
+describe('resolveHostPlayerId', () => {
+    const makePersist = () => vi.fn().mockResolvedValue(undefined)
+
+    const makeGame = (hostPlayerId: string | undefined, players: any[]) => ({
+        gameId: 'game1',
+        meta: hostPlayerId !== undefined ? { hostPlayerId } : {},
+        players,
+    })
+
+    it('returns stored hostPlayerId verbatim without calling persistFn', async () => {
+        const persistFn = makePersist()
+        const game = makeGame('stored-host', [
+            { playerId: 'p1', joinedAt: '2024-01-01T00:00:00Z' },
+        ])
+        const result = await resolveHostPlayerId(game, persistFn)
+        expect(result).toBe('stored-host')
+        expect(persistFn).not.toHaveBeenCalled()
+    })
+
+    it('derives host from earliest joinedAt when hostPlayerId absent, calls persistFn', async () => {
+        const persistFn = makePersist()
+        const game = makeGame(undefined, [
+            { playerId: 'p2', joinedAt: '2024-01-01T00:00:02Z' },
+            { playerId: 'p1', joinedAt: '2024-01-01T00:00:00Z' },
+        ])
+        const result = await resolveHostPlayerId(game, persistFn)
+        expect(result).toBe('p1')
+        expect(persistFn).toHaveBeenCalledWith('game1', 'p1')
+    })
+
+    it('breaks joinedAt ties deterministically by playerId lexicographic order', async () => {
+        const persistFn = makePersist()
+        const game = makeGame(undefined, [
+            { playerId: 'z-player', joinedAt: '2024-01-01T00:00:00Z' },
+            { playerId: 'a-player', joinedAt: '2024-01-01T00:00:00Z' },
+        ])
+        const result = await resolveHostPlayerId(game, persistFn)
+        expect(result).toBe('a-player')
     })
 })

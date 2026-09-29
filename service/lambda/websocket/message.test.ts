@@ -37,6 +37,11 @@ const makeEvent = (body: object) => ({
     body: JSON.stringify(body),
 }) as any
 
+const makeRawEvent = (body?: string) => ({
+    requestContext: { connectionId: 'conn1' },
+    body,
+}) as any
+
 beforeEach(() => {
     vi.clearAllMocks()
     mockValidatePlayerAction.mockResolvedValue({ statusCode: 200 })
@@ -140,4 +145,65 @@ describe('message handler routing', () => {
         const result = await handler(makeEvent({ action: 'startRound', gameId: 'game1', playerId: 'p1' }))
         expect(result.statusCode).toBe(500)
     })
+})
+
+describe('message handler body guard', () => {
+    it('returns 400 and does not throw on malformed JSON body', async () => {
+        const result = await handler(makeRawEvent('{ not json'))
+        expect(result.statusCode).toBe(400)
+    })
+
+    it('does not invoke any handler on malformed JSON body', async () => {
+        await handler(makeRawEvent('{ not json'))
+        expect(handleCreateGame).not.toHaveBeenCalled()
+        expect(handleStartRound).not.toHaveBeenCalled()
+        expect(mockValidatePlayerAction).not.toHaveBeenCalled()
+    })
+
+    it('returns 400 and invokes no handler on empty-string body', async () => {
+        const result = await handler(makeRawEvent(''))
+        expect(result.statusCode).toBe(400)
+        expect(handleCreateGame).not.toHaveBeenCalled()
+        expect(handleStartRound).not.toHaveBeenCalled()
+        expect(mockValidatePlayerAction).not.toHaveBeenCalled()
+    })
+
+    it('returns 400 and invokes no handler on missing body', async () => {
+        const result = await handler(makeRawEvent(undefined))
+        expect(result.statusCode).toBe(400)
+        expect(handleCreateGame).not.toHaveBeenCalled()
+        expect(handleStartRound).not.toHaveBeenCalled()
+        expect(mockValidatePlayerAction).not.toHaveBeenCalled()
+    })
+
+    it('returns 500 (not 400) when a handler throws on a valid body', async () => {
+        vi.mocked(handleStartRound).mockRejectedValueOnce(new Error('downstream boom'))
+        const result = await handler(makeEvent({ action: 'startRound', gameId: 'game1', playerId: 'p1' }))
+        expect(result.statusCode).toBe(500)
+    })
+})
+
+// ============================================================
+// Task 6.5: End-to-end router — non-host 403 pass-through
+// ============================================================
+
+describe('message handler — non-host 403 forwarded from handler (task 6.5)', () => {
+    const actions403 = ['startRound', 'resetGame', 'closeRoom', 'finaliseGame']
+
+    for (const action of actions403) {
+        it(`forwards 403 from ${action} handler when validation passes but handler rejects non-host`, async () => {
+            // Override the specific handler to return 403
+            const handlers: Record<string, any> = {
+                startRound: handleStartRound,
+                resetGame: handleResetGame,
+                closeRoom: handleCloseRoom,
+                finaliseGame: handleFinaliseGame,
+            }
+            vi.mocked(handlers[action]).mockResolvedValueOnce({ statusCode: 403 })
+            mockValidatePlayerAction.mockResolvedValue({ statusCode: 200 })
+
+            const result = await handler(makeEvent({ action, gameId: 'game1', playerId: 'non-host-id' }))
+            expect(result.statusCode).toBe(403)
+        })
+    }
 })

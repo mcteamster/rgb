@@ -57,7 +57,7 @@ export function generateGameId(): string {
 }
 
 export function generatePlayerId(): string {
-    return Math.random().toString(36).substring(2, 10);
+    return crypto.randomUUID();
 }
 
 // ============================================================================
@@ -110,6 +110,50 @@ export function findLastSubmittedColor(game: any, playerId: string): HSLColor | 
     return null;
 }
 
+// ============================================================================
+// SANITISATION — outbound payload helpers
+// ============================================================================
+
+/**
+ * Strip targetColor from rounds that are not yet in reveal/endgame phase.
+ * Returns a new array; does not mutate the input.
+ */
+function sanitiseRoundsForClient(rounds: any[]): any[] {
+    return rounds.map(round => {
+        if (round.phase === 'reveal' || round.phase === 'endgame') {
+            return round; // pass through with targetColor
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { targetColor, ...rest } = round;
+        return rest; // omit targetColor
+    });
+}
+
+/**
+ * Return a shallow-cloned game state with gameplay.rounds sanitised for
+ * client delivery (targetColor stripped from non-reveal/non-endgame rounds).
+ */
+export function sanitiseGameStateForClient(gameState: any): any {
+    return {
+        ...gameState,
+        gameplay: {
+            ...gameState.gameplay,
+            rounds: sanitiseRoundsForClient(gameState.gameplay?.rounds ?? [])
+        }
+    };
+}
+
+/**
+ * Return a shallow-cloned gameplay object with rounds sanitised for
+ * client delivery.
+ */
+export function sanitiseGameplayForClient(gameplay: any): any {
+    return {
+        ...gameplay,
+        rounds: sanitiseRoundsForClient(gameplay?.rounds ?? [])
+    };
+}
+
 export function shouldEndGame(game: any): boolean {
     const turnsPerPlayer = game.config.turnsPerPlayer;
     const players = game.players;
@@ -131,4 +175,55 @@ export function shouldEndGame(game: any): boolean {
     return players.every((player: Player) => 
         describerCounts[player.playerId] >= turnsPerPlayer
     );
+}
+
+// ============================================================================
+// HOST AUTHORIZATION
+// ============================================================================
+
+/**
+ * Returns true if `playerId` is the authoritative host of the game.
+ * Reads from game.meta.hostPlayerId (populated at game creation or via read-repair).
+ */
+export function isHost(game: any, playerId: string): boolean {
+    return game.meta?.hostPlayerId === playerId;
+}
+
+/**
+ * Returns the authoritative host player ID for a game.
+ *
+ * - If `game.meta.hostPlayerId` is already stored, returns it verbatim.
+ * - Otherwise (legacy game created before hostPlayerId was introduced),
+ *   derives the host as the player with the earliest `joinedAt` timestamp,
+ *   persists the derived value back to DynamoDB (read-repair), and returns it.
+ *
+ * The caller is responsible for passing a `persistFn` that writes
+ * `meta.hostPlayerId` back to the database.  In production callers should
+ * pass the real UpdateCommand; in tests a stub can be used.
+ *
+ * Tie-break: for two players with identical `joinedAt` values the player
+ * whose `playerId` sorts lexicographically first is selected, giving
+ * deterministic results across Lambda invocations.
+ */
+export async function resolveHostPlayerId(
+    game: any,
+    persistFn: (gameId: string, hostPlayerId: string) => Promise<void>
+): Promise<string> {
+    if (game.meta?.hostPlayerId) {
+        return game.meta.hostPlayerId;
+    }
+
+    // Legacy derivation: earliest joinedAt, ties broken by playerId sort
+    const sorted = [...game.players].sort((a: Player, b: Player) => {
+        const timeDiff = new Date(a.joinedAt).getTime() - new Date(b.joinedAt).getTime();
+        if (timeDiff !== 0) return timeDiff;
+        return a.playerId < b.playerId ? -1 : 1;
+    });
+
+    const derivedHostId = sorted[0].playerId;
+
+    // Read-repair: persist back so future calls return early
+    await persistFn(game.gameId, derivedHostId);
+
+    return derivedHostId;
 }

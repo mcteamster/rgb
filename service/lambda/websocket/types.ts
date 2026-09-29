@@ -13,6 +13,13 @@ export interface Player {
     draftDescription?: string;
 }
 
+export interface GameMeta {
+    status: string;
+    currentRound: number | null;
+    createdAt: string;
+    hostPlayerId?: string;
+}
+
 export interface WebSocketMessage {
     action: string;
     gameId?: string;

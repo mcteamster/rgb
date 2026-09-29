@@ -78,9 +78,9 @@ export const GameResults: React.FC<GameResultsProps> = ({ players, rounds }) => 
                             key={roundIndex}
                             className="describer-square color-accurate"
                             style={{
-                              backgroundColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
-                              borderColor: `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)`,
-                              color: targetColor.l > 50 ? '#000' : '#fff'
+                              backgroundColor: targetColor ? `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)` : undefined,
+                              borderColor: targetColor ? `hsl(${targetColor.h}, ${targetColor.s}%, ${targetColor.l}%)` : undefined,
+                              color: targetColor ? (targetColor.l > 50 ? '#000' : '#fff') : undefined
                             }}
                           >
                             {hasDescription ? '📣' : '❌'}

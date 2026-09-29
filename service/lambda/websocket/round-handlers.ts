@@ -2,7 +2,7 @@ import { UpdateCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb'
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { HSLColor, Player } from './types';
 import { dynamodb, broadcastToGame, sendToConnection } from './aws-clients';
-import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame } from './utils';
+import { getCurrentRound, findLastSubmittedColor, isValidHSLColor, generateRandomHSLColor, calculateColorScore, shouldEndGame, sanitiseGameplayForClient, sanitiseGameStateForClient, isHost, resolveHostPlayerId } from './utils';
 import { writeRoundToS3 } from './analytics';
 
 export async function handleUpdateDraftDescription(connectionId: string, gameId: string, playerId: string, description: string): Promise<APIGatewayProxyResultV2> {
@@ -43,6 +43,8 @@ export async function handleUpdateDraftDescription(connectionId: string, gameId:
         }
     }));
     
+    // No gameplayUpdated broadcast here — only players are updated (draftDescription lives on the player object).
+    // If a gameplayUpdated broadcast is added in future, wrap gameplay with sanitiseGameplayForClient.
     return { statusCode: 200 };
 }
 
@@ -136,7 +138,7 @@ export async function handleSubmitDescription(connectionId: string, gameId: stri
 
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
-            gameplay: updatedGame.Item!.gameplay
+            gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
         });
 
         // Broadcast updated players with new scores
@@ -190,7 +192,7 @@ export async function handleSubmitDescription(connectionId: string, gameId: stri
 
     await broadcastToGame(gameId, {
         type: 'gameplayUpdated',
-        gameplay: updatedGame.Item!.gameplay
+        gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
     });
     
     return { statusCode: 200 };
@@ -241,6 +243,8 @@ export async function handleUpdateDraftColor(connectionId: string, gameId: strin
         players: updatedGameResult.Item?.players
     });
     
+    // No gameplayUpdated broadcast here — only playersUpdated is sent (draftColor lives on the player object).
+    // If a gameplayUpdated broadcast is added in future, wrap gameplay with sanitiseGameplayForClient.
     return { statusCode: 200 };
 }
 
@@ -314,92 +318,93 @@ export async function handleSubmitColor(connectionId: string, gameId: string, pl
     
     // If all guesses are in, progress to reveal phase
     if (actualGuesses >= expectedGuessers) {
-        // Calculate scores for this round
-        const targetColor = currentRound.targetColor;
-        const roundScores: Record<string, number> = {};
-        
-        // Calculate scores for each guesser
-        const guesserScores: number[] = [];
-        Object.entries(updatedSubmissions).forEach(([playerId, guessedColor]: [string, any]) => {
-            const score = calculateColorScore(targetColor, guessedColor);
-            roundScores[playerId] = score;
-            guesserScores.push(score);
-        });
-        
-        // Calculate describer score (average of all guesser scores)
-        if (guesserScores.length > 0) {
-            const averageScore = Math.round(guesserScores.reduce((sum, score) => sum + score, 0) / guesserScores.length);
-            roundScores[currentRound.describerId] = averageScore;
-        }
-        
-        const finalRounds = [...updatedGame.Item!.gameplay.rounds];
-        finalRounds[updatedGame.Item!.meta.currentRound] = {
-            ...updatedCurrentRound,
-            phase: 'reveal',
-            scores: roundScores
-        };
-        
-        // Update player total scores
-        const updatedPlayers = updatedGame.Item!.players.map((player: any) => {
-            let totalScore = 0;
-            finalRounds.forEach(round => {
-                if (round.scores && round.scores[player.playerId]) {
-                    totalScore += round.scores[player.playerId];
-                }
-            });
-            return {
-                ...player,
-                score: totalScore
-            };
-        });
-
-        // Don't automatically transition to endgame - let client decide
-        // Check if game should end is available for client to query
-        // const shouldEnd = shouldEndGame(gameWithUpdatedRounds);
-
-        await dynamodb.send(new UpdateCommand({
-            TableName: process.env.GAMES_TABLE!,
-            Key: { gameId },
-            UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
-            ExpressionAttributeValues: {
-                ':rounds': finalRounds,
-                ':players': updatedPlayers
-            }
-        }));
-        
-        // Get final updated state
-        const finalGame = await dynamodb.send(new GetCommand({
-            TableName: process.env.GAMES_TABLE!,
-            Key: { gameId }
-        }));
-        
-        // Broadcast meta update
-        await broadcastToGame(gameId, {
-            type: 'metaUpdated',
-            meta: finalGame.Item!.meta
-        });
-
-        // Also broadcast gameplay update for reveal phase
-        await broadcastToGame(gameId, {
-            type: 'gameplayUpdated',
-            gameplay: finalGame.Item!.gameplay
-        });
-
-        // Broadcast updated players with new scores
-        await broadcastToGame(gameId, {
-            type: 'playersUpdated',
-            players: finalGame.Item!.players
-        });
-
-        await writeRoundToS3(finalGame.Item!, updatedGame.Item!.meta.currentRound);
+        await resolveRoundScores(gameId, updatedGame.Item!, updatedGame.Item!.meta.currentRound);
     } else {
         await broadcastToGame(gameId, {
             type: 'gameplayUpdated',
-            gameplay: updatedGame.Item!.gameplay
+            gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
         });
     }
     
     return { statusCode: 200 };
+}
+
+export async function resolveRoundScores(gameId: string, game: any, currentRoundIndex: number): Promise<void> {
+    const currentRound = game.gameplay.rounds[currentRoundIndex];
+    const updatedSubmissions = currentRound?.submissions || {};
+    const targetColor = currentRound.targetColor;
+    const roundScores: Record<string, number> = {};
+
+    // Calculate scores for each guesser
+    const guesserScores: number[] = [];
+    Object.entries(updatedSubmissions).forEach(([pid, guessedColor]: [string, any]) => {
+        const score = calculateColorScore(targetColor, guessedColor);
+        roundScores[pid] = score;
+        guesserScores.push(score);
+    });
+
+    // Calculate describer score (average of all guesser scores)
+    if (guesserScores.length > 0) {
+        const averageScore = Math.round(guesserScores.reduce((sum, score) => sum + score, 0) / guesserScores.length);
+        roundScores[currentRound.describerId] = averageScore;
+    }
+
+    const finalRounds = [...game.gameplay.rounds];
+    finalRounds[currentRoundIndex] = {
+        ...currentRound,
+        phase: 'reveal',
+        scores: roundScores
+    };
+
+    // Update player total scores
+    const updatedPlayers = game.players.map((player: any) => {
+        let totalScore = 0;
+        finalRounds.forEach((round: any) => {
+            if (round.scores && round.scores[player.playerId]) {
+                totalScore += round.scores[player.playerId];
+            }
+        });
+        return {
+            ...player,
+            score: totalScore
+        };
+    });
+
+    await dynamodb.send(new UpdateCommand({
+        TableName: process.env.GAMES_TABLE!,
+        Key: { gameId },
+        UpdateExpression: 'SET gameplay.rounds = :rounds, players = :players',
+        ExpressionAttributeValues: {
+            ':rounds': finalRounds,
+            ':players': updatedPlayers
+        }
+    }));
+
+    // Get final updated state
+    const finalGame = await dynamodb.send(new GetCommand({
+        TableName: process.env.GAMES_TABLE!,
+        Key: { gameId }
+    }));
+
+    // Broadcast meta update
+    await broadcastToGame(gameId, {
+        type: 'metaUpdated',
+        meta: finalGame.Item!.meta
+    });
+
+    // Broadcast gameplay update for reveal phase
+    await broadcastToGame(gameId, {
+        type: 'gameplayUpdated',
+        gameplay: sanitiseGameplayForClient(finalGame.Item!.gameplay)
+    });
+
+    // Broadcast updated players with new scores
+    await broadcastToGame(gameId, {
+        type: 'playersUpdated',
+        players: finalGame.Item!.players
+    });
+
+    await writeRoundToS3(finalGame.Item!, currentRoundIndex);
 }
 
 export async function handleStartRound(connectionId: string, gameId: string, playerId: string): Promise<APIGatewayProxyResultV2> {
@@ -419,13 +424,22 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
     const game = gameResult.Item;
     const players = game.players || [];
     
-    // Find the host (player who joined earliest)
-    const hostPlayer = players.reduce((earliest: any, player: any) => 
-        new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
-    );
-    
-    // Only allow host to start the game when in waiting status
-    if (game.meta.status === 'waiting' && playerId !== hostPlayer.playerId) {
+    // Build the persistFn for resolveHostPlayerId read-repair
+    const persistHostId = async (gId: string, hostPlayerId: string) => {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId: gId },
+            UpdateExpression: 'SET meta.hostPlayerId = :hostPlayerId',
+            ExpressionAttributeValues: { ':hostPlayerId': hostPlayerId }
+        }));
+        game.meta.hostPlayerId = hostPlayerId;
+    };
+
+    // Resolve (and read-repair if needed) the authoritative host ID
+    await resolveHostPlayerId(game, persistHostId);
+
+    // Only allow host to start/continue the game (applies to both initial start and inter-round continuation)
+    if (!isHost(game, playerId)) {
         await sendToConnection(connectionId, {
             type: 'error',
             error: 'Only the host can start the game'
@@ -555,7 +569,7 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
 
     await broadcastToGame(gameId, {
         type: 'gameplayUpdated',
-        gameplay: updatedGame.Item!.gameplay
+        gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
     });
     
     return { statusCode: 200 };
@@ -572,6 +586,33 @@ export async function handleFinaliseGame(connectionId: string, gameId: string, p
     }
 
     const game = gameResult.Item;
+
+    // Host guard — must precede all phase checks and mutations.
+    // Authorization (403) takes precedence over phase/readiness (400).
+    if (!isHost(game, playerId)) {
+        // Legacy read-repair: if game has no meta.hostPlayerId, derive and persist it first,
+        // then re-check.  resolveHostPlayerId writes meta.hostPlayerId back to DynamoDB.
+        const persistHostId = async (gId: string, hostId: string): Promise<void> => {
+            await dynamodb.send(new UpdateCommand({
+                TableName: process.env.GAMES_TABLE!,
+                Key: { gameId: gId },
+                UpdateExpression: 'SET meta.hostPlayerId = :hostId',
+                ExpressionAttributeValues: { ':hostId': hostId }
+            }));
+            // Patch in-memory so subsequent isHost calls use the resolved value
+            game.meta = { ...game.meta, hostPlayerId: hostId };
+        };
+        await resolveHostPlayerId(game, persistHostId);
+
+        if (!isHost(game, playerId)) {
+            await sendToConnection(connectionId, {
+                type: 'error',
+                error: 'Only the host can end the game'
+            });
+            return { statusCode: 403 };
+        }
+    }
+
     const currentRound = getCurrentRound(game);
 
     if (!currentRound || currentRound.phase !== 'reveal') {
@@ -609,7 +650,7 @@ export async function handleFinaliseGame(connectionId: string, gameId: string, p
     // Broadcast gameplay update
     await broadcastToGame(gameId, {
         type: 'gameplayUpdated',
-        gameplay: updatedGame.Item!.gameplay
+        gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
     });
 
     return { statusCode: 200 };
@@ -628,13 +669,20 @@ export async function handleResetGame(connectionId: string, gameId: string, play
 
     const game = gameResult.Item;
 
-    // Find the host (player who joined earliest)
-    const hostPlayer = game.players.reduce((earliest: any, player: any) =>
-        new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
-    );
+    // Resolve (and read-repair if needed) the authoritative host ID
+    const persistHostIdReset = async (gId: string, hostPlayerId: string) => {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId: gId },
+            UpdateExpression: 'SET meta.hostPlayerId = :hostPlayerId',
+            ExpressionAttributeValues: { ':hostPlayerId': hostPlayerId }
+        }));
+        game.meta.hostPlayerId = hostPlayerId;
+    };
+    await resolveHostPlayerId(game, persistHostIdReset);
 
     // Only allow host to reset the game
-    if (playerId !== hostPlayer.playerId) {
+    if (!isHost(game, playerId)) {
         return { statusCode: 403 }; // Forbidden
     }
 
@@ -662,7 +710,7 @@ export async function handleResetGame(connectionId: string, gameId: string, play
     // Broadcast full game state update
     await broadcastToGame(gameId, {
         type: 'gameStateUpdated',
-        gameState: updatedGame.Item
+        gameState: sanitiseGameStateForClient(updatedGame.Item)
     });
 
     return { statusCode: 200 };
@@ -681,13 +729,20 @@ export async function handleCloseRoom(connectionId: string, gameId: string, play
 
     const game = gameResult.Item;
 
-    // Find the host (player who joined earliest)
-    const hostPlayer = game.players.reduce((earliest: any, player: any) =>
-        new Date(player.joinedAt) < new Date(earliest.joinedAt) ? player : earliest
-    );
+    // Resolve (and read-repair if needed) the authoritative host ID
+    const persistHostIdClose = async (gId: string, hostPlayerId: string) => {
+        await dynamodb.send(new UpdateCommand({
+            TableName: process.env.GAMES_TABLE!,
+            Key: { gameId: gId },
+            UpdateExpression: 'SET meta.hostPlayerId = :hostPlayerId',
+            ExpressionAttributeValues: { ':hostPlayerId': hostPlayerId }
+        }));
+        game.meta.hostPlayerId = hostPlayerId;
+    };
+    await resolveHostPlayerId(game, persistHostIdClose);
 
     // Only allow host to close the room
-    if (playerId !== hostPlayer.playerId) {
+    if (!isHost(game, playerId)) {
         return { statusCode: 403 }; // Forbidden
     }
 

@@ -14,7 +14,7 @@ import { handler } from './submit-challenge'
 
 const validBody = {
     challengeId: '2026-03-15',
-    userId: 'user123',
+    userId: 'user-12345',
     userName: 'Alice',
     color: { h: 180, s: 80, l: 50 },
     fingerprint: 'fp123',
@@ -53,6 +53,38 @@ describe('submit-challenge handler', () => {
         it('returns 400 when userId is missing', async () => {
             const result = await handler(makeEvent({ ...validBody, userId: undefined }))
             expect(result.statusCode).toBe(400)
+        })
+
+        it('returns 400 for malformed userId and does not issue a PutCommand', async () => {
+            const result = await handler(makeEvent({ ...validBody, userId: 'bad!id' }))
+            expect(result.statusCode).toBe(400)
+            expect(JSON.parse(result.body).error).toBe('Invalid userId')
+            expect(mockSend).not.toHaveBeenCalled()
+        })
+
+        it('returns 400 for a userId that is too short and does not issue a PutCommand', async () => {
+            const result = await handler(makeEvent({ ...validBody, userId: 'short' }))
+            expect(result.statusCode).toBe(400)
+            expect(JSON.parse(result.body).error).toBe('Invalid userId')
+            expect(mockSend).not.toHaveBeenCalled()
+        })
+
+        it('trims whitespace from userId and stores the trimmed value', async () => {
+            const paddedId = '  user-12345  '
+            const trimmedId = 'user-12345'
+            mockSend
+                .mockResolvedValueOnce({ Item: { challengeId: '2026-03-15', totalSubmissions: 0 } })
+                .mockResolvedValueOnce({})
+                .mockResolvedValueOnce({})
+            // Capture the PutCommand constructor argument to verify the stored userId
+            const { PutCommand } = await import('@aws-sdk/lib-dynamodb')
+            const PutCommandMock = PutCommand as unknown as ReturnType<typeof vi.fn>
+            PutCommandMock.mockClear()
+            const result = await handler(makeEvent({ ...validBody, userId: paddedId }))
+            expect(result.statusCode).toBe(200)
+            // PutCommand was called with the trimmed id as the partition key
+            const putCallArgs = PutCommandMock.mock.calls[0]?.[0]
+            expect(putCallArgs?.Item?.userId).toBe(trimmedId)
         })
 
         it('returns 400 when color is missing', async () => {

@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const { mockSend, mockSendToConnection, mockBroadcastToGame } = vi.hoisted(() => ({
+const { mockSend, mockSendToConnection, mockBroadcastToGame, mockResolveRoundScores } = vi.hoisted(() => ({
     mockSend: vi.fn(),
     mockSendToConnection: vi.fn(),
     mockBroadcastToGame: vi.fn(),
+    mockResolveRoundScores: vi.fn(),
 }))
 
 vi.mock('./aws-clients', () => ({
@@ -12,12 +13,13 @@ vi.mock('./aws-clients', () => ({
     sendToConnection: mockSendToConnection,
 }))
 vi.mock('./deadlines', () => ({ checkAndEnforceDeadlines: vi.fn() }))
+vi.mock('./round-handlers', () => ({ resolveRoundScores: mockResolveRoundScores }))
 
 import { handleCreateGame, handleJoinGame, handleRejoinGame, handleKickPlayer, handleGetGame } from './game-handlers'
 
 const makeGame = (overrides: any = {}) => ({
     gameId: 'game1',
-    meta: { status: 'waiting', currentRound: null },
+    meta: { status: 'waiting', currentRound: null, hostPlayerId: 'host' },
     config: { maxPlayers: 10, descriptionTimeLimit: 30, guessingTimeLimit: 15, turnsPerPlayer: 2 },
     players: [
         { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
@@ -31,6 +33,8 @@ beforeEach(() => {
     mockSend.mockReset()
     mockSendToConnection.mockReset()
     mockBroadcastToGame.mockReset()
+    mockResolveRoundScores.mockReset()
+    mockResolveRoundScores.mockResolvedValue(undefined)
 })
 
 // ============================================================
@@ -50,6 +54,43 @@ describe('handleGetGame', () => {
         const result = await handleGetGame('conn1', 'game1')
         expect(result.statusCode).toBe(200)
         expect(mockSendToConnection).toHaveBeenCalledWith('conn1', expect.objectContaining({ type: 'gameStateUpdated' }))
+    })
+
+    it('strips targetColor from describing-phase round in gameStateUpdated payload', async () => {
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: { h: 180, s: 80, l: 50 },
+                    describerId: 'host',
+                    phase: 'describing',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        await handleGetGame('conn1', 'game1')
+        const call = mockSendToConnection.mock.calls[0][1]
+        expect(call.gameState.gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('retains targetColor in reveal-phase round in gameStateUpdated payload', async () => {
+        const target = { h: 180, s: 80, l: 50 }
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: target,
+                    describerId: 'host',
+                    phase: 'reveal',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        await handleGetGame('conn1', 'game1')
+        const call = mockSendToConnection.mock.calls[0][1]
+        expect(call.gameState.gameplay.rounds[0].targetColor).toEqual(target)
     })
 })
 
@@ -152,6 +193,216 @@ describe('handleJoinGame', () => {
         const result = await handleJoinGame('conn1', 'game1', 'Alice')
         expect(result.statusCode).toBe(200)
     })
+
+    // ----- Task 3.1: guarded write uses list_append and ConditionExpression -----
+
+    it('issues UpdateCommand with list_append and ConditionExpression for a valid join', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+        mockSend
+            .mockResolvedValueOnce({ Item: game })  // GetCommand: initial read
+            .mockResolvedValueOnce({})              // UpdateCommand: guarded write
+            .mockResolvedValueOnce({})              // UpdateCommand: connections table
+            .mockResolvedValue({ Items: [] })       // QueryCommand: other connections
+
+        await handleJoinGame('conn1', 'game1', 'Bob')
+
+        // Find the call that was an UpdateCommand against the games table
+        const updateCall = mockSend.mock.calls.find(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return (
+                input.UpdateExpression?.includes('list_append') &&
+                input.ConditionExpression !== undefined
+            )
+        })
+        expect(updateCall).toBeDefined()
+        const input = updateCall![0].input ?? updateCall![0]
+        expect(input.UpdateExpression).toContain('list_append(players, :newPlayer)')
+        expect(input.ConditionExpression).toContain('size(players) = :expectedCount')
+        expect(input.ConditionExpression).toContain('size(players) < :maxPlayers')
+        expect(input.ConditionExpression).toContain('meta.#status = :waiting')
+        expect(input.ExpressionAttributeNames?.['#status']).toBe('status')
+    })
+
+    // ----- Task 3.2: retry on ConditionalCheckFailedException -----
+
+    it('retries once when guarded write throws ConditionalCheckFailedException then succeeds', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        // Fresh game after first conflict — still only Alice, so Bob can still join
+        const freshGame = { ...game, players: [...game.players] }
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        mockSend
+            .mockResolvedValueOnce({ Item: game })        // GetCommand: initial read
+            .mockRejectedValueOnce(condError)             // UpdateCommand: first attempt fails
+            .mockResolvedValueOnce({ Item: freshGame })   // GetCommand: strong-consistent re-read
+            .mockResolvedValueOnce({})                    // UpdateCommand: second attempt succeeds
+            .mockResolvedValueOnce({})                    // UpdateCommand: connections table
+            .mockResolvedValue({ Items: [] })             // QueryCommand: other connections
+
+        const result = await handleJoinGame('conn1', 'game1', 'Bob')
+        expect(result.statusCode).toBe(200)
+
+        // Two guarded UpdateCommand attempts (both list_append)
+        const updateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression?.includes('list_append')
+        })
+        expect(updateCalls.length).toBe(2)
+    })
+
+    // ----- Task 3.3: two concurrent joins, room for both -----
+
+    it('persists both players when two concurrent joins have room for both', async () => {
+        // Simulate game with 1 player and maxPlayers=10 — room for both Bob and Carol
+        const baseGame = makeGame()
+        baseGame.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+        baseGame.config = { ...baseGame.config, maxPlayers: 10 }
+
+        // Each join gets its own mock setup — run them sequentially with non-overlapping mocks
+        // Bob joins first (no conflict)
+        mockSend
+            .mockResolvedValueOnce({ Item: baseGame })  // Bob: initial read
+            .mockResolvedValueOnce({})                  // Bob: guarded write
+            .mockResolvedValueOnce({})                  // Bob: connections table
+            .mockResolvedValue({ Items: [] })           // Bob: other connections query
+
+        const bobResult = await handleJoinGame('conn-bob', 'game1', 'Bob')
+        expect(bobResult.statusCode).toBe(200)
+
+        mockSend.mockReset()
+
+        // Carol joins next — game now has Bob too, still room
+        const gameWithBob = {
+            ...baseGame,
+            players: [
+                ...baseGame.players,
+                { playerId: 'p-bob', playerName: 'Bob', joinedAt: '2024-01-01T00:00:02Z' }
+            ]
+        }
+        mockSend
+            .mockResolvedValueOnce({ Item: gameWithBob })  // Carol: initial read
+            .mockResolvedValueOnce({})                     // Carol: guarded write
+            .mockResolvedValueOnce({})                     // Carol: connections table
+            .mockResolvedValue({ Items: [] })              // Carol: other connections
+
+        const carolResult = await handleJoinGame('conn-carol', 'game1', 'Carol')
+        expect(carolResult.statusCode).toBe(200)
+    })
+
+    // ----- Task 3.4: concurrent joins race for the last slot -----
+
+    it('admits exactly one and returns Game is full for the other when racing for the last slot', async () => {
+        // maxPlayers=2, one player already in — only one slot left
+        const fullishGame = makeGame({ config: { maxPlayers: 2 } })
+        fullishGame.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        // Second joiner: initial read sees room, then write conflicts, re-read shows full
+        const fullGame = {
+            ...fullishGame,
+            players: [
+                ...fullishGame.players,
+                { playerId: 'p-bob', playerName: 'Bob', joinedAt: '2024-01-01T00:00:02Z' }
+            ]
+        }
+
+        mockSend
+            .mockResolvedValueOnce({ Item: fullishGame }) // initial read: sees 1 player, room for 1 more
+            .mockRejectedValueOnce(condError)             // guarded write: another joiner won the slot
+            .mockResolvedValueOnce({ Item: fullGame })    // strong-consistent re-read: now full
+
+        const result = await handleJoinGame('conn-carol', 'game1', 'Carol')
+        expect(result.statusCode).toBe(400)
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn-carol', expect.objectContaining({
+            type: 'error',
+            error: 'Game is full'
+        }))
+    })
+
+    // ----- Task 3.5: concurrent same-name joins -----
+
+    it('admits at most one and returns Player name is already taken for the other on same-name race', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        // Second "Bob" attempt: initial read sees no Bob, write conflicts, re-read shows Bob already in
+        const gameWithBob = {
+            ...game,
+            players: [
+                ...game.players,
+                { playerId: 'p-bob', playerName: 'Bob', joinedAt: '2024-01-01T00:00:02Z' }
+            ]
+        }
+
+        mockSend
+            .mockResolvedValueOnce({ Item: game })         // initial read: no Bob yet
+            .mockRejectedValueOnce(condError)              // guarded write: concurrent Bob won
+            .mockResolvedValueOnce({ Item: gameWithBob })  // strong-consistent re-read: Bob now present
+
+        const result = await handleJoinGame('conn-bob2', 'game1', 'Bob')
+        expect(result.statusCode).toBe(400)
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn-bob2', expect.objectContaining({
+            type: 'error',
+            error: 'Player name is already taken'
+        }))
+    })
+
+    // ----- Task 2.3 / retry exhaustion: 5 consecutive conflicts → 409 -----
+
+    it('returns 409 after exhausting all retry attempts', async () => {
+        const game = makeGame()
+        game.players = [{ playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z' }]
+
+        // Fresh re-read always has room for one more — so every re-check passes
+        // and the handler loops back to try again.
+        const freshGame = { ...game, players: [...game.players] }
+
+        const condError = Object.assign(new Error('ConditionalCheckFailedException'), {
+            name: 'ConditionalCheckFailedException'
+        })
+
+        // Pattern: (write fails, re-read succeeds) × 5, last iteration hits the
+        // exhaustion guard before the 6th write attempt.
+        mockSend
+            .mockResolvedValueOnce({ Item: game })       // GetCommand: initial read
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 0 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 0
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 1 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 1
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 2 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 2
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 3 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 3
+            .mockRejectedValueOnce(condError)            // UpdateCommand: attempt 4 fails
+            .mockResolvedValueOnce({ Item: freshGame })  // GetCommand: re-read 4
+
+        const result = await handleJoinGame('conn1', 'game1', 'Bob')
+        expect(result.statusCode).toBe(409)
+        expect(mockSendToConnection).toHaveBeenCalledWith('conn1', expect.objectContaining({
+            type: 'error',
+            error: 'Failed to join game due to concurrent activity; please try again'
+        }))
+
+        // Confirm all 5 write attempts were made
+        const writeCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression?.includes('list_append')
+        })
+        expect(writeCalls.length).toBe(5)
+    })
 })
 
 // ============================================================
@@ -176,6 +427,25 @@ describe('handleRejoinGame', () => {
         mockSend.mockResolvedValue({})
         const result = await handleRejoinGame('conn1', 'game1', 'host')
         expect(result.statusCode).toBe(200)
+    })
+
+    it('strips targetColor from active round when rejoining', async () => {
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: { h: 200, s: 70, l: 40 },
+                    describerId: 'host',
+                    phase: 'describing',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        mockSend.mockResolvedValue({})
+        await handleRejoinGame('conn1', 'game1', 'host')
+        const call = mockSendToConnection.mock.calls[0][1]
+        expect(call.gameState.gameplay.rounds[0]).not.toHaveProperty('targetColor')
     })
 })
 
@@ -225,5 +495,269 @@ describe('handleKickPlayer', () => {
         const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
         expect(result.statusCode).toBe(200)
         expect(mockSendToConnection).toHaveBeenCalledWith('p2-conn', expect.objectContaining({ type: 'kicked' }))
+    })
+})
+
+// ============================================================
+// handleKickPlayer — guessing-phase removal (task 3.3)
+// ============================================================
+
+describe('handleKickPlayer — guessing phase', () => {
+    const makeGuessingGame = (submissions: Record<string, any> = {}) =>
+        makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'host' },
+            players: [
+                { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
+                { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
+                { playerId: 'p3',   playerName: 'Carol', joinedAt: '2024-01-01T00:00:02Z', score: 0 },
+            ],
+            gameplay: {
+                rounds: [{
+                    phase: 'guessing',
+                    describerId: 'host',
+                    targetColor: { h: 180, s: 50, l: 50 },
+                    submissions,
+                }]
+            }
+        })
+
+    it('removes non-submitting guesser when others still pending — round stays in guessing, only playersUpdated broadcast', async () => {
+        // p2 has submitted, p3 has not; we remove p3 (non-submitter)
+        // After removal only p2 remains as guesser and p2 already submitted →
+        // wait — that would trigger resolve. Let's have p2 NOT submitted.
+        // p3 submitted, p2 has not; remove p3 — p2 still pending
+        const game = makeGuessingGame({ p3: { h: 10, s: 10, l: 10 } })
+        // 3-player game: remove p3 (already submitted). p2 still pending.
+        mockSend
+            .mockResolvedValueOnce({ Item: game })           // GetCommand: game
+            .mockResolvedValueOnce({})                       // UpdateCommand: persist players
+            .mockResolvedValueOnce({ Items: [] })            // QueryCommand: find target connection
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p3', 'kick')
+        expect(result.statusCode).toBe(200)
+        expect(mockResolveRoundScores).not.toHaveBeenCalled()
+        expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'playersUpdated' }))
+        expect(mockBroadcastToGame).not.toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'gameplayUpdated' }))
+    })
+
+    it('removes the last pending guesser — resolveRoundScores is called', async () => {
+        // p2 has submitted; p3 has not — remove p3 (only pending guesser)
+        const game = makeGuessingGame({ p2: { h: 20, s: 20, l: 20 } })
+        const updatedGameAfterPersist = {
+            ...game,
+            players: game.players.filter((p: any) => p.playerId !== 'p3'),
+            meta: { ...game.meta }
+        }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })                           // GetCommand: game
+            .mockResolvedValueOnce({})                                       // UpdateCommand: persist players
+            .mockResolvedValueOnce({ Items: [] })                            // QueryCommand: find target connection
+            .mockResolvedValueOnce({ Item: updatedGameAfterPersist })        // GetCommand: for resolveRoundScores
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p3', 'kick')
+        expect(result.statusCode).toBe(200)
+        expect(mockResolveRoundScores).toHaveBeenCalledOnce()
+        expect(mockResolveRoundScores).toHaveBeenCalledWith('game1', updatedGameAfterPersist, 0)
+    })
+
+    it('removes the only guesser in 2-player game during guessing — falls through to below-minimum guard', async () => {
+        // 2-player game: host is describer, p2 is the only guesser
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'host' },
+            players: [
+                { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
+                { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
+            ],
+            gameplay: {
+                rounds: [{
+                    phase: 'guessing',
+                    describerId: 'host',
+                    targetColor: { h: 180, s: 50, l: 50 },
+                    submissions: {},
+                }]
+            }
+        })
+        const updatedGameAfterWait = { ...game, meta: { status: 'waiting', currentRound: null } }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })                    // GetCommand: game
+            .mockResolvedValueOnce({})                                // UpdateCommand: set status=waiting
+            .mockResolvedValueOnce({ Items: [] })                     // QueryCommand: find target connection
+            .mockResolvedValueOnce({ Item: updatedGameAfterWait })    // GetCommand: for gameStateUpdated
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+        expect(mockResolveRoundScores).not.toHaveBeenCalled()
+        expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'gameStateUpdated' }))
+    })
+})
+
+// ============================================================
+// handleKickPlayer — below-minimum player guard (task 4.2)
+// ============================================================
+
+describe('handleKickPlayer — below-minimum guard', () => {
+    const makePlayingGame = (phase: string, players: any[]) =>
+        makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: players[0].playerId },
+            players,
+            gameplay: {
+                rounds: [{
+                    phase,
+                    describerId: players[0].playerId,
+                    targetColor: { h: 180, s: 50, l: 50 },
+                    submissions: {},
+                }]
+            }
+        })
+
+    const twoPlayers = [
+        { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
+        { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
+    ]
+    const threePlayers = [
+        ...twoPlayers,
+        { playerId: 'p3', playerName: 'Carol', joinedAt: '2024-01-01T00:00:02Z', score: 0 },
+    ]
+
+    it('2-player describing phase: removing one player triggers waiting transition and gameStateUpdated broadcast', async () => {
+        const game = makePlayingGame('describing', twoPlayers)
+        const updatedGame = { ...game, meta: { status: 'waiting', currentRound: null } }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })        // GetCommand: game
+            .mockResolvedValueOnce({})                    // UpdateCommand: set waiting
+            .mockResolvedValueOnce({ Items: [] })         // QueryCommand: find target connection
+            .mockResolvedValueOnce({ Item: updatedGame }) // GetCommand: for broadcast
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+        expect(mockResolveRoundScores).not.toHaveBeenCalled()
+        expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'gameStateUpdated' }))
+    })
+
+    it('2-player guessing phase: triggers waiting transition, resolveRoundScores is NOT called', async () => {
+        const game = makePlayingGame('guessing', twoPlayers)
+        const updatedGame = { ...game, meta: { status: 'waiting', currentRound: null } }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })        // GetCommand: game
+            .mockResolvedValueOnce({})                    // UpdateCommand: set waiting
+            .mockResolvedValueOnce({ Items: [] })         // QueryCommand: find target connection
+            .mockResolvedValueOnce({ Item: updatedGame }) // GetCommand: for broadcast
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+        expect(mockResolveRoundScores).not.toHaveBeenCalled()
+        expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'gameStateUpdated' }))
+    })
+
+    it('3-player describing phase: removing one player does NOT trigger below-minimum guard — describing logic runs', async () => {
+        const game = makePlayingGame('describing', threePlayers)
+        // host is the describer; kick p3 (non-describer) — still 2 players left, guard not triggered
+        // but wait: host is describer and we're not kicking the describer, so describing-phase branch
+        // won't trigger either. Falls through to default branch.
+        mockSend
+            .mockResolvedValueOnce({ Item: game })  // GetCommand: game
+            .mockResolvedValueOnce({})              // UpdateCommand: persist players
+            .mockResolvedValueOnce({ Items: [] })   // QueryCommand: find target connection
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p3', 'kick')
+        expect(result.statusCode).toBe(200)
+        expect(mockResolveRoundScores).not.toHaveBeenCalled()
+        // gameStateUpdated NOT sent — not a waiting transition
+        const gameStateUpdatedCall = mockBroadcastToGame.mock.calls.find(
+            (c: any[]) => c[1]?.type === 'gameStateUpdated'
+        )
+        expect(gameStateUpdatedCall).toBeUndefined()
+        expect(mockBroadcastToGame).toHaveBeenCalledWith('game1', expect.objectContaining({ type: 'playersUpdated' }))
+    })
+})
+
+// ============================================================
+// Task 6.2 / 6.3 / 6.4: host authorization, succession, legacy read-repair
+// ============================================================
+
+describe('handleKickPlayer — host authorization (task 6.2)', () => {
+    it('host successfully kicks a member', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() })
+        mockSend.mockResolvedValue({ Items: [] })
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+    })
+
+    it('non-host attempting to kick a member gets 403 and no player removal', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() }) // GetCommand
+        const result = await handleKickPlayer('conn1', 'game1', 'p2', 'host', 'kick')
+        expect(result.statusCode).toBe(403)
+        // No mutating UpdateCommand should have been issued
+        const mutateCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression !== undefined && !input.UpdateExpression.includes('hostPlayerId')
+        })
+        expect(mutateCalls.length).toBe(0)
+    })
+
+    it('a member removing themselves (leave) succeeds regardless of host status', async () => {
+        mockSend.mockResolvedValueOnce({ Item: makeGame() })
+        mockSend.mockResolvedValue({ Items: [] })
+        const result = await handleKickPlayer('conn1', 'game1', 'p2', 'p2', 'leave')
+        expect(result.statusCode).toBe(200)
+    })
+})
+
+describe('handleKickPlayer — host succession (task 6.3)', () => {
+    it('removing the host promotes the earliest-joined remaining player and broadcasts hostPlayerId', async () => {
+        const game = makeGame({
+            meta: { status: 'waiting', currentRound: null, hostPlayerId: 'host' },
+            players: [
+                { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
+                { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
+                { playerId: 'p3',   playerName: 'Carol', joinedAt: '2024-01-01T00:00:02Z', score: 0 },
+            ]
+        })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })   // GetCommand: game
+            .mockResolvedValueOnce({})               // UpdateCommand: persist players + new hostPlayerId
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: find target connection
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'host', 'leave')
+        expect(result.statusCode).toBe(200)
+
+        // Verify the broadcast includes the new hostPlayerId (p2 is earliest remaining)
+        const playersBroadcast = mockBroadcastToGame.mock.calls.find(
+            (c: any[]) => c[1]?.type === 'playersUpdated'
+        )
+        expect(playersBroadcast).toBeDefined()
+        expect(playersBroadcast[1].hostPlayerId).toBe('p2')
+
+        // Verify the DynamoDB update included the new hostPlayerId
+        const updateCall = mockSend.mock.calls.find(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression?.includes('hostPlayerId') && input.UpdateExpression?.includes('players')
+        })
+        expect(updateCall).toBeDefined()
+        const input = updateCall![0].input ?? updateCall![0]
+        expect(input.ExpressionAttributeValues[':newHostId']).toBe('p2')
+    })
+})
+
+describe('handleKickPlayer — legacy read-repair (task 6.4)', () => {
+    it('a game with no meta.hostPlayerId is read-repaired from earliest joinedAt on first privileged action', async () => {
+        const legacyGame = makeGame({
+            meta: { status: 'waiting', currentRound: null }, // no hostPlayerId
+            players: [
+                { playerId: 'host', playerName: 'Alice', joinedAt: '2024-01-01T00:00:00Z', score: 0 },
+                { playerId: 'p2',   playerName: 'Bob',   joinedAt: '2024-01-01T00:00:01Z', score: 0 },
+            ]
+        })
+        mockSend
+            .mockResolvedValueOnce({ Item: legacyGame })   // GetCommand: game
+            .mockResolvedValueOnce({})                     // UpdateCommand: read-repair hostPlayerId
+            .mockResolvedValueOnce({})                     // UpdateCommand: persist players
+            .mockResolvedValueOnce({ Items: [] })          // QueryCommand: find target connection
+
+        // Host (earliest joinedAt) kicks p2
+        const result = await handleKickPlayer('conn1', 'game1', 'host', 'p2', 'kick')
+        expect(result.statusCode).toBe(200)
+
+        // Verify read-repair UpdateCommand was issued
+        const repairCall = mockSend.mock.calls.find(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.UpdateExpression === 'SET meta.hostPlayerId = :hostPlayerId'
+        })
+        expect(repairCall).toBeDefined()
+        const repairInput = repairCall![0].input ?? repairCall![0]
+        expect(repairInput.ExpressionAttributeValues[':hostPlayerId']).toBe('host')
     })
 })
