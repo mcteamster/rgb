@@ -60,7 +60,7 @@ export const handler = async (event: APIGatewayProxyWebsocketEventV2): Promise<A
 
         switch (action) {
             case 'getGame':
-                return await handleGetGame(connectionId, gameId!);
+                return await handleGetGame(connectionId, gameId!, playerId);
             case 'submitColor':
                 console.log('Submit color data:', data);
                 await checkAndEnforceDeadlines(gameId!);

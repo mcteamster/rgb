@@ -78,14 +78,14 @@ export async function handleCreateGame(connectionId: string, playerName: string,
     
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: sanitiseGameStateForClient(gameItem),
+        gameState: sanitiseGameStateForClient(gameItem, playerId),
         playerId: playerId
     });
     
     return { statusCode: 200 };
 }
 
-export async function handleGetGame(connectionId: string, gameId: string): Promise<APIGatewayProxyResultV2> {
+export async function handleGetGame(connectionId: string, gameId: string, playerId?: string): Promise<APIGatewayProxyResultV2> {
     // Check and enforce deadlines before getting game state
     await checkAndEnforceDeadlines(gameId);
     
@@ -104,7 +104,7 @@ export async function handleGetGame(connectionId: string, gameId: string): Promi
     
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: sanitiseGameStateForClient(result.Item)
+        gameState: sanitiseGameStateForClient(result.Item, playerId)
     });
     
     return { statusCode: 200 };
@@ -182,7 +182,7 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
             // Send game state to reconnecting player
             await sendToConnection(connectionId, {
                 type: 'gameStateUpdated',
-                gameState: sanitiseGameStateForClient(game),
+                gameState: sanitiseGameStateForClient(game, playerId),
                 playerId
             });
 
@@ -337,7 +337,7 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
     // Send full game state to the joining player
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: sanitiseGameStateForClient(currentGame),
+        gameState: sanitiseGameStateForClient(currentGame, playerId),
         playerId: playerId
     });
     
@@ -418,7 +418,7 @@ export async function handleRejoinGame(connectionId: string, gameId: string, pla
     // Send full game state with player ID
     await sendToConnection(connectionId, {
         type: 'gameStateUpdated',
-        gameState: sanitiseGameStateForClient(game),
+        gameState: sanitiseGameStateForClient(game, playerId),
         playerId: playerId
     });
     

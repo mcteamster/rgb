@@ -116,36 +116,43 @@ export function findLastSubmittedColor(game: any, playerId: string): HSLColor | 
 
 /**
  * Strip targetColor from rounds that are not yet in reveal/endgame phase.
+ * Pass `playerId` to preserve targetColor for the current round's describer.
  * Returns a new array; does not mutate the input.
  */
-function sanitiseRoundsForClient(rounds: any[]): any[] {
+function sanitiseRoundsForClient(rounds: any[], playerId?: string): any[] {
     return rounds.map(round => {
         if (round.phase === 'reveal' || round.phase === 'endgame') {
             return round; // pass through with targetColor
         }
+        // Describer always sees their own targetColor
+        if (playerId && round.describerId === playerId) {
+            return round;
+        }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { targetColor, ...rest } = round;
-        return rest; // omit targetColor
+        return rest; // omit targetColor for guessers
     });
 }
 
 /**
  * Return a shallow-cloned game state with gameplay.rounds sanitised for
- * client delivery (targetColor stripped from non-reveal/non-endgame rounds).
+ * client delivery. Pass `playerId` to preserve targetColor for the describer.
  */
-export function sanitiseGameStateForClient(gameState: any): any {
+export function sanitiseGameStateForClient(gameState: any, playerId?: string): any {
     return {
         ...gameState,
         gameplay: {
             ...gameState.gameplay,
-            rounds: sanitiseRoundsForClient(gameState.gameplay?.rounds ?? [])
+            rounds: sanitiseRoundsForClient(gameState.gameplay?.rounds ?? [], playerId)
         }
     };
 }
 
 /**
  * Return a shallow-cloned gameplay object with rounds sanitised for
- * client delivery.
+ * broadcast delivery (strips targetColor for all non-reveal rounds,
+ * regardless of player — use sanitiseGameStateForClient with a playerId
+ * for unicast messages to a specific player).
  */
 export function sanitiseGameplayForClient(gameplay: any): any {
     return {

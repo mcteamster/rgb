@@ -429,7 +429,7 @@ describe('handleRejoinGame', () => {
         expect(result.statusCode).toBe(200)
     })
 
-    it('strips targetColor from active round when rejoining', async () => {
+    it('strips targetColor from active round when rejoining as guesser', async () => {
         const game = makeGame({
             meta: { status: 'playing', currentRound: 0 },
             gameplay: {
@@ -443,9 +443,29 @@ describe('handleRejoinGame', () => {
         })
         mockSend.mockResolvedValueOnce({ Item: game })
         mockSend.mockResolvedValue({})
-        await handleRejoinGame('conn1', 'game1', 'host')
+        await handleRejoinGame('conn1', 'game1', 'p2')
         const call = mockSendToConnection.mock.calls[0][1]
         expect(call.gameState.gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('retains targetColor for describer when rejoining', async () => {
+        const target = { h: 200, s: 70, l: 40 }
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0 },
+            gameplay: {
+                rounds: [{
+                    targetColor: target,
+                    describerId: 'host',
+                    phase: 'describing',
+                    submissions: {}
+                }]
+            }
+        })
+        mockSend.mockResolvedValueOnce({ Item: game })
+        mockSend.mockResolvedValue({})
+        await handleRejoinGame('conn1', 'game1', 'host')
+        const call = mockSendToConnection.mock.calls[0][1]
+        expect(call.gameState.gameplay.rounds[0].targetColor).toEqual(target)
     })
 })
 
