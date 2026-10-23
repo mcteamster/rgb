@@ -26,11 +26,23 @@ export const handler = async (event: APIGatewayProxyWebsocketEventV2): Promise<A
             Key: { connectionId }
         }));
         
-        // If connection was associated with a game, clean up the game state
         if (connectionResult.Item?.gameId && connectionResult.Item?.playerId) {
             const { gameId, playerId } = connectionResult.Item;
-            
-            // Use generic kick player function with disconnect reason
+
+            // Don't kick players who disconnect while the game is still in the waiting lobby.
+            // Mobile browsers drop WebSocket connections when switching apps — a transient
+            // disconnect during lobby should not permanently remove the player. The client's
+            // attemptReconnect will fire handleRejoinGame and restore their session.
+            // Only kick immediately during active gameplay where a ghost player blocks progress.
+            const gameResult = await dynamodb.send(new GetCommand({
+                TableName: process.env.GAMES_TABLE!,
+                Key: { gameId }
+            }));
+
+            if (gameResult.Item?.meta?.status === 'waiting') {
+                return { statusCode: 200 };
+            }
+
             await handleKickPlayer(connectionId, gameId, playerId, playerId, 'disconnect');
         }
         

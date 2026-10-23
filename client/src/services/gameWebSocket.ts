@@ -54,6 +54,7 @@ export interface GameEvent {
   gameplay?: any;
   config?: any;
   error?: string;
+  reason?: string;
   message?: string;
   status?: string;
 }
@@ -66,6 +67,7 @@ export interface WebSocketCallbacks {
   onError: (error: string) => void;
   onConnectionStatus: (connected: boolean) => void;
   onKicked: (message: string) => void;
+  onRejoinFailed?: () => void;
 }
 
 export class GameWebSocket {
@@ -149,6 +151,12 @@ export class GameWebSocket {
     this.on('kicked', (event: GameEvent) => {
       if (this.callbacks) {
         this.callbacks.onKicked(event.message || 'You have been removed from the game');
+      }
+    });
+
+    this.on('rejoinFailed', (_event: GameEvent) => {
+      if (this.callbacks?.onRejoinFailed) {
+        this.callbacks.onRejoinFailed();
       }
     });
   }

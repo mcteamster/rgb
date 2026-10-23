@@ -333,6 +333,12 @@ export const GameProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Show kick/closure message as error
         dispatch({ type: 'SET_ERROR', payload: message });
+      },
+      onRejoinFailed: () => {
+        // Session expired — player was removed from the game while disconnected.
+        // Clear state silently and return to home screen (no error shown).
+        clearSession();
+        dispatch({ type: 'RESET_GAME' });
       }
     });
     
