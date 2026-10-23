@@ -161,6 +161,28 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
             }
 
             const playerId = existingPlayer.playerId;
+
+            // Cancel any pending grace-period marker for this player before writing
+            // the new connection record.
+            const staleConnections = await dynamodb.send(new QueryCommand({
+                TableName: process.env.CONNECTIONS_TABLE!,
+                IndexName: 'GameIdIndex',
+                KeyConditionExpression: 'gameId = :gameId',
+                FilterExpression: 'playerId = :playerId AND attribute_exists(gracePeriodExpiresAt)',
+                ExpressionAttributeValues: {
+                    ':gameId': gameId,
+                    ':playerId': playerId
+                }
+            }));
+
+            if (staleConnections.Items && staleConnections.Items.length > 0) {
+                for (const staleConn of staleConnections.Items) {
+                    await dynamodb.send(new DeleteCommand({
+                        TableName: process.env.CONNECTIONS_TABLE!,
+                        Key: { connectionId: staleConn.connectionId }
+                    }));
+                }
+            }
             
             // Update connection table to associate this WebSocket with the game
             const joinTime = new Date();
@@ -397,6 +419,29 @@ export async function handleRejoinGame(connectionId: string, gameId: string, pla
             error: 'Player not found in game'
         });
         return { statusCode: 404 };
+    }
+
+    // Cancel any pending grace-period marker for this player before writing the
+    // new connection record.  Query by GameIdIndex to find any stale connection
+    // record that still has gracePeriodExpiresAt set.
+    const staleConnections = await dynamodb.send(new QueryCommand({
+        TableName: process.env.CONNECTIONS_TABLE!,
+        IndexName: 'GameIdIndex',
+        KeyConditionExpression: 'gameId = :gameId',
+        FilterExpression: 'playerId = :playerId AND attribute_exists(gracePeriodExpiresAt)',
+        ExpressionAttributeValues: {
+            ':gameId': gameId,
+            ':playerId': playerId
+        }
+    }));
+
+    if (staleConnections.Items && staleConnections.Items.length > 0) {
+        for (const staleConn of staleConnections.Items) {
+            await dynamodb.send(new DeleteCommand({
+                TableName: process.env.CONNECTIONS_TABLE!,
+                Key: { connectionId: staleConn.connectionId }
+            }));
+        }
     }
     
     // Update the connection table to associate this WebSocket with the game and player

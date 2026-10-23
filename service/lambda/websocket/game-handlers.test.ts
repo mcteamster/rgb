@@ -781,3 +781,107 @@ describe('handleKickPlayer — legacy read-repair (task 6.4)', () => {
         expect(repairInput.ExpressionAttributeValues[':hostPlayerId']).toBe('host')
     })
 })
+
+// ============================================================
+// handleRejoinGame — grace-period cleanup (task 5.1, 5.3)
+// ============================================================
+
+describe('handleRejoinGame — grace-period cleanup', () => {
+    it('deletes stale grace-period connection record before writing the new connection', async () => {
+        const game = makeGame()
+        const staleConn = { connectionId: 'old-conn', gameId: 'game1', playerId: 'host', gracePeriodExpiresAt: 100 }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })           // GetCommand: game
+            .mockResolvedValueOnce({ Items: [staleConn] })  // QueryCommand: stale grace-period record
+            .mockResolvedValueOnce({})                       // DeleteCommand: delete stale record
+            .mockResolvedValueOnce({})                       // UpdateCommand: write new connection
+        const result = await handleRejoinGame('new-conn', 'game1', 'host')
+        expect(result.statusCode).toBe(200)
+
+        // Verify a DeleteCommand was issued — the third send call (index 2) should be the delete
+        // for the stale connection. The real DeleteCommand wraps input in cmd.input.
+        const thirdCall = mockSend.mock.calls[2]
+        expect(thirdCall).toBeDefined()
+        const thirdInput = thirdCall[0]?.input ?? thirdCall[0]
+        expect(thirdInput.Key).toEqual({ connectionId: 'old-conn' })
+    })
+
+    it('skips the delete when no stale grace-period record exists', async () => {
+        const game = makeGame()
+        mockSend
+            .mockResolvedValueOnce({ Item: game })   // GetCommand: game
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: no stale record
+            .mockResolvedValueOnce({})               // UpdateCommand: write new connection
+        const result = await handleRejoinGame('new-conn', 'game1', 'host')
+        expect(result.statusCode).toBe(200)
+
+        // No DeleteCommand should have been issued for a connection record
+        const deleteCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.Key?.connectionId !== undefined && input.UpdateExpression === undefined
+        })
+        expect(deleteCalls).toHaveLength(0)
+    })
+
+    it('does NOT broadcast playersUpdated on a successful rejoin (task 5.3)', async () => {
+        const game = makeGame()
+        mockSend
+            .mockResolvedValueOnce({ Item: game })   // GetCommand: game
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: no stale record
+            .mockResolvedValueOnce({})               // UpdateCommand: write new connection
+        await handleRejoinGame('new-conn', 'game1', 'host')
+
+        const playersUpdatedCalls = mockBroadcastToGame.mock.calls.filter(
+            (c: any[]) => c[1]?.type === 'playersUpdated'
+        )
+        expect(playersUpdatedCalls).toHaveLength(0)
+    })
+})
+
+// ============================================================
+// handleJoinGame — grace-period cleanup on in-progress reconnect (task 5.2)
+// ============================================================
+
+describe('handleJoinGame — grace-period cleanup on in-progress reconnect', () => {
+    it('deletes stale grace-period connection record before writing new connection on in-progress reconnect', async () => {
+        const game = makeGame({ meta: { status: 'playing', currentRound: 0 } })
+        const staleConn = { connectionId: 'old-conn', gameId: 'game1', playerId: 'host', gracePeriodExpiresAt: 100 }
+        mockSend
+            .mockResolvedValueOnce({ Item: game })           // GetCommand: game
+            .mockResolvedValueOnce({ Items: [] })            // QueryCommand: not already connected (active check)
+            .mockResolvedValueOnce({ Items: [staleConn] })  // QueryCommand: stale grace-period record
+            .mockResolvedValueOnce({})                       // DeleteCommand: delete stale record
+            .mockResolvedValueOnce({})                       // PutCommand: write new connection
+            .mockResolvedValue({})                           // broadcastToGame queries + sends
+
+        const result = await handleJoinGame('new-conn', 'game1', 'Alice') // Alice is existing player
+        expect(result.statusCode).toBe(200)
+
+        // Verify the DeleteCommand was issued for the stale connection
+        const deleteCall = mockSend.mock.calls.find(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.Key?.connectionId === 'old-conn'
+        })
+        expect(deleteCall).toBeDefined()
+    })
+
+    it('skips the grace-period cleanup when no stale record exists on in-progress reconnect', async () => {
+        const game = makeGame({ meta: { status: 'playing', currentRound: 0 } })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })   // GetCommand: game
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: not already connected (active check)
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: no stale grace-period record
+            .mockResolvedValueOnce({})               // PutCommand: write new connection
+            .mockResolvedValue({})
+
+        const result = await handleJoinGame('new-conn', 'game1', 'Alice')
+        expect(result.statusCode).toBe(200)
+
+        // No DeleteCommand should have been called for a connection key
+        const deleteCalls = mockSend.mock.calls.filter(([cmd]) => {
+            const input = cmd?.input ?? cmd
+            return input.Key?.connectionId === 'old-conn'
+        })
+        expect(deleteCalls).toHaveLength(0)
+    })
+})

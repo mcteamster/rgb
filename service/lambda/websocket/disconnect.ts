@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, DeleteCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, DeleteCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyWebsocketEventV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 import { handleKickPlayer } from './game-handlers';
 
@@ -20,16 +20,29 @@ export const handler = async (event: APIGatewayProxyWebsocketEventV2): Promise<A
             Key: { connectionId }
         }));
         
-        // Remove the connection record
+        const gracePeriodSeconds = parseInt(process.env.DISCONNECT_GRACE_PERIOD_SECONDS ?? '0', 10);
+        const { gameId, playerId } = connectionResult.Item ?? {};
+
+        // If grace period is enabled and connection is associated with a game,
+        // write a grace-period marker instead of kicking immediately.
+        if (gracePeriodSeconds > 0 && gameId) {
+            const expiresAt = Math.floor(Date.now() / 1000) + gracePeriodSeconds;
+            await dynamodb.send(new UpdateCommand({
+                TableName: process.env.CONNECTIONS_TABLE!,
+                Key: { connectionId },
+                UpdateExpression: 'SET gracePeriodExpiresAt = :expiresAt',
+                ExpressionAttributeValues: { ':expiresAt': expiresAt }
+            }));
+            return { statusCode: 200 };
+        }
+
+        // Grace period disabled or no game association — remove connection and kick immediately.
         await dynamodb.send(new DeleteCommand({
             TableName: process.env.CONNECTIONS_TABLE!,
             Key: { connectionId }
         }));
         
-        // If connection was associated with a game, clean up the game state
-        if (connectionResult.Item?.gameId && connectionResult.Item?.playerId) {
-            const { gameId, playerId } = connectionResult.Item;
-            
+        if (gameId && playerId) {
             // Use generic kick player function with disconnect reason
             await handleKickPlayer(connectionId, gameId, playerId, playerId, 'disconnect');
         }
