@@ -130,7 +130,7 @@ export class RgbStack extends cdk.Stack {
       environment: {
         CONNECTIONS_TABLE: connectionsTable.tableName,
         GAMES_TABLE: gamesTable.tableName,
-        DISCONNECT_GRACE_PERIOD_SECONDS: '300'
+        DISCONNECT_GRACE_PERIOD_SECONDS: '60'
       }
     });
 
@@ -159,7 +159,7 @@ export class RgbStack extends cdk.Stack {
         CONNECTIONS_TABLE: connectionsTable.tableName,
         GAMES_TABLE: gamesTable.tableName,
         WEBSOCKET_ENDPOINT: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${webSocketStage.stageName}`,
-        DISCONNECT_GRACE_PERIOD_SECONDS: '300'
+        DISCONNECT_GRACE_PERIOD_SECONDS: '60'
       }
     });
 
