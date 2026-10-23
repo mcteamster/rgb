@@ -884,4 +884,22 @@ describe('handleJoinGame — grace-period cleanup on in-progress reconnect', () 
         })
         expect(deleteCalls).toHaveLength(0)
     })
+
+    it('does NOT broadcast playersUpdated on in-progress reconnect (task 5.3)', async () => {
+        // Spec: "no playersUpdated broadcast is sent (the player was never removed)"
+        const game = makeGame({ meta: { status: 'playing', currentRound: 0 } })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })   // GetCommand: game
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: not already connected (active check)
+            .mockResolvedValueOnce({ Items: [] })    // QueryCommand: no stale grace-period record
+            .mockResolvedValueOnce({})               // PutCommand: write new connection
+            .mockResolvedValue({})
+
+        await handleJoinGame('new-conn', 'game1', 'Alice')
+
+        const playersUpdatedCalls = mockBroadcastToGame.mock.calls.filter(
+            (c: any[]) => c[1]?.type === 'playersUpdated'
+        )
+        expect(playersUpdatedCalls).toHaveLength(0)
+    })
 })

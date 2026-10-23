@@ -201,17 +201,13 @@ export async function handleJoinGame(connectionId: string, gameId: string, playe
                 throw error;
             }
 
-            // Send game state to reconnecting player
+            // Send game state to reconnecting player.
+            // Do NOT broadcast playersUpdated — the player was never removed from
+            // the game's player list (grace-period hold), so other players see no change.
             await sendToConnection(connectionId, {
                 type: 'gameStateUpdated',
                 gameState: sanitiseGameStateForClient(game, playerId),
                 playerId
-            });
-
-            // Broadcast player reconnection
-            await broadcastToGame(gameId, {
-                type: 'playersUpdated',
-                players: game.players
             });
 
             return { statusCode: 200 };
