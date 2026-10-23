@@ -7,8 +7,6 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import * as route53 from 'aws-cdk-lib/aws-route53';
-import * as events from 'aws-cdk-lib/aws-events';
-import * as eventsTargets from 'aws-cdk-lib/aws-events-targets';
 
 interface RgbStackProps extends cdk.StackProps {
   endpoints: { [region: string]: string };
@@ -129,8 +127,7 @@ export class RgbStack extends cdk.Stack {
       role: lambdaExecutionRole,
       environment: {
         CONNECTIONS_TABLE: connectionsTable.tableName,
-        GAMES_TABLE: gamesTable.tableName,
-        DISCONNECT_GRACE_PERIOD_SECONDS: '60'
+        GAMES_TABLE: gamesTable.tableName
       }
     });
 
@@ -148,31 +145,12 @@ export class RgbStack extends cdk.Stack {
       }
     });
 
-    // Sweeper Lambda — periodically evicts players whose grace period has expired
-    const sweeperFunction = new lambda.Function(this, 'SweeperFunction', {
-      runtime: lambda.Runtime.NODEJS_24_X,
-      memorySize: 512,
-      handler: 'disconnect-sweeper.handler',
-      code: lambda.Code.fromAsset('dist/lambda/websocket'),
-      role: lambdaExecutionRole,
-      environment: {
-        CONNECTIONS_TABLE: connectionsTable.tableName,
-        GAMES_TABLE: gamesTable.tableName,
-        WEBSOCKET_ENDPOINT: `https://${webSocketApi.apiId}.execute-api.${this.region}.amazonaws.com/${webSocketStage.stageName}`,
-        DISCONNECT_GRACE_PERIOD_SECONDS: '60'
-      }
-    });
-
     // Grant permissions
     gamesTable.grantReadWriteData(messageFunction);
     gamesTable.grantReadWriteData(disconnectFunction);
     connectionsTable.grantReadWriteData(connectFunction);
     connectionsTable.grantReadWriteData(disconnectFunction);
     connectionsTable.grantReadWriteData(messageFunction);
-
-    // Sweeper Lambda grants — read/write on both tables + execute-api:ManageConnections
-    gamesTable.grantReadWriteData(sweeperFunction);
-    connectionsTable.grantReadWriteData(sweeperFunction);
 
     // Grant WebSocket API permissions to message function
     lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
@@ -185,12 +163,6 @@ export class RgbStack extends cdk.Stack {
       actions: ['s3:PutObject'],
       resources: [`arn:aws:s3:::rgb-analytics-${this.account}/multiplayer/*`]
     }));
-
-    // EventBridge rule — invoke sweeper every minute to evict expired grace-period players
-    new events.Rule(this, 'SweeperScheduleRule', {
-      schedule: events.Schedule.rate(cdk.Duration.minutes(1)),
-      targets: [new eventsTargets.LambdaFunction(sweeperFunction)]
-    });
 
     // WebSocket Routes
     webSocketApi.addRoute('$connect', {
