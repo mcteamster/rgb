@@ -399,8 +399,8 @@ export async function handleRejoinGame(connectionId: string, gameId: string, pla
     
     if (!gameResult.Item) {
         await sendToConnection(connectionId, {
-            type: 'error',
-            error: 'Game not found'
+            type: 'rejoinFailed',
+            reason: 'game_not_found'
         });
         return { statusCode: 404 };
     }
@@ -411,8 +411,8 @@ export async function handleRejoinGame(connectionId: string, gameId: string, pla
     const playerExists = game.players.some((p: any) => p.playerId === playerId);
     if (!playerExists) {
         await sendToConnection(connectionId, {
-            type: 'error',
-            error: 'Player not found in game'
+            type: 'rejoinFailed',
+            reason: 'player_not_found'
         });
         return { statusCode: 404 };
     }
