@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { HSLColor, calculateDistanceFromLightness, calculateAngleFromSaturation } from '../utils/colorUtils';
+import { HSLColor, calculateDistanceFromLightness, calculateAngleFromSaturation, setBodyBackground } from '../utils/colorUtils';
 import { useGame } from './GameContext';
 
 interface WheelGeometry {
@@ -118,6 +118,12 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     }
   }, [gameState]);
 
+  // Sync body background on mount (initial color from localStorage)
+  useEffect(() => {
+    setBodyBackground(selectedColor);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Save selected color to localStorage when it changes (if not locked)
   useEffect(() => {
     if (!isColorLocked) {
@@ -199,6 +205,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
   const handleColorClick = (x: number, y: number, hsl: HSLColor) => {
     if (isColorLocked) return;
     setSelectedColor(hsl);
+    setBodyBackground(hsl);
     // Calculate and store the angle from the click position
     const dx = x - wheelGeometry.center;
     const dy = y - wheelGeometry.center;
@@ -210,6 +217,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
   const handleSetSelectedColor = (color: HSLColor) => {
     if (isColorLocked) return;
     setSelectedColor(color);
+    setBodyBackground(color);
   };
 
   const handleHueChange = useCallback((hue: number) => {
@@ -217,6 +225,7 @@ export const ColorProvider: React.FC<ColorProviderProps> = ({ children }) => {
     setSelectedHue(hue);
     const newColor = { h: hue, s: selectedColor.s, l: selectedColor.l };
     setSelectedColor(newColor);
+    setBodyBackground(newColor);
     updateClickPositionFromColor();
   }, [isColorLocked, selectedColor.s, selectedColor.l, updateClickPositionFromColor]);
 

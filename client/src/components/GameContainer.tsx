@@ -14,13 +14,12 @@ import { ColorWheelTips } from './ColorGuessingTips';
 import { useColor } from '../contexts/ColorContext';
 import { MinimisedView } from './MinimisedView';
 import { useGame, loadSession, clearSession } from '../contexts/GameContext';
-import { setBodyBackground } from '../utils/colorUtils';
 import { discordSdk, subscribeToLayoutMode } from '../services/discord';
 import { API_BASE_URL } from '../constants/regions';
 
 export const GameContainer: React.FC = () => {  const { roomCode } = useParams<{ roomCode?: string }>();
   const navigate = useNavigate();
-  const { selectedColor, setIsColorLocked } = useColor();
+  const { setIsColorLocked } = useColor();
   const { gameState, playerId, rejoinGame, getCurrentRound } = useGame();
   const discordRoomChecked = useRef(false);
   const [showAbout, setShowAbout] = useState(false);
@@ -94,11 +93,6 @@ export const GameContainer: React.FC = () => {  const { roomCode } = useParams<{
     setShowTips(false);
     setShouldShowTips('dismissed');
   };
-
-  // Update body background to always match selected color
-  useEffect(() => {
-    setBodyBackground(selectedColor);
-  }, [selectedColor]);
 
   // Check if URL room code matches saved session and attempt rejoin
   useEffect(() => {
