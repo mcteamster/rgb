@@ -4,7 +4,7 @@ interface ButtonProps {
   onClick?: () => void;
   disabled?: boolean;
   type?: 'button' | 'submit';
-  variant?: 'primary' | 'create' | 'join' | 'back' | 'exit';
+  variant?: 'primary' | 'create' | 'join' | 'solo' | 'back' | 'exit';
   style?: React.CSSProperties;
   fullWidth?: boolean;
   children: React.ReactNode;
@@ -23,6 +23,7 @@ export const Button: React.FC<ButtonProps> = ({
     switch (variant) {
       case 'create': return 'create-game-btn';
       case 'join': return 'join-game-btn';
+      case 'solo': return 'solo-game-btn';
       case 'back': return 'back-btn';
       case 'exit': return 'exit-game-btn';
       default: return 'start-round-btn';
