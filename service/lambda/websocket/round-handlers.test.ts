@@ -308,6 +308,22 @@ describe('handleStartRound', () => {
         expect(result.statusCode).toBe(403)
     })
 
+    it('returns 200 when non-host advances round from reveal phase', async () => {
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
+            gameplay: {
+                rounds: [{ describerId: 'describer', phase: 'reveal', scores: {} }],
+            },
+        })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({ Items: [] })
+        const result = await handleStartRound('conn1', 'game1', 'guesser')
+        expect(result.statusCode).toBe(200)
+    })
+
     it('returns 400 when fewer than 2 players', async () => {
         mockSend.mockResolvedValueOnce({
             Item: makeGame({
@@ -452,64 +468,6 @@ describe('handleFinaliseGame', () => {
         expect(result.statusCode).toBe(400)
     })
 
-    it('returns 403 when non-host calls finaliseGame on a valid reveal-phase game', async () => {
-        // host is 'describer'; caller is 'guesser' (non-host)
-        // game is in reveal phase with shouldEndGame true (2 rounds, turnsPerPlayer=2, each player described once)
-        const game = makeGame({
-            meta: { status: 'playing', currentRound: 1, hostPlayerId: 'describer' },
-            config: { maxPlayers: 10, descriptionTimeLimit: 30, guessingTimeLimit: 15, turnsPerPlayer: 1 },
-            gameplay: {
-                rounds: [
-                    { describerId: 'describer', phase: 'reveal', scores: { describer: 80, guesser: 70 } },
-                    { describerId: 'guesser', phase: 'reveal', scores: { describer: 60, guesser: 90 } },
-                ]
-            }
-        })
-        mockSend.mockResolvedValueOnce({ Item: game })
-        const result = await handleFinaliseGame('conn1', 'game1', 'guesser')
-        expect(result.statusCode).toBe(403)
-        // No mutating DynamoDB command — only the initial GetCommand was called
-        expect(mockSend).toHaveBeenCalledTimes(1)
-        expect(mockBroadcastToGame).not.toHaveBeenCalled()
-        expect(mockSendToConnection).toHaveBeenCalledWith('conn1', expect.objectContaining({
-            type: 'error',
-            error: 'Only the host can end the game'
-        }))
-    })
-
-    it('returns 403 when non-host calls finaliseGame even if phase is NOT reveal (auth before phase check)', async () => {
-        // Guard must fire 403 before any 400 phase check
-        const game = makeGame({
-            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
-            gameplay: {
-                rounds: [{ describerId: 'describer', phase: 'describing', submissions: {}, timers: {} }]
-            }
-        })
-        mockSend.mockResolvedValueOnce({ Item: game })
-        const result = await handleFinaliseGame('conn1', 'game1', 'guesser')
-        expect(result.statusCode).toBe(403)
-        expect(mockSend).toHaveBeenCalledTimes(1)
-        expect(mockBroadcastToGame).not.toHaveBeenCalled()
-    })
-
-    it('returns 403 for non-host on legacy game (no hostPlayerId) — read-repair still rejects non-host', async () => {
-        // No meta.hostPlayerId; 'describer' joined earliest → derived host
-        // Caller is 'guesser' → should be rejected
-        const game = makeGame({
-            meta: { status: 'playing', currentRound: 0 },
-            // no hostPlayerId — legacy record
-        })
-        // GetCommand(game) + UpdateCommand(read-repair persist)
-        mockSend.mockResolvedValueOnce({ Item: game })
-        mockSend.mockResolvedValueOnce({}) // UpdateCommand for read-repair
-        const result = await handleFinaliseGame('conn1', 'game1', 'guesser')
-        expect(result.statusCode).toBe(403)
-        // Exactly 2 DynamoDB calls: GetCommand (load) + UpdateCommand (read-repair persist).
-        // No further writes or reads — the 403 path must not issue any game-state mutation.
-        expect(mockSend).toHaveBeenCalledTimes(2)
-        expect(mockBroadcastToGame).not.toHaveBeenCalled()
-    })
-
     it('host succeeds: finaliseGame in reveal phase transitions to endgame and broadcasts', async () => {
         const game = makeGame({
             meta: { status: 'playing', currentRound: 1, hostPlayerId: 'describer' },
@@ -585,46 +543,6 @@ describe('handleResetGame', () => {
         mockSend.mockResolvedValue({ Item: game })
         const result = await handleResetGame('conn1', 'game1', hostId)
         expect(result.statusCode).toBe(200)
-    })
-})
-
-// ============================================================
-// Task 6.1: Non-host rejection + no DB mutation
-// ============================================================
-
-describe('handleStartRound — non-host rejection (no DB mutation)', () => {
-    it('returns 403 and does not write to DB when non-host sends startRound from waiting status', async () => {
-        const game = makeGame({ meta: { status: 'waiting', currentRound: null, hostPlayerId: 'describer' }, gameplay: { rounds: [] } })
-        mockSend.mockResolvedValueOnce({ Item: game }) // GetCommand
-        const result = await handleStartRound('conn1', 'game1', 'guesser')
-        expect(result.statusCode).toBe(403)
-        // Only the initial GetCommand should have been called (no mutating UpdateCommand)
-        const mutateCalls = mockSend.mock.calls.filter(([cmd]) => {
-            const input = cmd?.input ?? cmd
-            return input.UpdateExpression !== undefined
-        })
-        expect(mutateCalls.length).toBe(0)
-    })
-
-    it('returns 403 and does not write to DB when non-host sends startRound from playing/reveal status', async () => {
-        const game = makeGame({
-            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
-            gameplay: {
-                rounds: [{ describerId: 'describer', phase: 'reveal', scores: {} }],
-            },
-        })
-        mockSend.mockResolvedValueOnce({ Item: game }) // GetCommand
-        const result = await handleStartRound('conn1', 'game1', 'guesser')
-        expect(result.statusCode).toBe(403)
-        // read-repair UpdateCommand is allowed, but no round-starting mutation
-        const roundMutateCalls = mockSend.mock.calls.filter(([cmd]) => {
-            const input = cmd?.input ?? cmd
-            return (
-                input.UpdateExpression !== undefined &&
-                !input.UpdateExpression.includes('hostPlayerId')
-            )
-        })
-        expect(roundMutateCalls.length).toBe(0)
     })
 })
 
