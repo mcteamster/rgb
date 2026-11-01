@@ -101,5 +101,16 @@ export const cartesianToPolar = (x: number, y: number, center: number) => {
 };
 
 export const setBodyBackground = (color: HSLColor) => {
-  document.body.style.backgroundColor = `hsl(${Math.round(color.h)}, ${Math.round(color.s)}%, ${Math.round(color.l)}%)`;
+  const hsl = `hsl(${Math.round(color.h)}, ${Math.round(color.s)}%, ${Math.round(color.l)}%)`;
+  // Set on both html and body — Safari requires the html element to repaint reliably
+  document.documentElement.style.backgroundColor = hsl;
+  document.body.style.backgroundColor = hsl;
+  // Update theme-color meta tag for Safari/iOS UI chrome tinting
+  let meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!meta) {
+    meta = document.createElement('meta');
+    meta.name = 'theme-color';
+    document.head.appendChild(meta);
+  }
+  meta.content = hsl;
 };
