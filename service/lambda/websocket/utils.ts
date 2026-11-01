@@ -153,11 +153,14 @@ export function sanitiseGameStateForClient(gameState: any, playerId?: string): a
  * broadcast delivery (strips targetColor for all non-reveal rounds,
  * regardless of player — use sanitiseGameStateForClient with a playerId
  * for unicast messages to a specific player).
+ *
+ * Pass `playerId` to preserve targetColor for that player's rounds
+ * (i.e. when unicasting to the describer).
  */
-export function sanitiseGameplayForClient(gameplay: any): any {
+export function sanitiseGameplayForClient(gameplay: any, playerId?: string): any {
     return {
         ...gameplay,
-        rounds: sanitiseRoundsForClient(gameplay?.rounds ?? [])
+        rounds: sanitiseRoundsForClient(gameplay?.rounds ?? [], playerId)
     };
 }
 

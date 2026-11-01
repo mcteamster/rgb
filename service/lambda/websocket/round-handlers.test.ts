@@ -333,6 +333,7 @@ describe('handleStartRound', () => {
             .mockResolvedValueOnce({ Item: game }) // GetCommand
             .mockResolvedValueOnce({})             // UpdateCommand
             .mockResolvedValueOnce({ Item: game }) // GetCommand for broadcast
+            .mockResolvedValueOnce({ Items: [] })  // QueryCommand for describer connection
         const result = await handleStartRound('conn1', 'game1', 'describer')
         expect(result.statusCode).toBe(200)
         expect(mockBroadcastToGame).toHaveBeenCalled()
@@ -349,6 +350,7 @@ describe('handleStartRound', () => {
             .mockResolvedValueOnce({ Item: game })
             .mockResolvedValueOnce({})
             .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({ Items: [] })  // QueryCommand for describer connection
         const result = await handleStartRound('conn1', 'game1', 'describer')
         expect(result.statusCode).toBe(200)
     })
@@ -370,12 +372,48 @@ describe('handleStartRound', () => {
             .mockResolvedValueOnce({ Item: game })
             .mockResolvedValueOnce({})
             .mockResolvedValueOnce({ Item: gameAfterStart })
+            .mockResolvedValueOnce({ Items: [] })  // QueryCommand for describer connection
         await handleStartRound('conn1', 'game1', 'describer')
         const gameplayCall = mockBroadcastToGame.mock.calls.find(
             (c: any[]) => c[1]?.type === 'gameplayUpdated'
         )
         expect(gameplayCall).toBeDefined()
         expect(gameplayCall[1].gameplay.rounds[0]).not.toHaveProperty('targetColor')
+    })
+
+    it('unicasts targetColor to describer after broadcast strips it', async () => {
+        // Give 'guesser' one prior round so 'describer' is deterministically selected
+        const game = makeGame({
+            meta: { status: 'playing', currentRound: 0, hostPlayerId: 'describer' },
+            gameplay: {
+                rounds: [{ describerId: 'guesser', phase: 'reveal', scores: {} }]
+            }
+        })
+        const gameAfterStart = makeGame({
+            meta: { status: 'playing', currentRound: 1, hostPlayerId: 'describer' },
+            gameplay: {
+                rounds: [
+                    { describerId: 'guesser', phase: 'reveal', scores: {} },
+                    {
+                        targetColor: { h: 120, s: 60, l: 45 },
+                        describerId: 'describer',
+                        phase: 'describing',
+                        submissions: {}
+                    }
+                ]
+            }
+        })
+        mockSend
+            .mockResolvedValueOnce({ Item: game })
+            .mockResolvedValueOnce({})
+            .mockResolvedValueOnce({ Item: gameAfterStart })
+            .mockResolvedValueOnce({ Items: [{ connectionId: 'describer-conn' }] }) // QueryCommand
+        await handleStartRound('conn1', 'game1', 'describer')
+        const unicastCall = mockSendToConnection.mock.calls.find(
+            (c: any[]) => c[0] === 'describer-conn' && c[1]?.type === 'gameplayUpdated'
+        )
+        expect(unicastCall).toBeDefined()
+        expect(unicastCall[1].gameplay.rounds[1]).toHaveProperty('targetColor')
     })
 })
 

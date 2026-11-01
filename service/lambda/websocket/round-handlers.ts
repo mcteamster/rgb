@@ -1,4 +1,4 @@
-import { UpdateCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { UpdateCommand, GetCommand, DeleteCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { APIGatewayProxyResultV2 } from 'aws-lambda';
 import { HSLColor, Player } from './types';
 import { dynamodb, broadcastToGame, sendToConnection } from './aws-clients';
@@ -577,10 +577,32 @@ export async function handleStartRound(connectionId: string, gameId: string, pla
         meta: updatedGame.Item!.meta
     });
 
+    // Broadcast gameplay to all players — targetColor is stripped from the
+    // active describing round so guessers cannot see it.
     await broadcastToGame(gameId, {
         type: 'gameplayUpdated',
         gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay)
     });
+
+    // Unicast the describer's own gameplayUpdated with targetColor preserved,
+    // overriding the stripped broadcast they just received.
+    const describerConnections = await dynamodb.send(new QueryCommand({
+        TableName: process.env.CONNECTIONS_TABLE!,
+        IndexName: 'GameIdIndex',
+        KeyConditionExpression: 'gameId = :gameId',
+        FilterExpression: 'playerId = :describerId',
+        ExpressionAttributeValues: {
+            ':gameId': gameId,
+            ':describerId': describerId
+        }
+    }));
+
+    if (describerConnections.Items && describerConnections.Items.length > 0) {
+        await sendToConnection(describerConnections.Items[0].connectionId, {
+            type: 'gameplayUpdated',
+            gameplay: sanitiseGameplayForClient(updatedGame.Item!.gameplay, describerId)
+        });
+    }
     
     return { statusCode: 200 };
 }
