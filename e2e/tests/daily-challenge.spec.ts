@@ -147,7 +147,7 @@ test.describe('Daily challenge local timezone', () => {
       });
     });
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
-    await page.goto('/');
+    await page.goto('/daily');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
     expect(currentUrl).toContain('localDate=');
   });
@@ -164,36 +164,11 @@ test.describe('Daily challenge local timezone', () => {
       });
     });
     await page.addInitScript(() => localStorage.setItem('dailyChallengeTipsSeen', 'true'));
-    await page.goto('/');
+    await page.goto('/daily');
     await page.locator('.color-wheel').first().waitFor({ timeout: 10_000 });
     expect(capturedDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     const browserLocalDate = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
     expect(capturedDate).toBe(browserLocalDate);
-  });
-
-  test('home screen shows Color of the Day button with prompt', async ({ page }) => {
-    await page.route('**/daily-challenge/current**', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 0, userSubmission: null }),
-      })
-    );
-    await page.goto('/');
-    await expect(page.getByRole('button', { name: /color of the day/i })).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText(/ocean blue/i)).toBeVisible({ timeout: 10_000 });
-  });
-
-  test('home screen shows result button after submission', async ({ page }) => {
-    await page.route('**/daily-challenge/current**', route =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({ challengeId: CHALLENGE_STUB.challengeId, prompt: CHALLENGE_STUB.prompt, validFrom: CHALLENGE_STUB.validFrom, validUntil: CHALLENGE_STUB.validUntil, totalSubmissions: 42, userSubmission: SUBMISSION_STUB }),
-      })
-    );
-    await page.goto('/');
-    await expect(page.getByRole('button', { name: /87.*see more/i })).toBeVisible({ timeout: 10_000 });
   });
 
   test('history calendar today marker matches browser local date', async ({ page }) => {
